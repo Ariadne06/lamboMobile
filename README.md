@@ -1,50 +1,71 @@
-# Welcome to your Expo app 👋
+# Welcome to our LAMBO Mobile Application 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+---
 
-## Get started
+## 🚀 Get Started
 
-1. Install dependencies
+1. **Install dependencies**
 
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. **Start the app**
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🔐 Supabase Setup
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+This project is preconfigured to use Supabase for backend services like authentication and database access.
 
-## Get a fresh project
+1. Create a `.env` file in the root directory:
+   ```env
+   EXPO_PUBLIC_SUPABASE_URL='your_supabase_url'
+   EXPO_PUBLIC_SUPABASE_ANON_KEY='your_supabase_anon_key'
+   ```
 
-When you're ready, run:
+---
+
+## 💅 NativeWind (Tailwind CSS for React Native)
+
+This app uses [NativeWind](https://www.nativewind.dev/) to style components with Tailwind CSS classes.
+
+- Use `className="..."` on React Native components.
+- Configured via `tailwind.config.js` and `nativewind.config.ts`.
+
+**Example:**
+
+```tsx
+<View className="flex-1 items-center justify-center bg-blue-100">
+  <Text className="text-red-600 text-lg font-bold">Hello from NativeWind!</Text>
+</View>
+```
+
+---
+
+## 📁 Routing with Expo Router
+
+This project uses **Expo Router** for file-based routing. Folder structure inside `app/` determines your screens.
+
+- `app/index.tsx` → Home screen
+- `app/(tabs)/explore.tsx` → Explore tab
+- `app/details/[id].tsx` → Dynamic route
+
+📘 Learn more at [https://expo.github.io/router/docs](https://expo.github.io/router/docs)
+
+---
+
+## 🧼 Reset Starter App
+
+To remove demo files and start fresh:
 
 ```bash
 npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+This moves current demo files to `app-example/` and gives you a clean `app/` directory.
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
