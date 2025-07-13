@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { Link } from 'expo-router';
 
 export default function Index() {
   const [residents, setResidents] = useState<any[]>([]);
@@ -32,6 +33,50 @@ export default function Index() {
         backgroundColor: '#f9f9f9',
       }}
     >
+
+<View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+        <Link href="/residents" asChild>
+          <Pressable
+            style={{
+              backgroundColor: '#1e40af',
+              paddingVertical: 10,
+              paddingHorizontal: 18,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>
+              Go to Residents
+            </Text>
+          </Pressable>
+        </Link>
+
+        <Link href="/(auth)/register" asChild>
+          <Pressable
+            style={{
+              backgroundColor: '#16a34a',
+              paddingVertical: 10,
+              paddingHorizontal: 18,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Register</Text>
+          </Pressable>
+        </Link>
+
+        <Link href="/(auth)/login" asChild>
+          <Pressable
+            style={{
+              backgroundColor: '#dc2626',
+              paddingVertical: 10,
+              paddingHorizontal: 18,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Login</Text>
+          </Pressable>
+        </Link>
+      </View>
+      
       <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
         Resident List
       </Text>
@@ -60,4 +105,6 @@ export default function Index() {
       )}
     </View>
   );
+  
 }
+

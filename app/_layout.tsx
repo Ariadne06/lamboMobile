@@ -7,6 +7,8 @@ import 'react-native-reanimated';
 import "../global.css";
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import SplashScreenManager from '@/components/SplashScreenManager';
+import { AuthProvider } from '@/context/authContext';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -15,17 +17,28 @@ export default function RootLayout() {
   });
 
   if (!loaded) {
-    // Async font loading only occurs in development.
     return null;
   }
 
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <SplashScreenManager
+        customImage={require('../assets/images/brgylogo.png')}
+        title="Barangay Cansaga"
+        subtitle="Resident Management System"
+        backgroundColor={colorScheme === 'dark' ? '#ffffff' : '#1e40af'}
+        textColor={colorScheme === 'dark' ? '#000000' : '#ffffff'}
+        duration={3000}
+      >
+        <ThemeProvider value={DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </SplashScreenManager>
+    </AuthProvider>
   );
 }
