@@ -50,19 +50,6 @@ export default function Index() {
           </Pressable>
         </Link>
 
-        <Link href="/(auth)/register" asChild>
-          <Pressable
-            style={{
-              backgroundColor: '#16a34a',
-              paddingVertical: 10,
-              paddingHorizontal: 18,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Register</Text>
-          </Pressable>
-        </Link>
-
         <Link href="/(auth)/login" asChild>
           <Pressable
             style={{

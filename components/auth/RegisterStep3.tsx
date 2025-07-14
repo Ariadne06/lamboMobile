@@ -56,7 +56,7 @@ export default function RegisterStep3() {
       {/* Submit button within the component */}
       <Pressable
         onPress={handleSubmit}
-        style={{ backgroundColor: '#1e40af', padding: 12, borderRadius: 6, marginTop: 20 }}
+        style={{ backgroundColor: '#FF3D33', padding: 12, borderRadius: 6, marginTop: 20 }}
       >
         <Text style={{ color: '#fff', textAlign: 'center' }}>Submit</Text>
       </Pressable>

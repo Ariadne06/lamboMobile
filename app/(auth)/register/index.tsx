@@ -19,7 +19,7 @@ export default function Step1Personal() {
         {/* Navigation */}
         <Pressable
           onPress={() => router.push('/register/step2')}
-          style={{ marginTop: 20, backgroundColor: '#1e40af', padding: 12, borderRadius: 6 }}
+          style={{ marginTop: 5, backgroundColor: '#FF3D33', padding: 12, borderRadius: 6 }}
         >
           <Text style={{ color: '#fff', textAlign: 'center' }}>Next</Text>
         </Pressable>

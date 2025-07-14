@@ -13,15 +13,15 @@ export default function Step2() {
       <RegisterStep2 />
 
       {/* Navigation */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-        <Pressable onPress={() => router.back()} style={{ backgroundColor: '#1e40af', padding: 12, borderRadius: 6 }}>
+      {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}> */}
+        {/* <Pressable onPress={() => router.back()} style={{ backgroundColor: '#FF3D33', padding: 12, borderRadius: 6 }}>
           <Text style={{ color: '#fff' }}>Back</Text>
-        </Pressable>
+        </Pressable> */}
 
-        <Pressable onPress={() => router.push('/register/step3')} style={{ backgroundColor: '#1e40af', padding: 12, borderRadius: 6 }}>
-          <Text style={{ color: '#fff' }}>Next</Text>
+        <Pressable onPress={() => router.push('/register/step3')} style={{ marginTop: 20, backgroundColor: '#FF3D33', padding: 12, borderRadius: 6 }}>
+          <Text style={{ color: '#fff', textAlign: 'center'}}>Next</Text>
         </Pressable>
-      </View>
+      {/* </View> */}
     </View>
   );
 }

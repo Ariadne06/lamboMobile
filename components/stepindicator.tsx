@@ -30,9 +30,9 @@ export default function StepIndicator({ currentStep, steps }: Props) {
                   height: 32,
                   borderRadius: 16,
                   backgroundColor: isCompleted
-                    ? '#1e40af'
+                    ? '#FF3D33'
                     : isActive
-                    ? '#3b82f6'
+                    ? '#FF3D33'
                     : '#e5e7eb',
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -51,7 +51,7 @@ export default function StepIndicator({ currentStep, steps }: Props) {
               <Text
                 style={{
                   marginTop: 4,
-                  color: isCompleted || isActive ? '#1e40af' : '#6b7280',
+                  color: isCompleted || isActive ? '#FF3D33' : '#6b7280',
                   fontSize: 12,
                 }}
               >
@@ -65,7 +65,7 @@ export default function StepIndicator({ currentStep, steps }: Props) {
                 style={{
                   height: 2,
                   width: 32,
-                  backgroundColor: isCompleted ? '#1e40af' : '#d1d5db',
+                  backgroundColor: isCompleted ? '#FF3D33' : '#d1d5db',
                   marginHorizontal: 8,
                   alignSelf: 'center',
                 }}

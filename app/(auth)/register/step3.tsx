@@ -13,11 +13,11 @@ export default function Step3() {
       <RegisterStep3 />
 
       {/* Navigation */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-        <Pressable onPress={() => router.back()} style={{ backgroundColor: '#1e40af', padding: 12, borderRadius: 6  }}>
+      {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
+        <Pressable onPress={() => router.back()} style={{ backgroundColor: '#FF3D33', padding: 12, borderRadius: 6  }}>
           <Text style={{ color: '#fff' }}>Back</Text>
         </Pressable>
-      </View>
+      </View> */}
     </View>
   );
 }
