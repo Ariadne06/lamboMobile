@@ -1,33 +1,22 @@
 import { View, Text, TextInput, Alert, Pressable } from 'react-native';
 import { useRegister } from '@/context/registercontext';
+import { router } from 'expo-router';
 
 export default function RegisterStep3() {
   const { formData, setFormData } = useRegister();
-  
-  const handleSubmit = async () => {
-    if (!formData.first_name || !formData.middle_name || !formData.last_name || !formData.dob || !formData.sex ) {
+
+  const handleNext = () => {
+    // Validate required fields
+    if (!formData.username || !formData.password || !formData.confirm_password) {
       Alert.alert('Missing Info', 'Please fill out all fields.');
       return;
     }
-
-    try {
-      const response = await fetch('http://192.168.1.9:8000/api/register/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        Alert.alert('Success', 'Resident registered successfully!');
-      } else {
-        console.error(result);
-        Alert.alert('Error', 'Registration failed.');
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'Network error.');
+    if (formData.password !== formData.confirm_password) {
+      Alert.alert('Password Mismatch', 'Passwords do not match.');
+      return;
     }
+    // Proceed to choose document screen
+    router.push('/(auth)/register/chooseDocument');
   };
 
   return (
@@ -52,13 +41,11 @@ export default function RegisterStep3() {
         style={styles.input}
         secureTextEntry
       />
-      
-      {/* Submit button within the component */}
       <Pressable
-        onPress={handleSubmit}
+        onPress={handleNext}
         style={{ backgroundColor: '#FF3D33', padding: 12, borderRadius: 6, marginTop: 20 }}
       >
-        <Text style={{ color: '#fff', textAlign: 'center' }}>Submit</Text>
+        <Text style={{ color: '#fff', textAlign: 'center' }}>Next: Choose Document</Text>
       </Pressable>
     </View>
   );
@@ -72,4 +59,4 @@ const styles = {
     padding: 12,
     marginBottom: 12,
   },
-}; 
+};

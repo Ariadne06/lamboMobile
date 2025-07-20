@@ -15,7 +15,7 @@ export default function ResidentsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://192.168.1.9:8000/api/residents/') // Replace with your actual IP
+    fetch('http://192.168.1.13:8000/api/residents/') // Replace with your actual IP
       .then((res) => res.json())
       .then((data) => {
        
