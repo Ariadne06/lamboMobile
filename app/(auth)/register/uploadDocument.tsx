@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Button, Image, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import { View, Text, Button, Image, Alert, ActivityIndicator, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useRegister } from '@/context/registercontext';
@@ -134,36 +134,181 @@ export default function UploadDocument() {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24, paddingBottom: 40 }}>
       <Text style={{ fontSize: 20, marginBottom: 20 }}>Upload and Verify Your ID</Text>
-      {image && <Image source={{ uri: image }} style={{ width: 200, height: 200, marginBottom: 20 }} />}
-      <Button title="Take Photo" onPress={takePhoto} />
-      <View style={{ height: 10 }} />
-      <Button title="Choose from Gallery" onPress={pickFromGallery} />
-      <View style={{ height: 20 }} />
-      {image && !uploading && !verified && <Button title="Verify" onPress={handleVerify} />}
-      {uploading && <ActivityIndicator size="large" />}
+      <View style={{ width: '100%', alignItems: 'center', marginTop: 16 }}>
+        {/* Image Preview */}
+        {image && (
+          <View
+            style={{
+              width: 220,
+              height: 220,
+              borderRadius: 16,
+              borderWidth: 2,
+              borderColor: '#6366f1',
+              backgroundColor: '#f3f4f6',
+              marginBottom: 20,
+              elevation: 3,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Image
+              source={{ uri: image }}
+              style={{ width: 200, height: 200, borderRadius: 12 }}
+              resizeMode="cover"
+            />
+          </View>
+        )}
+
+        {/* Action Buttons */}
+        {!image && (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 16 }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#2563eb',
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderRadius: 8,
+                marginHorizontal: 8,
+                opacity: uploading ? 0.6 : 1,
+              }}
+              onPress={takePhoto}
+              disabled={uploading}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#fbbf24',
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderRadius: 8,
+                marginHorizontal: 8,
+                opacity: uploading ? 0.6 : 1,
+              }}
+              onPress={pickFromGallery}
+              disabled={uploading}
+            >
+              <Text style={{ color: '#1e293b', fontWeight: 'bold', fontSize: 16 }}>Choose from Gallery</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Change Photo Button (only once, after image preview) */}
+        {image && !uploading && (
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#e5e7eb',
+              paddingVertical: 10,
+              paddingHorizontal: 18,
+              borderRadius: 8,
+              marginBottom: 10,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#d1d5db',
+            }}
+            onPress={() => setImage(null)}
+          >
+            <Text style={{ color: '#374151', fontWeight: 'bold', fontSize: 15 }}>Change Photo</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Verify Button */}
+        {image && !uploading && !verified && !mismatches && (
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#10b981',
+              paddingVertical: 14,
+              paddingHorizontal: 32,
+              borderRadius: 10,
+              marginBottom: 16,
+              alignItems: 'center',
+            }}
+            onPress={handleVerify}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 17 }}>Verify ID</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Spinner */}
+        {uploading && (
+          <ActivityIndicator size="large" color="#6366f1" style={{ marginVertical: 20 }} />
+        )}
+
+        {/* Submit Button */}
+        {verified && !uploading && (
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#1e40af',
+              paddingVertical: 16,
+              paddingHorizontal: 40,
+              borderRadius: 12,
+              marginTop: 10,
+              alignItems: 'center',
+              elevation: 2,
+            }}
+            onPress={handleSubmitRegistration}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>Submit Registration</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       {mismatches && (
         <View style={{ marginTop: 20, width: '100%' }}>
-          <Text style={{ color: 'red', fontWeight: 'bold', marginBottom: 8 }}>Mismatches found:</Text>
+          <Text style={{ color: 'red', fontWeight: 'bold', marginBottom: 8 }}>We found some differences:</Text>
           {Object.entries(mismatches).map(([key, val]: any) => (
-            <View key={key} style={{ marginBottom: 12 }}>
-              <Text style={{ fontWeight: 'bold' }}>{key.replace('_', ' ').toUpperCase()}</Text>
-              <Text>User: <Text style={{ color: 'red' }}>{val.user}</Text></Text>
-              <Text>OCR: <Text style={{ color: 'blue' }}>{val.ocr}</Text></Text>
-              <TextInput
-                style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 8, marginTop: 4 }}
-                value={val.user}
-                onChangeText={text => handleFieldCorrection(key, text)}
-                placeholder={`Correct ${key}`}
-              />
+            <View key={key} style={{
+              backgroundColor: '#fef2f2',
+              borderColor: '#f87171',
+              borderWidth: 1,
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 16,
+              flexDirection: 'row',
+              alignItems: 'center'
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: 'bold', color: '#991b1b' }}>{key.replace('_', ' ').toUpperCase()}</Text>
+                <Text>User Input: <Text style={{ color: '#991b1b' }}>{val.user}</Text></Text>
+                <Text>ID Extracted: <Text style={{ color: '#2563eb' }}>{val.ocr}</Text></Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#d1d5db',
+                    borderRadius: 6,
+                    padding: 8,
+                    marginTop: 6,
+                    backgroundColor: '#fff'
+                  }}
+                  value={val.user}
+                  onChangeText={text => handleFieldCorrection(key, text)}
+                  placeholder={`Correct ${key}`}
+                />
+              </View>
+              <Text style={{ fontSize: 24, color: '#f87171', marginLeft: 8 }}>!</Text>
             </View>
           ))}
-          <Button title="Re-Verify" onPress={handleVerify} />
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#10b981',
+              paddingVertical: 12,
+              paddingHorizontal: 32,
+              borderRadius: 10,
+              marginTop: 10,
+              alignItems: 'center',
+              marginBottom: 40, // Add extra space below the button
+            }}
+            onPress={handleVerify}
+            disabled={uploading}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Re-verify</Text>
+          </TouchableOpacity>
         </View>
-      )}
-      {verified && !uploading && (
-        <Button title="Submit Registration" onPress={handleSubmitRegistration} color="#1e40af" />
       )}
     </ScrollView>
   );

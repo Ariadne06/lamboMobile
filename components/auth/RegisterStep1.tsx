@@ -107,8 +107,8 @@ export default function RegisterStep1() {
         <Text style={styles.label}>Civil Status</Text>
         <View style={styles.picker}>
           <Picker
-            selectedValue={formData.civil_status}
-            onValueChange={itemValue => setFormData({ ...formData, civil_status: itemValue })}
+            selectedValue={formData.civil_status_id}
+            onValueChange={itemValue => setFormData({ ...formData, civil_status_id: itemValue })}
           >
             <Picker.Item label="Select Civil Status" value="" />
             {civilStatusOptions.map((cs: CivilStatusOption) => (
@@ -137,8 +137,8 @@ export default function RegisterStep1() {
         <Text style={styles.label}>Educational Attainment</Text>
           <View style={styles.picker}>
             <Picker
-              selectedValue={formData.educational_attainment}
-              onValueChange={itemValue => setFormData({ ...formData, educational_attainment: itemValue })}
+              selectedValue={formData.educational_attainment_id}
+              onValueChange={itemValue => setFormData({ ...formData, educational_attainment_id: itemValue })}
             >
               <Picker.Item label="Select Educational Attainment" value="" />
               {educationOptions.map((ed: EducationOption) => (

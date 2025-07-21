@@ -1,7 +1,24 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRegister } from '@/context/registercontext';
+
+// Illustration at the top (replace the path with your actual image if needed)
+const MockIDImage = () => (
+  <Image
+    source={require('../../../assets/images/id-card.png')}
+    style={styles.image}
+    resizeMode="contain"
+  />
+);
+
+const DOCUMENTS = [
+  { label: 'Philippine National ID', value: 'Philippine National ID' },
+  { label: 'SSS ID', value: 'SSS ID' },
+  { label: 'Voter’s ID', value: 'Voters ID' },
+  { label: 'Driver’s License', value: 'Drivers License' },
+  { label: 'UMID', value: 'UMID' },
+];
 
 export default function ChooseDocument() {
   const router = useRouter();
@@ -16,35 +33,81 @@ export default function ChooseDocument() {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-      <Text style={{ fontSize: 22, marginBottom: 20, fontWeight: 'bold' }}>Choose Document to Upload</Text>
-      <TouchableOpacity style={styles.button} onPress={() => handleSelect('Philippine National ID')}>
-        <Text style={styles.buttonText}>Philippine National ID</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={() => handleSelect('Birth Certificate')}>
-        <Text style={styles.buttonText}>Birth Certificate</Text>
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.imageContainer}>
+        <Image
+          source={require('@/assets/images/id-card.png')}
+          style={{ width: 120, height: 100 }}
+          resizeMode="cover"
+        />
+      </View>
+      <Text style={styles.title}>Choose ID/Document to upload</Text>
+      <View style={styles.optionsContainer}>
+        {DOCUMENTS.map((doc) => (
+          <TouchableOpacity
+            key={doc.value}
+            style={styles.optionCard}
+            onPress={() => handleSelect(doc.value)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.optionText}>{doc.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
 
-const styles = {
-  button: {
-    backgroundColor: '#e0e7ff',
-    padding: 16,
-    borderRadius: 8,
-    marginVertical: 10,
-    width: 240,
-    alignItems: 'center' as const,
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    paddingTop: 48,
+    paddingHorizontal: 24,
+  },
+  imageContainer: {
+    marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 28,
+    textAlign: 'center',
+  },
+  optionsContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  optionCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    alignItems: 'center',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.07,
     shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  buttonText: {
+  optionText: {
     fontSize: 16,
-    fontWeight: 600 as const,
-    color: '#1e293b',
+    fontWeight: '600',
+    color: '#374151',
   },
-};
+  image: {
+    width: '100%',
+    maxWidth: 400, // or whatever max you want
+    height: 200,   // or use 'auto' with aspectRatio
+    alignSelf: 'center',
+  },
+});
