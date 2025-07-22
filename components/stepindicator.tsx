@@ -15,6 +15,7 @@ export default function StepIndicator({ currentStep, steps }: Props) {
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 20,
+        marginTop: 30,
       }}
     >
       {steps.map((step, index) => {
