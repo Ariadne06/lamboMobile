@@ -14,7 +14,6 @@ const MockIDImage = () => (
 
 const DOCUMENTS = [
   { label: 'Philippine National ID', value: 'Philippine National ID' },
-  { label: 'SSS ID', value: 'SSS ID' },
   { label: 'Voter’s ID', value: 'Voters ID' },
   { label: 'Driver’s License', value: 'Drivers License' },
   { label: 'UMID', value: 'UMID' },
@@ -65,6 +64,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 48,
     paddingHorizontal: 24,
+    justifyContent: 'center',
   },
   imageContainer: {
     marginBottom: 24,
