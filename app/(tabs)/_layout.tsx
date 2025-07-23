@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -20,7 +20,6 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
             backgroundColor: '#ffffff',
           },
@@ -33,31 +32,46 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
         }}
       />
 
-      {/* Dashboard Tab */}
+    
       <Tabs.Screen
         name="dashboard"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color }) => <MaterialIcons size={28} name="dashboard" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons size={24} name="dashboard" color={color} />,
         }}
       />
 
-
-      {/* Hide Explore Tab */}
       <Tabs.Screen
-        name="explore"
+        name="menu"
         options={{
-          href: null,
+          title: 'Menu',
+          tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
         }}
       />
-      
+
+
+      {/* <Tabs.Screen
+        name="menu"
+        options={{
+          title: 'Menu',
+          tabBarIcon: ({ color, focused}) => (
+            <Image
+              source={require('@/assets/images/health.png')}
+              style={{
+                width: 28,
+                height: 28,
+                tintColor: focused ? color : '#8e8e93',
+              }}
+            />
+          ),
+        }}
+      /> */}
+     
     </Tabs>
-
-
         
   );
 }
