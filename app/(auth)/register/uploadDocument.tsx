@@ -63,7 +63,7 @@ export default function UploadDocument() {
     } as any);
 
     try {
-      const response = await fetch('http://192.168.1.13:8000/api/verify-id-fields/', {
+      const response = await fetch('http://192.168.1.15:8000/api/verify-id-fields/', {
         method: 'POST',
         body: formDataToSend,
       });
@@ -110,7 +110,7 @@ export default function UploadDocument() {
   
 
     try {
-      const response = await fetch('http://192.168.1.13:8000/api/register/', {
+      const response = await fetch('http://192.168.1.15:8000/api/register/', {
         method: 'POST',
         body: formDataToSend,
       });

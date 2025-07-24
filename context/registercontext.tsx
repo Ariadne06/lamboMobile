@@ -51,27 +51,27 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
 
 
   useEffect(() => {
-    fetch('http://192.168.1.13:8000/api/religion-categories/')
+    fetch('http://192.168.1.15:8000/api/religion-categories/')
       .then(res => res.json())
       .then(setReligionOptions)
       .catch(err => console.error('Religion Category fetch error:', err));
 
-    fetch('http://192.168.1.13:8000/api/civil-statuses/')
+    fetch('http://192.168.1.15:8000/api/civil-statuses/')
       .then(res => res.json())
       .then(setCivilStatusOptions)
       .catch(err => console.error('Civil Status fetch error:', err));
 
-    fetch('http://192.168.1.13:8000/api/educational-attainments/')
+    fetch('http://192.168.1.15:8000/api/educational-attainments/')
       .then(res => res.json())
       .then(setEducationOptions)
       .catch(err => console.error('Educational Attainment fetch error:', err));
 
-    fetch('http://192.168.1.13:8000/api/sitios/')
+    fetch('http://192.168.1.15:8000/api/sitios/')
       .then(res => res.json())
       .then(setSitioOptions)
       .catch(err => console.error('Sitios fetch error:', err));
 
-    fetch('http://192.168.1.13:8000/api/resident-statuses/')
+    fetch('http://192.168.1.15:8000/api/resident-statuses/')
       .then(res => res.json())
       .then(setStatusOptions)
       .catch(err => console.error('Status fetch error:', err));

@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5, Ionicons  } from '@expo/vector-icons';
+import { ThemedText } from '@/components/ThemedText';
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -9,40 +10,40 @@ export default function MenuScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Menu</Text>
+      <ThemedText style={styles.title}>Menu</ThemedText>
 
       <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} onPress={() => router.push('/(tabs)/menu/householdinformation')}>
         <View style={styles.buttonContent}>
-          <MaterialIcons name="home" size={24} color="#1e293b" />
-          <Text style={styles.buttonText}>Household Information</Text>
+          <Ionicons name="home-outline" size={24} color="#1e293b" />
+          <ThemedText style={styles.buttonText}>Household Information</ThemedText>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} onPress={() => router.push('/(tabs)/menu/transactionhistory')}>
         <View style={styles.buttonContent}>
-          <MaterialIcons name="history" size={24} color="#1e293b" />
-          <Text style={styles.buttonText}>Transaction History</Text>
+          <Ionicons name="receipt-outline" size={24} color="#1e293b" />
+          <ThemedText style={styles.buttonText}>Transaction History</ThemedText>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} onPress={() => router.push('/(tabs)/menu/healthrecords')}>
         <View style={styles.buttonContent}>
-          <FontAwesome5 name="notes-medical" size={22} color="#1e293b" />
-          <Text style={styles.buttonText}>Health Records</Text>
+          <Ionicons name="medkit-outline" size={22} color="#1e293b" />
+          <ThemedText style={styles.buttonText}>Health Records</ThemedText>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} onPress={() => router.push('/(tabs)/menu/businessinfo')}>
         <View style={styles.buttonContent}>
-          <MaterialIcons name="business" size={24} color="#1e293b" />
-          <Text style={styles.buttonText}>Business Info</Text>
+          <Ionicons name="storefront-outline" size={24} color="#1e293b" />
+          <ThemedText style={styles.buttonText}>Business Info</ThemedText>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} onPress={() => router.push('/(tabs)/menu/cncrequest')}>
         <View style={styles.buttonContent}>
-          <MaterialIcons name="assignment-turned-in" size={24} color="#1e293b" />
-          <Text style={styles.buttonText}>Certificate & Clearance Request</Text>
+          <Ionicons name="documents-outline" size={24} color="#1e293b" />
+          <ThemedText style={styles.buttonText}>Certificate & Clearance Request</ThemedText>
         </View>
       </TouchableOpacity>
     </View>
@@ -59,7 +60,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
     marginBottom: 28,
     color: '#1e293b',
   },

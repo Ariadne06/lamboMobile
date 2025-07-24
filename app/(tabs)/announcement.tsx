@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 
-export default function DashboardScreen() {
+export default function AnnounecmentScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Dashboard</Text>
+        <Text style={styles.title}>Announcement</Text>
         <Text style={styles.subtitle}>Welcome to Barangay Cansaga</Text>
       </View>
 

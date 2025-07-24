@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, Image } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -38,10 +38,10 @@ export default function TabLayout() {
 
     
       <Tabs.Screen
-        name="dashboard"
+        name="announcement"
         options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color }) => <MaterialIcons size={24} name="dashboard" color={color} />,
+          title: 'Announcement',
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="megaphone" color={color} />,
         }}
       />
 
@@ -53,24 +53,6 @@ export default function TabLayout() {
         }}
       />
 
-
-      {/* <Tabs.Screen
-        name="menu"
-        options={{
-          title: 'Menu',
-          tabBarIcon: ({ color, focused}) => (
-            <Image
-              source={require('@/assets/images/health.png')}
-              style={{
-                width: 28,
-                height: 28,
-                tintColor: focused ? color : '#8e8e93',
-              }}
-            />
-          ),
-        }}
-      /> */}
-     
     </Tabs>
         
   );
