@@ -2,35 +2,36 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, SafeAreaView } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
+import { ThemedText } from '@/components/ThemedText';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    // We'll add login logic later
+   
     console.log('Login button pressed');
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
-        {/* Header */}
+       
         <View style={{ alignItems: 'center', marginBottom: 40, marginTop: 40 }}>
             <Image
-                source={require('../../assets/images/brgylogo.png')}  // ← Change this to your logo filename
+                source={require('../../assets/images/brgylogo.png')}  
                 style={{ width: 120, height: 120, marginBottom: 20 }}
                 contentFit="contain"
             />
-          <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>
+          <ThemedText style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>
             Sign in to your account
-          </Text>
+          </ThemedText>
         </View>
 
-        {/* Login Form */}
+       
         <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }}>
-          {/* Email Input */}
-          <Text style={styles.label}>Email Address</Text>
+    
+          <ThemedText style={styles.label}>Email Address</ThemedText>
           <TextInput
             placeholder="Email"
             value={email}
@@ -41,8 +42,8 @@ export default function LoginScreen() {
             autoCorrect={false}
           />
 
-          {/* Password Input */}
-          <Text style={styles.label}>Password</Text>
+        
+          <ThemedText style={styles.label}>Password</ThemedText>
           <TextInput
             placeholder="Password"
             value={password}
@@ -53,28 +54,28 @@ export default function LoginScreen() {
             autoCorrect={false}
           />
 
-          {/* Forgot Password Link */}
+      
           <Pressable onPress={() => console.log('Forgot password pressed')}>
-            <Text style={styles.forgotPassword}>Forgot Password?</Text>
+            <ThemedText style={styles.forgotPassword}>Forgot Password?</ThemedText>
           </Pressable>
 
-          {/* Login Button */}
+        
           <Pressable onPress={handleLogin} style={styles.loginButton}>
-            <Text style={styles.loginButtonText}>Sign In</Text>
+            <ThemedText style={styles.loginButtonText}>Sign In</ThemedText>
           </Pressable>
         </View>
 
         {/* Footer */}
         <View style={{ alignItems: 'center', marginTop: 30 }}>
-          <Text style={{ color: '#6b7280', marginBottom: 10 }}>
+          <ThemedText style={{ color: '#6b7280', marginBottom: 10 }}>
             Don't have an account?
-          </Text>
-          <Text 
+          </ThemedText>
+          <ThemedText 
             style={{ color: '#1e40af', fontWeight: 'bold' }}
             onPress={() => router.push('/(auth)/register')}
           >
             Register here
-          </Text>
+          </ThemedText>
         </View>
       </ScrollView>
     </SafeAreaView>
