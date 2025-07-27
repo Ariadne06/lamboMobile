@@ -5,9 +5,7 @@ import { ScrollView, View, Text, StyleSheet } from 'react-native';
 export default function HouseholdInformationScreen() {
     return (
         <ScrollView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Household Information</Text>
-            </View>
+            
         </ScrollView>
     )
 }

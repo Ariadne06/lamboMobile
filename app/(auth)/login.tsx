@@ -71,7 +71,7 @@ export default function LoginScreen() {
             Don't have an account?
           </ThemedText>
           <ThemedText 
-            style={{ color: '#1e40af', fontWeight: 'bold' }}
+            style={{ color: '#FF3D33', fontWeight: 'bold' }}
             onPress={() => router.push('/(auth)/register')}
           >
             Register here
@@ -93,13 +93,13 @@ const styles = {
     backgroundColor: '#fff',
   },
   forgotPassword: {
-    color: '#1e40af',
+    color: '#FF3D33',
     textAlign: 'right' as const,
     marginBottom: 24,
     fontSize: 14,
   },
   loginButton: {
-    backgroundColor: '#1e40af',
+    backgroundColor: '#FF3D33',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center' as const,

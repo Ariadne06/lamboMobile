@@ -4,9 +4,7 @@ import { ScrollView, View, Text, StyleSheet } from 'react-native';
 export default function CnCRequestScreen() {
     return (
         <ScrollView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Certificate and Clearance Request</Text>
-            </View>
+            
         </ScrollView>
     )
 }

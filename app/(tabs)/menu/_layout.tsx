@@ -1,8 +1,9 @@
 import { Stack } from 'expo-router';
+import CustomHeader from '@/components/ui/CustomHeader';
 
 export default function MenuLayout() {
   return (
-    <Stack screenOptions={{ headerShown: true }}>
+    <Stack screenOptions={{  header: ({ options }) => <CustomHeader title={options.title || ''} /> }}>
       <Stack.Screen
         name="index"
         options={{

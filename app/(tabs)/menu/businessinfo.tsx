@@ -4,9 +4,7 @@ import { ScrollView, View, Text, StyleSheet } from 'react-native';
 export default function BusinessInfoScreen() {
     return (
         <ScrollView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Business Information</Text>
-            </View>
+            
         </ScrollView>
     )
 }

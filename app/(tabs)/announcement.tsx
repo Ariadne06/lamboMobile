@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
+import CustomHeader from '@/components/ui/CustomHeader';
 
 
 export default function AnnounecmentScreen() {
@@ -44,13 +45,9 @@ export default function AnnounecmentScreen() {
   
    return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-      <StatusBar backgroundColor="#1e40af" barStyle="light-content" />
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <ThemedText style={styles.title}>Announcements</ThemedText>
-          <ThemedText style={styles.subtitle}>Stay updated with Barangay Cansaga</ThemedText>
-        </View>
-
+      <CustomHeader title="Announcements" showBackButton={false} />
+      
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {announcements.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="notifications-off" size={60} color="#d1d5db" />
@@ -78,15 +75,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f9fafb',
   },
-  header: {
-    padding: 20,
-    backgroundColor: '#1e40af',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    marginBottom: 20,
+
+  contentContainer: {
+    paddingTop: 24, 
   },
+
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -156,7 +149,5 @@ const styles = StyleSheet.create({
     color: '#374151',
     lineHeight: 22,
   },
-
- 
 
 });
