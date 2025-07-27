@@ -40,6 +40,14 @@ export default function MenuLayout() {
           title: 'Certificate and Clearance Request',
       }}
       />
+
+      <Stack.Screen
+        name="profile"
+        options={{
+          title: 'Account Profile',
+      }}
+      />
+
     </Stack>
   );
 }
