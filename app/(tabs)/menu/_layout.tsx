@@ -37,7 +37,7 @@ export default function MenuLayout() {
       <Stack.Screen
         name="cncrequest"
         options={{
-          title: 'Certificate and Clearance Request',
+          title: 'Certificate & Clearance Request',
       }}
       />
 
