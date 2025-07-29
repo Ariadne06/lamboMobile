@@ -4,18 +4,18 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 
 export default function BusinessInfoScreen() {
-  // Dummy data
-  const ownerName = 'Juan Dela Cruz';
-  const ownerAddress = '123 Main St, Barangay Uno, City';
+  
+  const ownerName = 'Adrianne Villarta';
+  const ownerAddress = 'Sampaguita St, Sitio 5';
   const businessType = 'Sari-Sari Store';
-  const businessName = 'Dela Cruz Store';
+  const businessName = 'Adrianne Store';
   const businessAddress = '456 Market Rd, Barangay Uno, City';
-  const contactNumber = '0917-123-4567';
+  const contactNumber = '0967-226-7206';
   const isActive = true;
 
   return (
     <ScrollView style={styles.container}>
-      {/* Owner's Information */}
+    
       <View style={styles.section}>
         <ThemedText style={styles.sectionTitle}>Owner's Information</ThemedText>
         <View style={styles.infoRow}>
@@ -28,7 +28,7 @@ export default function BusinessInfoScreen() {
         </View>
       </View>
 
-      {/* Business Information */}
+    
       <View style={styles.section}>
         <ThemedText style={styles.sectionTitle}>Business Information</ThemedText>
         <View style={styles.infoRow}>
