@@ -3,6 +3,7 @@ import { View, Text, Button, Image, Alert, ActivityIndicator, TextInput, ScrollV
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useRegister } from '@/context/registercontext';
+import { API_BASE_URL } from '@/constants/apiConfig';
 
 export default function UploadDocument() {
   const [image, setImage] = useState<string | null>(null);
@@ -63,7 +64,7 @@ export default function UploadDocument() {
     } as any);
 
     try {
-      const response = await fetch('http://192.168.1.15:8000/api/verify-id-fields/', {
+      const response = await fetch(`${API_BASE_URL}/api/verify-id-fields/`, {
         method: 'POST',
         body: formDataToSend,
       });
@@ -110,7 +111,7 @@ export default function UploadDocument() {
   
 
     try {
-      const response = await fetch('http://192.168.1.15:8000/api/register/', {
+      const response = await fetch(`${API_BASE_URL}/api/register/`, {
         method: 'POST',
         body: formDataToSend,
       });

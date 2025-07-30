@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, SafeAreaView } from 'react-native';
-
+import { API_BASE_URL } from '@/constants/apiConfig';
 
 type Resident = {
   resident_id: number;
@@ -15,7 +15,7 @@ export default function ResidentsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://192.168.1.15:8000/api/residents/') // Replace with your actual IP
+    fetch(`${API_BASE_URL}/api/residents/`)
       .then((res) => res.json())
       .then((data) => {
        

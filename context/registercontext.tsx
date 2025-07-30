@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/constants/apiConfig';
 
 export type ReligionOption = {religion_cat_id: number; religion_name: string};
 export type CivilStatusOption = { civil_stat_id: number; civil_name: string };
@@ -51,27 +52,27 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
 
 
   useEffect(() => {
-    fetch('http://192.168.1.15:8000/api/religion-categories/')
+    fetch(`${API_BASE_URL}/api/religion-categories/`)
       .then(res => res.json())
       .then(setReligionOptions)
       .catch(err => console.error('Religion Category fetch error:', err));
 
-    fetch('http://192.168.1.15:8000/api/civil-statuses/')
+    fetch(`${API_BASE_URL}/api/civil-statuses/`)
       .then(res => res.json())
       .then(setCivilStatusOptions)
       .catch(err => console.error('Civil Status fetch error:', err));
 
-    fetch('http://192.168.1.15:8000/api/educational-attainments/')
+    fetch(`${API_BASE_URL}/api/educational-attainments/`)
       .then(res => res.json())
       .then(setEducationOptions)
       .catch(err => console.error('Educational Attainment fetch error:', err));
 
-    fetch('http://192.168.1.15:8000/api/sitios/')
+    fetch(`${API_BASE_URL}/api/sitios/`)
       .then(res => res.json())
       .then(setSitioOptions)
       .catch(err => console.error('Sitios fetch error:', err));
 
-    fetch('http://192.168.1.15:8000/api/resident-statuses/')
+    fetch(`${API_BASE_URL}/api/resident-statuses/`)
       .then(res => res.json())
       .then(setStatusOptions)
       .catch(err => console.error('Status fetch error:', err));
