@@ -4,7 +4,7 @@
 node_modules/
 
 #api constant
-constants/apiConfig.js
+constants/apiConfig.ts
 
 # Expo
 .expo/
