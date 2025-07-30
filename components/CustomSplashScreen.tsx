@@ -124,20 +124,6 @@ export default function CustomSplashScreen({
           </Text>
         </Animated.View>
 
-        {/* Optional: Loading indicator */}
-        <Animated.View style={[styles.loadingContainer, { opacity: textFadeAnim }]}>
-          <View style={styles.loadingDots}>
-            {[0, 1, 2].map((index) => (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.dot,
-                  { backgroundColor: textColor },
-                ]}
-              />
-            ))}
-          </View>
-        </Animated.View>
       </Animated.View>
     </View>
   );
@@ -181,15 +167,5 @@ const styles = StyleSheet.create({
   loadingContainer: {
     marginTop: 20,
   },
-  loadingDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-  },
+
 }); 
