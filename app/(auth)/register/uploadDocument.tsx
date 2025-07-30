@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, Button, Image, Alert, ActivityIndicator, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { useRegister } from '@/context/registercontext';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useRegister } from '@/context/registercontext';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function UploadDocument() {
   const [image, setImage] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export default function UploadDocument() {
     } as any);
 
     try {
-      const response = await fetch('http://192.168.1.13:8000/api/verify-id-fields/', {
+      const response = await fetch('http://192.168.254.184:8000/api/verify-id-fields/', {
         method: 'POST',
         body: formDataToSend,
       });
@@ -110,7 +110,7 @@ export default function UploadDocument() {
   
 
     try {
-      const response = await fetch('http://192.168.1.13:8000/api/register/', {
+      const response = await fetch('http://192.168.254.184:8000/api/register/', {
         method: 'POST',
         body: formDataToSend,
       });
