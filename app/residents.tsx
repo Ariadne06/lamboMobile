@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, SafeAreaView } from 'react-native';
-import { API_BASE_URL } from '@/constants/apiConfig';
+import { API_BASE_URL } from '../constants/apiConfig';
 
 type Resident = {
   resident_id: number;

@@ -3,7 +3,7 @@ import { View, Text, Image, Alert, ActivityIndicator, TextInput, ScrollView, Tou
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useRegister } from '@/context/registercontext';
-import { API_BASE_URL } from '@/constants/apiConfig';
+import { API_BASE_URL } from '../../../constants/apiConfig';
 
 
 export default function UploadDocument() {
