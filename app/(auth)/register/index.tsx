@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView, SafeAreaView } from 'react-native';
+import {Text, Pressable, ScrollView, SafeAreaView } from 'react-native';
 import { router } from 'expo-router';
 import StepIndicator from '@/components/stepindicator';
 import RegisterStep1 from '@/components/auth/RegisterStep1';
+import { ThemedText } from '@/components/ThemedText';
 
 
 
@@ -11,17 +12,15 @@ export default function Step1Personal() {
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
         <StepIndicator currentStep={1} steps={['Personal', 'Address', 'Account']} />
-        <Text style={{ fontSize: 20, marginBottom: 10 }}>Step 1: Personal Info</Text>
-        
-        {/* Form Component */}
+        <ThemedText style={{ fontSize: 20, marginBottom: 10 }}>Step 1: Personal Info</ThemedText>
+
         <RegisterStep1 />
 
-        {/* Navigation */}
         <Pressable
           onPress={() => router.push('/register/step2')}
           style={{ marginTop: 5, backgroundColor: '#FF3D33', padding: 12, borderRadius: 6 }}
         >
-          <Text style={{ color: '#fff', textAlign: 'center' }}>Next</Text>
+          <ThemedText style={{ color: '#fff', textAlign: 'center' }}>Next</ThemedText>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

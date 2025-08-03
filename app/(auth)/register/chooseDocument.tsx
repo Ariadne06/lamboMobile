@@ -1,16 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRegister } from '@/context/registercontext';
-
-// Illustration at the top (replace the path with your actual image if needed)
-const MockIDImage = () => (
-  <Image
-    source={require('../../../assets/images/id-card.png')}
-    style={styles.image}
-    resizeMode="contain"
-  />
-);
+import { ThemedText } from '@/components/ThemedText';
 
 const DOCUMENTS = [
   { label: 'Philippine National ID', value: 'Philippine National ID' },
@@ -40,7 +32,7 @@ export default function ChooseDocument() {
           resizeMode="cover"
         />
       </View>
-      <Text style={styles.title}>Choose ID/Document to upload</Text>
+      <ThemedText style={styles.title}>Choose ID/Document to upload</ThemedText>
       <View style={styles.optionsContainer}>
         {DOCUMENTS.map((doc) => (
           <TouchableOpacity
@@ -49,7 +41,7 @@ export default function ChooseDocument() {
             onPress={() => handleSelect(doc.value)}
             activeOpacity={0.85}
           >
-            <Text style={styles.optionText}>{doc.label}</Text>
+            <ThemedText style={styles.optionText}>{doc.label}</ThemedText>
           </TouchableOpacity>
         ))}
       </View>

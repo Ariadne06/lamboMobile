@@ -30,7 +30,7 @@ export default function ImmunizationScreen() {
           Child Immunization Record
         </ThemedText>
         <ThemedText style={styles.subtitle}>
-          Track your child's immunization schedule and doses.
+          Track your child&apos;s immunization schedule and doses.
         </ThemedText>
       </View>
       <CustomTable columns={columns} data={vaccineData} />

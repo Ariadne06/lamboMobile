@@ -23,14 +23,14 @@ export default function GrowthMonitoringScreen() {
       <View style={styles.infoBox}>
         <ThemedText type="subtitle" style={styles.title}>Growth Monitoring</ThemedText>
         <ThemedText style={styles.subtitle}>
-          Track your child's height, weight, temperature, and growth notes.
+          Track your child&apos;s height, weight, temperature, and growth notes.
         </ThemedText>
       </View>
       <CustomTable columns={columns} data={growthData} />
       <View style={styles.noteBox}>
         <ThemedText style={styles.noteTitle}>Note:</ThemedText>
         <ThemedText style={styles.noteText}>
-          Regular monitoring helps ensure your child's healthy development.
+          Regular monitoring helps ensure your child&apos;s healthy development.
         </ThemedText>
       </View>
     </ScrollView>

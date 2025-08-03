@@ -17,7 +17,7 @@ export default function BusinessInfoScreen() {
     <ScrollView style={styles.container}>
     
       <View style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Owner's Information</ThemedText>
+        <ThemedText style={styles.sectionTitle}>Owner&apos;s Information</ThemedText>
         <View style={styles.infoRow}>
           <Ionicons name="person-circle" size={24} color="#FF3D33" style={styles.icon} />
           <ThemedText style={styles.infoText}>{ownerName}</ThemedText>

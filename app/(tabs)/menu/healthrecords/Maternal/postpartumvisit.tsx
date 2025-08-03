@@ -44,7 +44,7 @@ export default function PostPartumVisitScreen() {
       <View style={styles.noteBox}>
         <ThemedText style={styles.noteTitle}>Note:</ThemedText>
         <ThemedText style={styles.noteText}>
-          Regular postpartum visits help ensure your recovery and your baby's health. Contact your healthcare provider if you notice any unusual symptoms.
+          Regular postpartum visits help ensure your recovery and your baby&apos;s health. Contact your healthcare provider if you notice any unusual symptoms.
         </ThemedText>
       </View>
       <Modal

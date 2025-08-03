@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, Animated, Dimensions, StatusBar } from 'react-n
 import { Image } from 'expo-image';
 
 
-const { width, height } = Dimensions.get('window');
+
 
 interface CustomSplashScreenProps {
   onFinish: () => void;
   duration?: number;
-  customImage?: any; // You can pass your own image source
+  customImage?: any; 
   title?: string;
   subtitle?: string;
   backgroundColor?: string;

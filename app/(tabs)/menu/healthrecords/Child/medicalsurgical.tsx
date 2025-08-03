@@ -28,7 +28,7 @@ export default function MedicalSurgicalScreen() {
       <View style={styles.infoBox}>
         <ThemedText type="subtitle" style={styles.title}>Medical & Surgical History</ThemedText>
         <ThemedText style={styles.subtitle}>
-          Review your child's past medical conditions and surgical procedures.
+          Review your child&apos;s past medical conditions and surgical procedures.
         </ThemedText>
       </View>
 

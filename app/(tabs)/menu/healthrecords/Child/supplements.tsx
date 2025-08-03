@@ -13,7 +13,7 @@ export default function SupplementsScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.infoBox}>
         <ThemedText type="subtitle" style={styles.title}>Supplements Record</ThemedText>
-        <ThemedText style={styles.subtitle}>Track your child's supplement intake history.</ThemedText>
+        <ThemedText style={styles.subtitle}>Track your child&apos;s supplement intake history.</ThemedText>
       </View>
       <View style={styles.tableContainer}>
         <View style={styles.tableHeader}>
@@ -34,7 +34,7 @@ export default function SupplementsScreen() {
       <View style={styles.noteBox}>
         <ThemedText style={styles.noteTitle}>Note:</ThemedText>
         <ThemedText style={styles.noteText}>
-          Supplements are important for your child's health. Please consult your health provider for more information.
+          Supplements are important for your child&apos;s health. Please consult your health provider for more information.
         </ThemedText>
       </View>
     </ScrollView>
