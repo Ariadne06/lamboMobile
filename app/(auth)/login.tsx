@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, SafeAreaView } from 'react-native';
+import { View, TextInput, Pressable, ScrollView, SafeAreaView } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/ThemedText';
@@ -68,7 +68,7 @@ export default function LoginScreen() {
         {/* Footer */}
         <View style={{ alignItems: 'center', marginTop: 30 }}>
           <ThemedText style={{ color: '#6b7280', marginBottom: 10 }}>
-            Don't have an account?
+            Don&apos;t have an account?
           </ThemedText>
           <ThemedText 
             style={{ color: '#FF3D33', fontWeight: 'bold' }}

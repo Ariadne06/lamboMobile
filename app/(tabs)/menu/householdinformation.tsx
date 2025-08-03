@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ScrollView, View, StyleSheet, TextInput, Platform, Animated } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 
 const quarters = ['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'];

@@ -2,8 +2,9 @@ import { API_BASE_URL } from '@/constants/apiConfig';
 import { useRegister } from '@/context/registercontext';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
 
 export default function UploadDocument() {
   const [image, setImage] = useState<string | null>(null);
