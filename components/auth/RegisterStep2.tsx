@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { useRegister, SitioOption } from '@/context/registercontext';
 import { Picker } from '@react-native-picker/picker';
@@ -6,6 +6,71 @@ import { ThemedText } from '@/components/ThemedText';
 
 export default function RegisterStep2() {
   const { formData, setFormData, sitioOptions } = useRegister();
+  const [showOtherCity, setShowOtherCity] = useState(false);
+  const [showOtherBarangay, setShowOtherBarangay] = useState(false);
+
+  // Set default location on first load
+  useEffect(() => {
+    if (!formData.city_municipality && !formData.barangay) {
+      updateLocationAndStatus('Consolacion', 'Cansaga');
+    }
+  }, []);
+
+  const updateLocationAndStatus = (city: string, barangay: string) => {
+    const isResident =
+      city.toLowerCase().includes('consolacion') &&
+      barangay.toLowerCase().includes('cansaga');
+
+    const status_id = isResident ? 2 : 1; // 2 = Resident, 1 = Pending
+
+    setFormData((prev: any) => ({
+      ...prev,
+      city_municipality: city,
+      barangay: barangay,
+      status_id: status_id,
+      sitio_id: isResident ? prev.sitio_id : null, // Reset sitio if not resident
+    }));
+
+    console.log(`Location updated: ${city}, ${barangay} → Status: ${isResident ? 'Resident' : 'Pending'}`);
+  };
+
+  const handleCityChange = (value: string) => {
+    if (value === 'other') {
+      setShowOtherCity(true);
+      setFormData((prev: any) => ({ ...prev, city_municipality: '' }));
+    } else {
+      setShowOtherCity(false);
+      updateLocationAndStatus(value, formData.barangay);
+    }
+  };
+
+  const handleBarangayChange = (value: string) => {
+    if (value === 'other') {
+      setShowOtherBarangay(true);
+      setFormData((prev: any) => ({ ...prev, barangay: '' }));
+    } else {
+      setShowOtherBarangay(false);
+      updateLocationAndStatus(formData.city_municipality, value);
+    }
+  };
+
+  const handleManualCityInput = (text: string) => {
+    setFormData((prev: any) => ({ ...prev, city_municipality: text }));
+    if (text.trim()) {
+      updateLocationAndStatus(text, formData.barangay);
+    }
+  };
+
+  const handleManualBarangayInput = (text: string) => {
+    setFormData((prev: any) => ({ ...prev, barangay: text }));
+    if (text.trim()) {
+      updateLocationAndStatus(formData.city_municipality, text);
+    }
+  };
+
+  const shouldShowSitio =
+    formData.city_municipality?.toLowerCase() === 'consolacion' &&
+    formData.barangay?.toLowerCase() === 'cansaga';
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -22,6 +87,7 @@ export default function RegisterStep2() {
             style={styles.input}
           />
         </View>
+
         <View style={styles.inputGroup}>
           <ThemedText style={styles.label}>Street</ThemedText>
           <TextInput
@@ -31,52 +97,90 @@ export default function RegisterStep2() {
             style={styles.input}
           />
         </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Barangay</ThemedText>
-          <TextInput
-            placeholder="Barangay"
-            value={formData.barangay}
-            onChangeText={text => setFormData({ ...formData, barangay: text })}
-            style={styles.input}
-          />
-        </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Sitio</ThemedText>
-          <View style={styles.picker}>
-            <Picker
-              selectedValue={formData.sitio_id}
-              onValueChange={itemValue => setFormData({ ...formData, sitio_id: itemValue })}
-            >
-              <Picker.Item label="Select Sitio" value="" />
-              {sitioOptions.map((sitio: SitioOption) => (
-                <Picker.Item key={sitio.sitio_id} label={sitio.sitio_name} value={sitio.sitio_id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
+
+        {/* City Picker */}
         <View style={styles.inputGroup}>
           <ThemedText style={styles.label}>City/Municipality</ThemedText>
-          <TextInput
-            placeholder="City/Municipality"
-            value={formData.city_municipality}
-            onChangeText={text => setFormData({ ...formData, city_municipality: text })}
-            style={styles.input}
-          />
+          {!showOtherCity ? (
+            <View style={styles.picker}>
+              <Picker
+                selectedValue={
+                  formData.city_municipality?.toLowerCase() === 'consolacion'
+                    ? 'Consolacion'
+                    : 'other'
+                }
+                onValueChange={handleCityChange}
+              >
+                <Picker.Item label="Select City" value="" />
+                <Picker.Item label="Consolacion" value="Consolacion" />
+                <Picker.Item label="Other City" value="other" />
+              </Picker>
+            </View>
+          ) : (
+            <TextInput
+              placeholder="Enter your city/municipality"
+              value={formData.city_municipality}
+              onChangeText={handleManualCityInput}
+              style={styles.input}
+              autoCapitalize="words"
+            />
+          )}
         </View>
+
+        {/* Barangay Picker */}
         <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Country</ThemedText>
-          <TextInput
-            placeholder="Country"
-            value={formData.country}
-            onChangeText={text => setFormData({ ...formData, country: text })}
-            style={styles.input}
-          />
+          <ThemedText style={styles.label}>Barangay</ThemedText>
+          {!showOtherBarangay ? (
+            <View style={styles.picker}>
+              <Picker
+                selectedValue={
+                  formData.barangay?.toLowerCase() === 'cansaga' ? 'Cansaga' : 'other'
+                }
+                onValueChange={handleBarangayChange}
+              >
+                <Picker.Item label="Select Barangay" value="" />
+                <Picker.Item label="Cansaga" value="Cansaga" />
+                <Picker.Item label="Other Barangay" value="other" />
+              </Picker>
+            </View>
+          ) : (
+            <TextInput
+              placeholder="Enter your barangay"
+              value={formData.barangay}
+              onChangeText={handleManualBarangayInput}
+              style={styles.input}
+              autoCapitalize="words"
+            />
+          )}
         </View>
+
+        {/* Sitio Picker (Only when Consolacion + Cansaga) */}
+        {shouldShowSitio && (
+          <View style={styles.inputGroup}>
+            <ThemedText style={styles.label}>Sitio</ThemedText>
+            <View style={styles.picker}>
+              <Picker
+                selectedValue={formData.sitio_id}
+                onValueChange={itemValue => setFormData({ ...formData, sitio_id: itemValue })}
+              >
+                <Picker.Item label="Select Sitio" value="" />
+                {sitioOptions.map((sitio: SitioOption) => (
+                  <Picker.Item
+                    key={sitio.sitio_id}
+                    label={sitio.sitio_name}
+                    value={sitio.sitio_id}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
   scrollContainer: {
     padding: 16,
