@@ -176,21 +176,6 @@ export default function RegisterStep1() {
           />
         </View>
 
-        {/* Status */}
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Status</ThemedText>
-          <View style={styles.picker}>
-            <Picker
-              selectedValue={formData.status_id}
-              onValueChange={itemValue => setFormData({ ...formData, status_id: itemValue })}
-            >
-              <Picker.Item label="Select Status" value="" />
-              {statusOptions.map((status: StatusOption) => (
-                <Picker.Item key={status.status_id} label={status.status_name} value={status.status_id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
 
         {/* Voter */}
         <ThemedText style={styles.voterLabel}>Are you a registered voter?</ThemedText>
