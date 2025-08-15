@@ -72,7 +72,7 @@ export default function LoginScreen() {
           </ThemedText>
           <ThemedText 
             style={{ color: '#FF3D33', fontWeight: 'bold' }}
-            onPress={() => router.push('/(auth)/register')}
+            onPress={() => router.push('/(auth)/register/userType')}
           >
             Register here
           </ThemedText>
