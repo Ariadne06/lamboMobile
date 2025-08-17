@@ -63,6 +63,21 @@ export default function Index() {
           </Pressable>
         </Link>
       </View>
+
+        <Link href="/(nurse)" asChild>
+          <Pressable
+            style={{
+              backgroundColor: '#16a34a',
+              paddingVertical: 10,
+              paddingHorizontal: 18,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>
+              Nurse Dashboard
+            </Text>
+          </Pressable>
+        </Link>
       
       <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
         Resident List
