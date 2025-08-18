@@ -39,6 +39,7 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)/register" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
             <Stack.Screen name="(nurse)" options={{ headerShown: false }} />
+            <Stack.Screen name="(bhw)" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
