@@ -6,15 +6,11 @@ import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 
-
 export default function TabLayout() {
-  
-
   return (
     <Tabs
       screenOptions={{
-        // tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarActiveTintColor: '#FF3D33', // Active icon color
+        tabBarActiveTintColor: '#FF3D33',
         tabBarInactiveTintColor: '#6b7280',
         headerShown: false,
         tabBarButton: HapticTab,
@@ -33,19 +29,12 @@ export default function TabLayout() {
           },
         }),
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
-        }}
-      />
 
-    
+      
       <Tabs.Screen
         name="announcement"
         options={{
-          title: 'Announcement',
+          title: 'Announcements',
           tabBarIcon: ({ color }) => <Ionicons size={24} name="megaphone" color={color} />,
         }}
       />
@@ -58,7 +47,15 @@ export default function TabLayout() {
         }}
       />
 
+      {/* HIDDEN: DevTest tab - only show in development when needed */}
+      <Tabs.Screen
+        name="devtest"
+        options={{
+          href: null, // This completely hides the tab
+          title: 'Dev Test',
+        }}
+      />
+
     </Tabs>
-        
   );
 }

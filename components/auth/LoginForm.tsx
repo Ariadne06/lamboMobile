@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { supabase } from '@/lib/supabase';
+import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
+import { storeUserSession } from '@/utils/session';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('');
+  // CHANGED: username instead of email 
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!username || !password) {
       Alert.alert('Missing Info', 'Please fill in all fields.');
       return;
     }
@@ -17,21 +19,90 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
+      // console.log(' Attempting login with Django backend...');
+      
+      // REPLACED: Django API call instead of Supabase
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.MOBILE_LOGIN}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password,
+        }),
       });
 
-      if (error) {
-        Alert.alert('Login Failed', error.message);
-      } else {
+      const data = await response.json();
+      console.log(' Login response:', data);
+
+      // Replace the navigation section in handleLogin:
+
+      if (data.success && data.status === 'success') {
+        // Store user info for later use (optional)
+        console.log(' Login successful:', {
+          accountType: data.account_type,
+          userId: data.user_id,
+          username: data.username,
+          roleName: data.role_name,
+          sessionToken: data.session_token
+        });
+        
+        // SAVE session to phone storage
+        await storeUserSession({
+          account_type: data.account_type,
+          user_id: data.user_id,
+          username: data.username,
+          role_name: data.role_name,
+          role_id: data.role_id,
+          session_token: data.session_token,
+          login_time: new Date().toISOString(),
+        });
+        
+        // FIXED: Navigate based on account type and role
+        if (data.account_type === 'personnel') {
+          if (data.role_name === 'Nurse') {
+            router.replace('/(nurse)');     
+          } else if (data.role_name === 'BHW') {
+            router.replace('/(bhw)');       
+          } else {
+            router.replace('/(nurse)');     
+          }
+        } else if (data.account_type === 'resident') {
+          router.replace('/(tabs)/announcement');        
+        }
+        
         Alert.alert('Success', 'Login successful!');
-        // Navigate to main app after successful login
-        router.replace('/(tabs)');
+        
+      } else if (data.status === 'require_password_change') {
+        Alert.alert(
+          'Password Change Required', 
+          'You need to change your password before continuing.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // TODO: Navigate to password change screen
+                console.log('Need to implement password change screen');
+                // router.push({
+                //   pathname: '/(auth)/changePassword',
+                //   params: {
+                //     account_type: data.account_type,
+                //     user_id: data.user_id,
+                //     username: data.username
+                //   }
+                // });
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Login Failed', data.message || 'Invalid credentials');
       }
+      
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred.');
-      console.error('Login error:', error);
+      console.error(' Login error:', error);
+      Alert.alert('Error', 'Network error occurred. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -39,15 +110,15 @@ export default function LoginForm() {
 
   return (
     <View>
-      {/* Email Input */}
+      {/* CHANGED: Username instead of Email */}
       <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
         style={styles.input}
-        keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
+        editable={!loading}
       />
 
       {/* Password Input */}
@@ -59,6 +130,7 @@ export default function LoginForm() {
         secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}
+        editable={!loading}
       />
 
       {/* Forgot Password Link */}
@@ -66,7 +138,7 @@ export default function LoginForm() {
         <Text style={styles.forgotPassword}>Forgot Password?</Text>
       </Pressable>
 
-      {/* Login Button */}
+      {/* UPDATED: Login Button */}
       <Pressable
         onPress={handleLogin}
         disabled={loading}
@@ -79,21 +151,11 @@ export default function LoginForm() {
         )}
       </Pressable>
 
-      {/* Social Login Options (Optional) */}
-      <View style={styles.socialContainer}>
-        <Text style={styles.socialText}>Or continue with</Text>
-        
-        <Pressable 
-          style={styles.socialButton}
-          onPress={() => Alert.alert('Info', 'Google login coming soon!')}
-        >
-          <Text style={styles.socialButtonText}>Google</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
 
+// UPDATED: Styles 
 const styles = {
   input: {
     borderWidth: 1,
@@ -105,13 +167,13 @@ const styles = {
     backgroundColor: '#fff',
   },
   forgotPassword: {
-    color: '#1e40af',
+    color: '#FF3D33', 
     textAlign: 'right' as const,
     marginBottom: 24,
     fontSize: 14,
   },
   loginButton: {
-    backgroundColor: '#1e40af',
+    backgroundColor: '#FF3D33', 
     padding: 15,
     borderRadius: 8,
     alignItems: 'center' as const,
@@ -125,25 +187,5 @@ const styles = {
     fontSize: 16,
     fontWeight: 'bold' as const,
   },
-  socialContainer: {
-    alignItems: 'center' as const,
-    marginTop: 20,
-  },
-  socialText: {
-    color: '#6b7280',
-    marginBottom: 16,
-    fontSize: 14,
-  },
-  socialButton: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-  },
-  socialButtonText: {
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-}; 
+
+};
