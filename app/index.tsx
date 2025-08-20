@@ -51,7 +51,7 @@ export default function SplashScreen() {
           } else if (session.role_name === 'BHW') {
             router.replace('/(bhw)');
           } else {
-            router.replace('/+not-found'); // Default to not found
+            router.replace('/(auth)/login'); // Default to not found
           }
         } else if (session.account_type === 'resident') {
           router.replace('/(tabs)/announcement');

@@ -66,7 +66,8 @@ export default function LoginForm() {
           } else if (data.role_name === 'BHW') {
             router.replace('/(bhw)');       
           } else {
-            router.replace('/(nurse)');     
+            Alert.alert('Access Denied', 'Your role is not authorized for mobile access.');
+            return;     
           }
         } else if (data.account_type === 'resident') {
           router.replace('/(tabs)/announcement');        

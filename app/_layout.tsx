@@ -6,6 +6,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { RegisterProvider } from '@/context/registercontext'; // Add this import
+
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -28,47 +30,49 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        {/* Root entry point */}
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        
-        {/* Authentication group - Let Expo Router handle nested routes automatically */}
-        <Stack.Screen 
-          name="(auth)" 
-          options={{ 
-            headerShown: false,
-          }} 
-        />
-        
-        {/* Main app screens */}
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
-            headerShown: false,
-            gestureEnabled: false // Prevent going back to auth
-          }} 
-        />
-        
-        <Stack.Screen 
-          name="(nurse)" 
-          options={{ 
-            headerShown: false,
-            gestureEnabled: false 
-          }} 
-        />
-        
-        <Stack.Screen 
-          name="(bhw)" 
-          options={{ 
-            headerShown: false,
-            gestureEnabled: false 
-          }} 
-        />
-        
-        {/* Other standalone screens */}
-        <Stack.Screen name="residents" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" options={{ headerShown: false }} />
-      </Stack>
+        <RegisterProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              {/* Root entry point */}
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              
+              {/* Authentication group - Let Expo Router handle nested routes automatically */}
+              <Stack.Screen 
+                name="(auth)" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              
+              {/* Main app screens */}
+              <Stack.Screen 
+                name="(tabs)" 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: false // Prevent going back to auth
+                }} 
+              />
+              
+              <Stack.Screen 
+                name="(nurse)" 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: false 
+                }} 
+              />
+              
+              <Stack.Screen 
+                name="(bhw)" 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: false 
+                }} 
+              />
+              
+              {/* Other standalone screens */}
+              <Stack.Screen name="residents" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+            </Stack>
+        </RegisterProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
