@@ -1,11 +1,18 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
+import React from 'react';
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  SafeAreaView,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
-import { showLogoutConfirmation } from '@/utils/auth';
 
-export default function MenuScreen() {
+export default function BHWMenu() {
   const router = useRouter();
   const { width } = Dimensions.get('window');
   const BUTTON_WIDTH = Math.min(width * 0.92, 400);
@@ -13,67 +20,54 @@ export default function MenuScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       <ScrollView style={styles.scroll}>
-        <CustomHeader title="Menu" showBackButton={false} />
+        <CustomHeader title="BHW Menu" showBackButton={false} />
         <View style={styles.container}>        
-          <ThemedText style={styles.sectionTitle}>Services</ThemedText>
+          
+          <ThemedText style={styles.sectionTitle}>Community Management</ThemedText>
           <View style={styles.section}>
             <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/householdinformation')}>
+              onPress={() => router.push('/menu/householdmenu')}>
               <View style={styles.buttonContent}>
                 <Ionicons name="home-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Household Information</ThemedText>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/transactionhistory')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="receipt-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Transaction History</ThemedText>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/healthrecords')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="medkit-outline" size={22} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Health Records</ThemedText>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/businessinfo')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="storefront-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Business Info</ThemedText>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/cncrequest')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="documents-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Certificate & Clearance Request</ThemedText>
+                <ThemedText style={styles.buttonText}>Household Record</ThemedText>
               </View>
             </TouchableOpacity>
           </View>
 
-          
-          <ThemedText style={styles.sectionTitle}>Account</ThemedText>
+          <ThemedText style={styles.sectionTitle}>Health Records</ThemedText>
           <View style={styles.section}>
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/profile')}>
+            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
               <View style={styles.buttonContent}>
-                <Ionicons name="person-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Profile</ThemedText>
+                <Ionicons name="heart-outline" size={24} color="#1e293b" />
+                <ThemedText style={styles.buttonText}>Maternal Health Record</ThemedText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
+              <View style={styles.buttonContent}>
+                <Ionicons name="medical-outline" size={24} color="#1e293b" />
+                <ThemedText style={styles.buttonText}>Child Health Record</ThemedText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
+              <View style={styles.buttonContent}>
+                <Ionicons name="clipboard-outline" size={24} color="#1e293b" />
+                <ThemedText style={styles.buttonText}>General Health Information</ThemedText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
+              <View style={styles.buttonContent}>
+                <Ionicons name="shield-checkmark-outline" size={24} color="#1e293b" />
+                <ThemedText style={styles.buttonText}>Immunization Status</ThemedText>
               </View>
             </TouchableOpacity>
           </View>
 
-          
           <TouchableOpacity 
             style={[styles.button, styles.logoutButton, { width: BUTTON_WIDTH * 0.5 }]} 
-            onPress={showLogoutConfirmation}>
+            onPress={() => {/* handle logout */}}>
             <View style={styles.buttonContent}>
               <Ionicons name="log-out-outline" size={24} color="#FF3D33" />
               <ThemedText style={[styles.buttonText, { color: '#FF3D33' }]}>Logout</ThemedText>
@@ -95,14 +89,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#1e293b',
-    alignSelf: 'flex-start',
-    marginLeft: 12,
   },
   sectionTitle: {
     fontSize: 16,
@@ -132,7 +118,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    
   },
   buttonContent: {
     flexDirection: 'row',
@@ -146,17 +131,9 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     flexShrink: 1,
   },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginLeft: 16,
-    flexShrink: 1,
-  },
   logoutButton: {
     marginTop: 12,
     borderColor: '#FF3D33',
     borderRadius: 20,
-    
   },
 });

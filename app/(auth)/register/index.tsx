@@ -9,10 +9,9 @@ import { ThemedText } from '@/components/ThemedText';
 
 export default function Step1Personal() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50, backgroundColor: '#f3f4f6' }}>
         <StepIndicator currentStep={1} steps={['Personal', 'Address', 'Account']} />
-        <ThemedText style={{ fontSize: 20, marginBottom: 10 }}>Step 1: Personal Info</ThemedText>
 
         <RegisterStep1 />
 

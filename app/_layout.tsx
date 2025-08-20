@@ -1,47 +1,79 @@
-import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import "../global.css";
+import { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import SplashScreenManager from '@/components/SplashScreenManager';
-import { AuthProvider } from '@/context/authContext';
+import { RegisterProvider } from '@/context/registercontext'; // Add this import
+
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    PoppinsRegular: require('../assets/fonts/Poppins/Poppins-Regular.ttf'),
-    PoppinsBold: require('../assets/fonts/Poppins/Poppins-Bold.ttf'),
   });
+
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
 
   if (!loaded) {
     return null;
   }
 
   return (
-    <AuthProvider>
-      <SplashScreenManager
-        customImage={require('../assets/images/brgylogo.png')}
-        title="Barangay Cansaga"
-        subtitle="Resident Management System"
-        backgroundColor={colorScheme === 'dark' ? '#ffffff' : '#1e40af'}
-        textColor={colorScheme === 'dark' ? '#000000' : '#ffffff'}
-        duration={3000}
-      >
-        <ThemeProvider value={DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)/register" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </SplashScreenManager>
-    </AuthProvider>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <RegisterProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              {/* Root entry point */}
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              
+              {/* Authentication group - Let Expo Router handle nested routes automatically */}
+              <Stack.Screen 
+                name="(auth)" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              
+              {/* Main app screens */}
+              <Stack.Screen 
+                name="(tabs)" 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: false // Prevent going back to auth
+                }} 
+              />
+              
+              <Stack.Screen 
+                name="(nurse)" 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: false 
+                }} 
+              />
+              
+              <Stack.Screen 
+                name="(bhw)" 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: false 
+                }} 
+              />
+              
+              {/* Other standalone screens */}
+              <Stack.Screen name="residents" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+            </Stack>
+        </RegisterProvider>
+      <StatusBar style="auto" />
+    </ThemeProvider>
   );
 }
