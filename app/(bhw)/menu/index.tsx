@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
+import { showLogoutConfirmation } from '@/utils/auth';
 
 export default function BHWMenu() {
   const router = useRouter();
@@ -65,9 +66,9 @@ export default function BHWMenu() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity 
+           <TouchableOpacity 
             style={[styles.button, styles.logoutButton, { width: BUTTON_WIDTH * 0.5 }]} 
-            onPress={() => {/* handle logout */}}>
+            onPress={showLogoutConfirmation}>
             <View style={styles.buttonContent}>
               <Ionicons name="log-out-outline" size={24} color="#FF3D33" />
               <ThemedText style={[styles.buttonText, { color: '#FF3D33' }]}>Logout</ThemedText>
