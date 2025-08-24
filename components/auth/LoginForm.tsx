@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Alert, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
 import { storeUserSession } from '@/utils/session';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 export default function LoginForm() {
   // CHANGED: username instead of email 
@@ -63,7 +63,7 @@ export default function LoginForm() {
         if (data.account_type === 'personnel') {
           if (data.role_name === 'Nurse') {
             router.replace('/(nurse)');     
-          } else if (data.role_name === 'BHW') {
+          } else if (data.role_name === 'Barangay Health Worker') {
             router.replace('/(bhw)');       
           } else {
             Alert.alert('Access Denied', 'Your role is not authorized for mobile access.');
