@@ -234,7 +234,7 @@ export default function UploadDocument() {
             Guardian Document Upload
           </Text>
           <Text style={styles.guardianHeaderDescription}>
-            Upload your guardian's {formData.document_type} for verification.
+            Upload your guardian&apos;s {formData.document_type} for verification.
             {formData.guardian_type === 'GUARDIAN_ID' && ' Document will be automatically scanned.'}
             {formData.guardian_type === 'GUARDIAN_SUPPORTING' && ' Document will be manually reviewed.'}
           </Text>
@@ -375,11 +375,11 @@ export default function UploadDocument() {
                   Document Extracted: <Text style={styles.mismatchUserValue}>{val.guardian}</Text>
                 </Text>
                 <Text style={styles.mismatchText}>
-                  Guardian's Stored Info: <Text style={styles.mismatchOcrValue}>{val.expected}</Text>
+                  Guardian&apos;s Stored Info: <Text style={styles.mismatchOcrValue}>{val.expected}</Text>
                 </Text>
                 {/* Remove the TextInput for guardian verification since user can't correct guardian's document */}
                 <Text style={styles.mismatchNote}>
-                  Please ensure you're uploading the correct guardian document that matches their registered information.
+                  Please ensure you&apos;re uploading the correct guardian document that matches their registered information.
                 </Text>
               </View>
               <Text style={styles.mismatchIcon}>!</Text>
