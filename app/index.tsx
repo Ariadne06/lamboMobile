@@ -46,9 +46,9 @@ export default function SplashScreen() {
         
         // Navigate based on account type and role
         if (session.account_type === 'personnel') {
-          if (session.role_name === 'Nurse') {
+          if (session.role_name === 'Midwife') {
             router.replace('/(nurse)');
-          } else if (session.role_name === 'BHW') {
+          } else if (session.role_name === 'Barangay Health Worker') {
             router.replace('/(bhw)');
           } else {
             router.replace('/(auth)/login'); // Default to not found

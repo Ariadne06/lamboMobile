@@ -19,9 +19,6 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      // console.log(' Attempting login with Django backend...');
-      
-      // REPLACED: Django API call instead of Supabase
       const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.MOBILE_LOGIN}`, {
         method: 'POST',
         headers: {
@@ -34,21 +31,10 @@ export default function LoginForm() {
       });
 
       const data = await response.json();
-      console.log(' Login response:', data);
-
-      // Replace the navigation section in handleLogin:
+      console.log('Login response:', data);
 
       if (data.success && data.status === 'success') {
-        // Store user info for later use (optional)
-        console.log(' Login successful:', {
-          accountType: data.account_type,
-          userId: data.user_id,
-          username: data.username,
-          roleName: data.role_name,
-          sessionToken: data.session_token
-        });
-        
-        // SAVE session to phone storage
+        // Store user info and navigate normally
         await storeUserSession({
           account_type: data.account_type,
           user_id: data.user_id,
@@ -59,9 +45,9 @@ export default function LoginForm() {
           login_time: new Date().toISOString(),
         });
         
-        // FIXED: Navigate based on account type and role
+        // Navigate based on account type and role
         if (data.account_type === 'personnel') {
-          if (data.role_name === 'Nurse') {
+          if (data.role_name === 'Midwife') {
             router.replace('/(nurse)');     
           } else if (data.role_name === 'Barangay Health Worker') {
             router.replace('/(bhw)');       
@@ -73,26 +59,26 @@ export default function LoginForm() {
           router.replace('/(tabs)/announcement');        
         }
         
-        Alert.alert('Success', 'Login successful!');
+        // Alert.alert('Success', 'Login successful!');
         
       } else if (data.status === 'require_password_change') {
+        // Handle password change requirement
         Alert.alert(
           'Password Change Required', 
-          'You need to change your password before continuing.',
+          'You must change your default password before continuing.',
           [
             {
-              text: 'OK',
+              text: 'Change Password',
               onPress: () => {
-                // TODO: Navigate to password change screen
-                console.log('Need to implement password change screen');
-                // router.push({
-                //   pathname: '/(auth)/changePassword',
-                //   params: {
-                //     account_type: data.account_type,
-                //     user_id: data.user_id,
-                //     username: data.username
-                //   }
-                // });
+                router.push({
+                  pathname: '/(auth)/changePassword',
+                  params: {
+                    account_type: data.account_type,
+                    user_id: data.user_id,
+                    username: data.username,
+                    role_name: data.role_name
+                  }
+                });
               }
             }
           ]
@@ -102,7 +88,7 @@ export default function LoginForm() {
       }
       
     } catch (error) {
-      console.error(' Login error:', error);
+      console.error('Login error:', error);
       Alert.alert('Error', 'Network error occurred. Please check your connection and try again.');
     } finally {
       setLoading(false);

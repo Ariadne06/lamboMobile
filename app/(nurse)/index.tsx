@@ -226,7 +226,7 @@ export default function NurseDashboard() {
               Good Morning 👋
             </ThemedText>
             <ThemedText style={styles.welcomeSub}>
-              Today's health overview
+              Today&apos;s health overview
             </ThemedText>
           </View>
           <View style={styles.profile}>

@@ -1,9 +1,10 @@
-// nurse screen menu
+// midwife screen menu
 import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
+import { showLogoutConfirmation } from '@/utils/auth';
 
 export default function NurseMenu() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function NurseMenu() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       <ScrollView style={styles.scroll}>
-        <CustomHeader title="Nurse Menu" showBackButton={false} />
+        <CustomHeader title="Midwife Menu" showBackButton={false} />
         <View style={styles.container}>        
           
           <ThemedText style={styles.sectionTitle}>Patient Management</ThemedText>
@@ -72,7 +73,7 @@ export default function NurseMenu() {
 
           <TouchableOpacity 
             style={[styles.button, styles.logoutButton, { width: BUTTON_WIDTH * 0.5 }]} 
-            onPress={() => {/* handle logout */}}>
+            onPress={showLogoutConfirmation}>
             <View style={styles.buttonContent}>
               <Ionicons name="log-out-outline" size={24} color="#FF3D33" />
               <ThemedText style={[styles.buttonText, { color: '#FF3D33' }]}>Logout</ThemedText>
