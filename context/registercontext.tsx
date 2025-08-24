@@ -6,6 +6,7 @@ export type CivilStatusOption = { civil_stat_id: number; civil_name: string };
 export type EducationOption = { educational_attain_id: number; educational_attain_name: string };
 export type SitioOption = { sitio_id: number; sitio_name: string };
 export type StatusOption = { status_id: number; status_name: string };
+export type IdentityDocTypeOption = { identity_doc_type_id: number; name: string };
 
 
 const RegisterContext = createContext<any>(null);
@@ -22,26 +23,29 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
     is_voter: false,
     email: '',
     phone_number: '',
-    religion_cat_id: '',
-    civil_status: '',
-    educational_attainment: '',
+    religion_cat_id: null,
+    civil_status: null,
+    educational_attainment: null,
     house_number: '',
     street: '',
     barangay: '',
     sitio_id: '',
     city_municipality: '',
     country: 'Philippines',
-    status_id: '',
+    status_id: 1,
     username: '',
     password: '',
     confirm_password: '',
     document_type: '',
     document_number: '',
-    // id_document_image: null,
-    // birth_certificate_image: null,
-    // id_doc_id: '',
     ocr_fields: {},
     date_recorded: new Date().toISOString().split('T')[0],
+    identity_doc_type_id: null,
+    verification_type: 'ID',
+    user_type: '',
+    registration_function: 'register_verified_resident',
+    guardian_username: '',
+    guardian_type: null,
   });
 
   const [religionOptions, setReligionOptions] = useState([]);
@@ -49,6 +53,7 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
   const [educationOptions, setEducationOptions] = useState([]);
   const [sitioOptions, setSitioOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState<StatusOption[]>([]);
+  const [identityDocTypeOptions, setIdentityDocTypeOptions] = useState<IdentityDocTypeOption[]>([]);
 
 
   useEffect(() => {
@@ -76,10 +81,15 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
       .then(res => res.json())
       .then(setStatusOptions)
       .catch(err => console.error('Status fetch error:', err));
+
+    fetch(`${API_BASE_URL}/api/identity-doc-types/`)
+      .then(res => res.json())
+      .then(setIdentityDocTypeOptions)
+      .catch(err => console.error('Identity Doc Types fetch error:', err));
   }, []);
 
   return (
-    <RegisterContext.Provider value={{ formData, setFormData, religionOptions, civilStatusOptions, educationOptions, sitioOptions, statusOptions }}>
+    <RegisterContext.Provider value={{ formData, setFormData, religionOptions, civilStatusOptions, educationOptions, sitioOptions, statusOptions, identityDocTypeOptions }}>
       {children}
     </RegisterContext.Provider>
   );

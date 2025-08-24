@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { useRegister, SitioOption } from '@/context/registercontext';
 import { Picker } from '@react-native-picker/picker';
@@ -7,12 +7,41 @@ import { ThemedText } from '@/components/ThemedText';
 export default function RegisterStep2() {
   const { formData, setFormData, sitioOptions } = useRegister();
 
+  // Check if user is non-resident
+  const isNonResident = formData.user_type === 'non_resident';
+
+  // Set default values based on user type
+  useEffect(() => {
+    if (!isNonResident) {
+      // RESIDENT: Set fixed location
+      setFormData((prev: any) => ({
+        ...prev,
+        city_municipality: 'Consolacion',
+        barangay: 'Cansaga',
+        status_id: 2, // Resident status
+      }));
+    } else {
+      // NON-RESIDENT: Clear sitio and set pending status
+      setFormData((prev: any) => ({
+        ...prev,
+        sitio_id: null,
+        status_id: 1, // Pending status
+      }));
+    }
+  }, [isNonResident]);
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <View style={styles.formCard}>
         <ThemedText style={styles.formTitle}>Address Information</ThemedText>
-        <ThemedText style={styles.formSubtitle}>Please provide your address details</ThemedText>
+        <ThemedText style={styles.formSubtitle}>
+          {isNonResident 
+            ? 'Please provide your address details' 
+            : 'Select your sitio in Barangay Cansaga, Consolacion'
+          }
+        </ThemedText>
 
+        {/* House Number - ALWAYS SHOW */}
         <View style={styles.inputGroup}>
           <ThemedText style={styles.label}>House Number</ThemedText>
           <TextInput
@@ -22,6 +51,8 @@ export default function RegisterStep2() {
             style={styles.input}
           />
         </View>
+
+        {/* Street - ALWAYS SHOW */}
         <View style={styles.inputGroup}>
           <ThemedText style={styles.label}>Street</ThemedText>
           <TextInput
@@ -29,49 +60,82 @@ export default function RegisterStep2() {
             value={formData.street}
             onChangeText={text => setFormData({ ...formData, street: text })}
             style={styles.input}
+            autoCapitalize="words"
           />
         </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Barangay</ThemedText>
-          <TextInput
-            placeholder="Barangay"
-            value={formData.barangay}
-            onChangeText={text => setFormData({ ...formData, barangay: text })}
-            style={styles.input}
-          />
-        </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Sitio</ThemedText>
-          <View style={styles.picker}>
-            <Picker
-              selectedValue={formData.sitio_id}
-              onValueChange={itemValue => setFormData({ ...formData, sitio_id: itemValue })}
-            >
-              <Picker.Item label="Select Sitio" value="" />
-              {sitioOptions.map((sitio: SitioOption) => (
-                <Picker.Item key={sitio.sitio_id} label={sitio.sitio_name} value={sitio.sitio_id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>City/Municipality</ThemedText>
-          <TextInput
-            placeholder="City/Municipality"
-            value={formData.city_municipality}
-            onChangeText={text => setFormData({ ...formData, city_municipality: text })}
-            style={styles.input}
-          />
-        </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Country</ThemedText>
-          <TextInput
-            placeholder="Country"
-            value={formData.country}
-            onChangeText={text => setFormData({ ...formData, country: text })}
-            style={styles.input}
-          />
-        </View>
+
+        {/* RESIDENT: Fixed City and Barangay + Sitio Picker */}
+        {!isNonResident && (
+          <>
+            {/* Fixed City for Residents */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>City/Municipality</ThemedText>
+              <View style={[styles.input, styles.fixedInput]}>
+                <ThemedText style={styles.fixedInputText}>Consolacion</ThemedText>
+              </View>
+            </View>
+
+            {/* Fixed Barangay for Residents */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Barangay</ThemedText>
+              <View style={[styles.input, styles.fixedInput]}>
+                <ThemedText style={styles.fixedInputText}>Cansaga</ThemedText>
+              </View>
+            </View>
+
+            {/* Sitio Picker - RESIDENTS ONLY */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Sitio *</ThemedText>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={formData.sitio_id}
+                  onValueChange={itemValue => setFormData({ ...formData, sitio_id: itemValue })}
+                >
+                  <Picker.Item label="Select Sitio" value="" />
+                  {sitioOptions.map((sitio: SitioOption) => (
+                    <Picker.Item
+                      key={sitio.sitio_id}
+                      label={sitio.sitio_name}
+                      value={sitio.sitio_id}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* NON-RESIDENT: Input Fields for City and Barangay */}
+        {isNonResident && (
+          <>
+            {/* City Input for Non-Residents */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>City/Municipality *</ThemedText>
+              <TextInput
+                placeholder="Enter your city/municipality"
+                value={formData.city_municipality}
+                onChangeText={text => setFormData({ ...formData, city_municipality: text })}
+                style={styles.input}
+                autoCapitalize="words"
+              />
+            </View>
+
+            {/* Barangay Input for Non-Residents */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Barangay *</ThemedText>
+              <TextInput
+                placeholder="Enter your barangay"
+                value={formData.barangay}
+                onChangeText={text => setFormData({ ...formData, barangay: text })}
+                style={styles.input}
+                autoCapitalize="words"
+              />
+            </View>
+          </>
+        )}
+
+    
+
       </View>
     </ScrollView>
   );
@@ -148,4 +212,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginLeft: 2,
   },
+  
+
+  fixedInput: {
+    backgroundColor: '#f0f9ff',
+    borderColor: '#0ea5e9',
+    borderWidth: 1,
+  },
+  fixedInputText: {
+    color: '#0c4a6e',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  
 });

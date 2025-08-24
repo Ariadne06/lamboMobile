@@ -11,6 +11,8 @@ export default function RegisterStep1() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { formData, setFormData, religionOptions, civilStatusOptions, educationOptions, statusOptions } = useRegister();
 
+  const isNonResident = formData.user_type === 'non_resident';
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <View style={styles.formCard}>
@@ -99,61 +101,70 @@ export default function RegisterStep1() {
             </Picker>
           </View>
         </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Gender (optional)</ThemedText>
-          <TextInput
-            placeholder="Gender (optional)"
-            value={formData.gender}
-            onChangeText={text => setFormData({ ...formData, gender: text })}
-            style={styles.input}
-          />
-        </View>
 
-        {/* Civil Status, Religion */}
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Civil Status</ThemedText>
-          <View style={styles.picker}>
-            <Picker
-              selectedValue={formData.civil_status_id}
-              onValueChange={itemValue => setFormData({ ...formData, civil_status_id: itemValue })}
-            >
-              <Picker.Item label="Select Civil Status" value="" />
-              {civilStatusOptions.map((cs: CivilStatusOption) => (
-                <Picker.Item key={cs.civil_stat_id} label={cs.civil_name} value={cs.civil_stat_id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Religion</ThemedText>
-          <View style={styles.picker}>
-            <Picker
-              selectedValue={formData.religion_cat_id}
-              onValueChange={itemValue => setFormData({ ...formData, religion_cat_id: itemValue })}
-            >
-              <Picker.Item label="Select Religion" value="" />
-              {religionOptions.map((rel: ReligionOption) => (
-                <Picker.Item key={rel.religion_cat_id} label={rel.religion_name} value={rel.religion_cat_id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
 
-        {/* Education, Email, Phone */}
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Educational Attainment</ThemedText>
-          <View style={styles.picker}>
-            <Picker
-              selectedValue={formData.educational_attainment_id}
-              onValueChange={itemValue => setFormData({ ...formData, educational_attainment_id: itemValue })}
-            >
-              <Picker.Item label="Select Educational Attainment" value="" />
-              {educationOptions.map((ed: EducationOption) => (
-                <Picker.Item key={ed.educational_attain_id} label={ed.educational_attain_name} value={ed.educational_attain_id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
+        {!isNonResident && (
+          <>
+            {/* Gender - RESIDENTS ONLY */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Gender (optional)</ThemedText>
+              <TextInput
+                placeholder="Gender (optional)"
+                value={formData.gender}
+                onChangeText={text => setFormData({ ...formData, gender: text })}
+                style={styles.input}
+              />
+            </View>
+
+            {/* Civil Status - RESIDENTS ONLY */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Civil Status</ThemedText>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={formData.civil_status_id}
+                  onValueChange={itemValue => setFormData({ ...formData, civil_status_id: itemValue })}
+                >
+                  <Picker.Item label="Select Civil Status" value="" />
+                  {civilStatusOptions.map((cs: CivilStatusOption) => (
+                    <Picker.Item key={cs.civil_stat_id} label={cs.civil_name} value={cs.civil_stat_id} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {/* Religion - RESIDENTS ONLY */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Religion</ThemedText>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={formData.religion_cat_id}
+                  onValueChange={itemValue => setFormData({ ...formData, religion_cat_id: itemValue })}
+                >
+                  <Picker.Item label="Select Religion" value="" />
+                  {religionOptions.map((rel: ReligionOption) => (
+                    <Picker.Item key={rel.religion_cat_id} label={rel.religion_name} value={rel.religion_cat_id} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {/* Educational Attainment - RESIDENTS ONLY */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Educational Attainment</ThemedText>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={formData.educational_attainment_id}
+                  onValueChange={itemValue => setFormData({ ...formData, educational_attainment_id: itemValue })}
+                >
+                  <Picker.Item label="Select Educational Attainment" value="" />
+                  {educationOptions.map((ed: EducationOption) => (
+                    <Picker.Item key={ed.educational_attain_id} label={ed.educational_attain_name} value={ed.educational_attain_id} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+          </>
+        )}
         <View style={styles.inputGroup}>
           <ThemedText style={styles.label}>Email</ThemedText>
           <TextInput
@@ -176,52 +187,7 @@ export default function RegisterStep1() {
           />
         </View>
 
-        {/* Status */}
-        <View style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Status</ThemedText>
-          <View style={styles.picker}>
-            <Picker
-              selectedValue={formData.status_id}
-              onValueChange={itemValue => setFormData({ ...formData, status_id: itemValue })}
-            >
-              <Picker.Item label="Select Status" value="" />
-              {statusOptions.map((status: StatusOption) => (
-                <Picker.Item key={status.status_id} label={status.status_name} value={status.status_id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
 
-        {/* Voter */}
-        <ThemedText style={styles.voterLabel}>Are you a registered voter?</ThemedText>
-        <View style={styles.voterRow}>
-          <Pressable
-            onPress={() => setFormData({ ...formData, is_voter: true })}
-            style={[
-              styles.voterToggle,
-              formData.is_voter === true && styles.voterToggleActive,
-              { borderTopRightRadius: 0, borderBottomRightRadius: 0 }
-            ]}
-          >
-            <ThemedText style={[
-              styles.voterToggleText,
-              formData.is_voter === true && styles.voterToggleTextActive,
-            ]}>Yes</ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => setFormData({ ...formData, is_voter: false })}
-            style={[
-              styles.voterToggle,
-              formData.is_voter === false && styles.voterToggleActive,
-              { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }
-            ]}
-          >
-            <ThemedText style={[
-              styles.voterToggleText,
-              formData.is_voter === false && styles.voterToggleTextActive,
-            ]}>No</ThemedText>
-          </Pressable>
-        </View>
       </View>
     </ScrollView>
   );
@@ -288,8 +254,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
-    height: 48, // <-- Add this line to match input height
-    justifyContent: 'center', // <-- Optional, for vertical alignment
+    height: 48, 
+    justifyContent: 'center', 
   },
   label: {
     fontSize: 13,
@@ -298,43 +264,43 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginLeft: 2,
   },
-  voterLabel: {
-    marginBottom: 10,
-    marginTop: 28,
-    fontWeight: '600' as const,
-    fontSize: 15,
-    color: '#374151',
-    textAlign: 'center' as const,
-  },
-  voterRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'center' as const,
-    marginBottom: 8,
-    marginTop: 2,
-  },
-  voterToggle: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    borderRadius: 8,
-  },
-  voterToggleActive: {
-    backgroundColor: '#1e40af',
-    borderColor: '#1e40af',
-    zIndex: 1,
-  },
-  voterToggleText: {
-    color: '#1e40af',
-    fontWeight: 'bold' as const,
-    textAlign: 'center' as const,
-    fontSize: 15,
-    letterSpacing: 0.2,
-  },
-  voterToggleTextActive: {
-    color: '#fff',
-  },
+  // voterLabel: {
+  //   marginBottom: 10,
+  //   marginTop: 28,
+  //   fontWeight: '600' as const,
+  //   fontSize: 15,
+  //   color: '#374151',
+  //   textAlign: 'center' as const,
+  // },
+  // voterRow: {
+  //   flexDirection: 'row' as const,
+  //   justifyContent: 'center' as const,
+  //   marginBottom: 8,
+  //   marginTop: 2,
+  // },
+  // voterToggle: {
+  //   flex: 1,
+  //   backgroundColor: '#f3f4f6',
+  //   paddingVertical: 12,
+  //   borderWidth: 1,
+  //   borderColor: '#d1d5db',
+  //   alignItems: 'center' as const,
+  //   justifyContent: 'center' as const,
+  //   borderRadius: 8,
+  // },
+  // voterToggleActive: {
+  //   backgroundColor: '#1e40af',
+  //   borderColor: '#1e40af',
+  //   zIndex: 1,
+  // },
+  // voterToggleText: {
+  //   color: '#1e40af',
+  //   fontWeight: 'bold' as const,
+  //   textAlign: 'center' as const,
+  //   fontSize: 15,
+  //   letterSpacing: 0.2,
+  // },
+  // voterToggleTextActive: {
+  //   color: '#fff',
+  // },
 });

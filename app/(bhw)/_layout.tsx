@@ -1,16 +1,16 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform} from 'react-native';
+import { Platform } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 
-export default function TabLayout() {
+export default function BHWTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#FF3D33',
+        tabBarActiveTintColor: '#FF3D33', // Active icon color
         tabBarInactiveTintColor: '#6b7280',
         headerShown: false,
         tabBarButton: HapticTab,
@@ -29,13 +29,11 @@ export default function TabLayout() {
           },
         }),
       }}>
-
-      
       <Tabs.Screen
-        name="announcement"
+        name="index"
         options={{
-          title: 'Announcements',
-          tabBarIcon: ({ color }) => <Ionicons size={24} name="megaphone" color={color} />,
+          title: 'Dashboard',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
         }}
       />
 
@@ -46,16 +44,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
         }}
       />
-
-      {/* HIDDEN: DevTest tab - only show in development when needed */}
-      <Tabs.Screen
-        name="devtest"
-        options={{
-          href: null, // This completely hides the tab
-          title: 'Dev Test',
-        }}
-      />
-
     </Tabs>
   );
 }
