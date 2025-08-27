@@ -32,7 +32,7 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
     sitio_id: '',
     city_municipality: '',
     country: 'Philippines',
-    status_id: 1,
+    status_id: '',
     username: '',
     password: '',
     confirm_password: '',
