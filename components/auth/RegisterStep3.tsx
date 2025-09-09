@@ -16,17 +16,44 @@ import { ThemedText } from '@/components/ThemedText';
 export default function RegisterStep3() {
   const { formData, setFormData } = useRegister();
 
-  const handleNext = () => {
-    if (!formData.username || !formData.password || !formData.confirm_password) {
-      Alert.alert('Missing Info', 'Please fill out all fields.');
+
+    const handleNext = () => {
+    if (!formData.username?.trim()) {
+      Alert.alert('Missing Info', 'Please enter a username.');
       return;
     }
+    if (!formData.password?.trim()) {
+      Alert.alert('Missing Info', 'Please enter a password.');
+      return;
+    }
+    if (!formData.confirm_password?.trim()) {
+      Alert.alert('Missing Info', 'Please confirm your password.');
+      return;
+    }
+    
+    // Username validation
+    if (formData.username.length < 3) {
+      Alert.alert('Invalid Username', 'Username must be at least 3 characters long.');
+      return;
+    }
+    
+    // Password validation
+    if (formData.password.length < 8) {
+      Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
+      return;
+    }
+    
+    // Password match validation
     if (formData.password !== formData.confirm_password) {
       Alert.alert('Password Mismatch', 'Passwords do not match.');
       return;
     }
+    
+    // All validations passed, proceed to next step
     router.push('/(auth)/register/chooseDocument');
   };
+
+  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
@@ -71,8 +98,6 @@ export default function RegisterStep3() {
               autoCapitalize="none"
             />
           </View>
-        </View>
-        <View style={styles.buttonContainer}>
           <Pressable
             onPress={handleNext}
             style={styles.nextButton}

@@ -1,14 +1,44 @@
 import React, { useEffect } from 'react';
-import { View, TextInput, ScrollView, StyleSheet } from 'react-native';
+import { View, TextInput, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRegister, SitioOption } from '@/context/registercontext';
 import { Picker } from '@react-native-picker/picker';
 import { ThemedText } from '@/components/ThemedText';
+import { router } from 'expo-router';
 
 export default function RegisterStep2() {
   const { formData, setFormData, sitioOptions } = useRegister();
 
   // Check if user is non-resident
   const isNonResident = formData.user_type === 'non_resident';
+
+     const handleNext = () => {
+    if (!formData.house_number?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your house number.');
+      return;
+    }
+    if (!formData.street?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your street.');
+      return;
+    }
+    if (!formData.barangay?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your barangay.');
+      return;
+    }
+    if (!formData.city_municipality?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your city/municipality.');
+      return;
+    }
+
+    if (!isNonResident) {
+          if (!formData.sitio_id) {
+            Alert.alert('Missing Info', 'Please select your sitio.');
+            return;
+          }
+        }
+
+    // All validations passed, proceed to next step
+    router.push('/(auth)/register/step3');
+  };
 
   // Set default values based on user type
   useEffect(() => {
@@ -134,7 +164,14 @@ export default function RegisterStep2() {
           </>
         )}
 
-    
+        <Pressable
+          onPress={handleNext}
+          style={styles.nextButton}
+        >
+          <ThemedText style={styles.nextButtonText}>
+            Next: Account Setup
+          </ThemedText>
+        </Pressable>
 
       </View>
     </ScrollView>
@@ -223,6 +260,32 @@ const styles = StyleSheet.create({
     color: '#0c4a6e',
     fontSize: 15,
     fontWeight: '600',
+  },
+
+  requiredField: {
+    color: '#dc2626',
+  },
+  errorInput: {
+    borderColor: '#dc2626',
+    borderWidth: 2,
+  },
+
+  nextButton: {
+    backgroundColor: '#FF3D33',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   
 });
