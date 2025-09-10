@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TextInput,
@@ -8,13 +8,18 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { useRegister } from '@/context/registercontext';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterStep3() {
   const { formData, setFormData } = useRegister();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 
     const handleNext = () => {
@@ -78,25 +83,53 @@ export default function RegisterStep3() {
           </View>
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Password</ThemedText>
-            <TextInput
-              placeholder="Password"
-              value={formData.password}
-              onChangeText={text => setFormData({ ...formData, password: text })}
-              style={styles.input}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                placeholder="Password"
+                value={formData.password}
+                onChangeText={text => setFormData({ ...formData, password: text })}
+                style={styles.passwordInput}
+                secureTextEntry={!showPassword} 
+                autoCapitalize="none"
+              />
+              
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#6b7280"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
+
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Confirm Password</ThemedText>
-            <TextInput
-              placeholder="Confirm Password"
-              value={formData.confirm_password}
-              onChangeText={text => setFormData({ ...formData, confirm_password: text })}
-              style={styles.input}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                placeholder="Confirm Password"
+                value={formData.confirm_password}
+                onChangeText={text => setFormData({ ...formData, confirm_password: text })}
+                style={styles.passwordInput}
+                secureTextEntry={!showConfirmPassword} 
+              />
+             
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#6b7280"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           <Pressable
             onPress={handleNext}
@@ -155,6 +188,25 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 2,
     textAlign: 'left',
+  },
+  passwordContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+    marginBottom: 2,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 15,
+  },
+  eyeButton: {
+    padding: 12,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   label: {
     fontSize: 13,

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
 import { storeUserSession } from '@/utils/session';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginForm() {
   // CHANGED: username instead of email 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -97,7 +99,7 @@ export default function LoginForm() {
 
   return (
     <View>
-      {/* CHANGED: Username instead of Email */}
+      {/*  Username Input */}
       <TextInput
         placeholder="Username"
         value={username}
@@ -109,16 +111,30 @@ export default function LoginForm() {
       />
 
       {/* Password Input */}
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-        secureTextEntry
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!loading}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          style={styles.passwordInput}
+          secureTextEntry={!showPassword} 
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!loading}
+        />
+        
+        <TouchableOpacity
+          style={styles.eyeButton}
+          onPress={() => setShowPassword(!showPassword)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={showPassword ? 'eye-off' : 'eye'}
+            size={20}
+            color="#6b7280"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Forgot Password Link */}
       <Pressable onPress={() => Alert.alert('Info', 'Forgot password feature coming soon!')}>
@@ -142,7 +158,7 @@ export default function LoginForm() {
   );
 }
 
-// UPDATED: Styles 
+
 const styles = {
   input: {
     borderWidth: 1,
@@ -173,6 +189,26 @@ const styles = {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold' as const,
+  },
+
+    passwordContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    marginBottom: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 15,
+    fontSize: 16,
+  },
+  eyeButton: {
+    padding: 15,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
 
 };
