@@ -99,7 +99,7 @@ export default function RegisterStep3() {
                 activeOpacity={0.7}
               >
                 <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
                   color="#6b7280"
                 />
@@ -124,7 +124,7 @@ export default function RegisterStep3() {
                 activeOpacity={0.7}
               >
                 <Ionicons
-                  name={showConfirmPassword ? 'eye-off' : 'eye'}
+                  name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
                   color="#6b7280"
                 />

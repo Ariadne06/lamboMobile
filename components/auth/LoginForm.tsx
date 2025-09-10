@@ -134,7 +134,7 @@ export default function LoginForm() {
           activeOpacity={0.7}
         >
           <Ionicons
-            name={showPassword ? 'eye-off' : 'eye'}
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
             size={20}
             color="#6b7280"
           />
