@@ -53,9 +53,11 @@ export default function VerificationStatus() {
           fontWeight: 'bold',
           color: '#1e293b',
           marginBottom: 16,
-          textAlign: 'center'
+          textAlign: 'center',
+          padding: 10
+          
         }}>
-          {isVerified ? '🎉 Account Verified!' : '⏳ Verification Pending'}
+          {isVerified ? ' Account Verified!' : ' Verification Pending'}
         </ThemedText>
 
         {/* Message */}
@@ -112,7 +114,7 @@ export default function VerificationStatus() {
         {/* Continue Button */}
         <TouchableOpacity 
           style={{
-            backgroundColor: isVerified ? '#10b981' : '#6b7280',
+            backgroundColor: isVerified ? '#10b981' : '#FF3D33',
             padding: 16,
             borderRadius: 12,
             alignItems: 'center',
@@ -124,13 +126,14 @@ export default function VerificationStatus() {
             color: '#fff',
             fontSize: 16,
             fontWeight: '600'
+            
           }}>
             {isVerified ? 'Continue to App' : 'Back to Login'}
           </ThemedText>
         </TouchableOpacity>
 
         {/* Pro Tip */}
-        {!isVerified && (
+        {/* {!isVerified && (
           <View style={{
             backgroundColor: '#e0f2fe',
             padding: 16,
@@ -147,7 +150,7 @@ export default function VerificationStatus() {
                Pro tip: Use government-issued ID documents for instant verification next time!
             </ThemedText>
           </View>
-        )}
+        )} */}
 
       </ScrollView>
     </SafeAreaView>

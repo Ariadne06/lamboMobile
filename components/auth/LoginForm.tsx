@@ -58,12 +58,17 @@ export default function LoginForm() {
             return;     
           }
         } else if (data.account_type === 'resident') {
-          router.replace('/(tabs)/announcement');        
-        }
-        
-        // Alert.alert('Success', 'Login successful!');
-        
-      } else if (data.status === 'require_password_change') {
+            router.replace('/(tabs)/announcement');        
+          }      
+        } else if (data.status === 'not_verified') {
+            router.push({
+            pathname: '/(auth)/register/verificationStatus',
+            params: {
+              isVerified: 'false',
+              message: data.message || 'Your account is pending verification. Please wait for approval.',
+                  }
+            });
+        } else if (data.status === 'require_password_change') {
         // Handle password change requirement
         Alert.alert(
           'Password Change Required', 
