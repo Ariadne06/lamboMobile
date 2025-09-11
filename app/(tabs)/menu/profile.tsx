@@ -42,38 +42,98 @@ export default function ProfileScreen() {
 
   const loadProfile = async () => {
     try {
-      setLoading(true);
-      setImageError(false);
-      const profileData = await fetchResidentProfile();
-      
-      if (profileData) {
-        setProfile(profileData);
-        setEditData({
-          email: profileData.email,
-          phone_number: profileData.phone_number,
-          civil_stat_id: getCivilStatusIdByName(profileData.civil_status),
-          educational_attain_id: getEducationIdByName(profileData.educational_attainment),
-          religion_cat_id: getReligionIdByName(profileData.religion),
-          gender: profileData.gender,
-          house_number: profileData.house_number,
-          street: profileData.street,
-          barangay: profileData.barangay,
-          city_municipality: profileData.city_municipality,
+          setLoading(true);
+          setImageError(false);
           
-        });
-        
-        // Check if user is non-resident
-        setIsNonResident(profileData.resident_status?.toLowerCase() === 'non-resident');
-      } else {
-        Alert.alert('Error', 'Failed to load profile data');
+          // Add retry logic
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries) {
+              try {
+                  const profileData = await fetchResidentProfile();
+                  
+                  if (profileData) {
+                      // Clean the profile data properly
+                      const cleanedProfile = {
+                          ...profileData,
+                          profile_image_path: (profileData.profile_image_path === "NULL" || 
+                                            !profileData.profile_image_path) 
+                                            ? null 
+                                            : profileData.profile_image_path
+                      };
+                      
+                      setProfile(cleanedProfile);
+                      setEditData({
+                          email: cleanedProfile.email || '',
+                          phone_number: cleanedProfile.phone_number || '',
+                          civil_stat_id: getCivilStatusIdByName(cleanedProfile.civil_status),
+                          educational_attain_id: getEducationIdByName(cleanedProfile.educational_attainment),
+                          religion_cat_id: getReligionIdByName(cleanedProfile.religion),
+                          gender: cleanedProfile.gender,
+                          house_number: cleanedProfile.house_number || '',
+                          street: cleanedProfile.street || '',
+                          barangay: cleanedProfile.barangay,
+                          city_municipality: cleanedProfile.city_municipality,
+                      });
+                      
+                      setIsNonResident(cleanedProfile.resident_status?.toLowerCase() === 'non-resident');
+                      break; // Success, exit retry loop
+                  } else {
+                      throw new Error('No profile data received');
+                  }
+              } catch (error) {
+                  retryCount++;
+                  console.log(`Profile load attempt ${retryCount} failed:`, error);
+                  
+                  if (retryCount >= maxRetries) {
+                      throw error; // Give up after max retries
+                  }
+                  
+                  // Wait before retrying
+                  await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+              }
+          }
+      } catch (error) {
+          console.error('Error loading profile after retries:', error);
+          Alert.alert('Connection Error', 'Failed to load profile data. Please check your internet connection and try again.');
+      } finally {
+          setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      Alert.alert('Error', 'Failed to load profile data');
-    } finally {
-      setLoading(false);
-    }
   };
+  //   try {
+  //     setLoading(true);
+  //     setImageError(false);
+  //     const profileData = await fetchResidentProfile();
+      
+  //     if (profileData) {
+  //       setProfile(profileData);
+  //       setEditData({
+  //         email: profileData.email,
+  //         phone_number: profileData.phone_number,
+  //         civil_stat_id: getCivilStatusIdByName(profileData.civil_status),
+  //         educational_attain_id: getEducationIdByName(profileData.educational_attainment),
+  //         religion_cat_id: getReligionIdByName(profileData.religion),
+  //         gender: profileData.gender,
+  //         house_number: profileData.house_number,
+  //         street: profileData.street,
+  //         barangay: profileData.barangay,
+  //         city_municipality: profileData.city_municipality,
+          
+  //       });
+        
+  //       // Check if user is non-resident
+  //       setIsNonResident(profileData.resident_status?.toLowerCase() === 'non-resident');
+  //     } else {
+  //       Alert.alert('Error', 'Failed to load profile data');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error loading profile:', error);
+  //     Alert.alert('Error', 'Failed to load profile data');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // Helper functions to get IDs from names - Add safety checks
   const getCivilStatusIdByName = (name: string) => {

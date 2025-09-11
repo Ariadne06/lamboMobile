@@ -7,7 +7,9 @@ export type EducationOption = { educational_attain_id: number; educational_attai
 export type SitioOption = { sitio_id: number; sitio_name: string };
 export type StatusOption = { status_id: number; status_name: string };
 export type IdentityDocTypeOption = { identity_doc_type_id: number; name: string };
-
+export type OccupationOption = { occupation_id: number; occupation_name: string };
+export type NationalityOption = { nationality_id: number; nationality_name: string };
+export type EmploymentStatusOption = { employment_status_id: number; status_name: string };
 
 const RegisterContext = createContext<any>(null);
 
@@ -32,7 +34,7 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
     sitio_id: '',
     city_municipality: '',
     country: 'Philippines',
-    status_id: 1,
+    status_id: '',
     username: '',
     password: '',
     confirm_password: '',
@@ -46,6 +48,10 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
     registration_function: 'register_verified_resident',
     guardian_username: '',
     guardian_type: null,
+    occupation_id: null,
+    nationality_id: null,
+    employment_status_id: null,
+    is_pwd: false,
   });
 
   const [religionOptions, setReligionOptions] = useState([]);
@@ -54,6 +60,10 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
   const [sitioOptions, setSitioOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState<StatusOption[]>([]);
   const [identityDocTypeOptions, setIdentityDocTypeOptions] = useState<IdentityDocTypeOption[]>([]);
+  const [occupationOptions, setOccupationOptions] = useState<OccupationOption[]>([]);
+  const [nationalityOptions, setNationalityOptions] = useState<NationalityOption[]>([]);
+  const [employmentStatusOptions, setEmploymentStatusOptions] = useState<EmploymentStatusOption[]>([]);
+
 
 
   useEffect(() => {
@@ -86,10 +96,25 @@ export const RegisterProvider = ({ children }: { children: React.ReactNode }) =>
       .then(res => res.json())
       .then(setIdentityDocTypeOptions)
       .catch(err => console.error('Identity Doc Types fetch error:', err));
+
+     fetch(`${API_BASE_URL}/api/occupations/`)
+      .then(res => res.json())
+      .then(setOccupationOptions)
+      .catch(err => console.error('Occupation fetch error:', err));
+
+    fetch(`${API_BASE_URL}/api/nationalities/`)
+      .then(res => res.json())
+      .then(setNationalityOptions)
+      .catch(err => console.error('Nationality fetch error:', err));
+
+    fetch(`${API_BASE_URL}/api/employment-statuses/`)
+      .then(res => res.json())
+      .then(setEmploymentStatusOptions)
+      .catch(err => console.error('Employment Status fetch error:', err));
   }, []);
 
   return (
-    <RegisterContext.Provider value={{ formData, setFormData, religionOptions, civilStatusOptions, educationOptions, sitioOptions, statusOptions, identityDocTypeOptions }}>
+    <RegisterContext.Provider value={{ formData, setFormData, religionOptions, civilStatusOptions, educationOptions, sitioOptions, statusOptions, identityDocTypeOptions, occupationOptions, nationalityOptions, employmentStatusOptions }}>
       {children}
     </RegisterContext.Provider>
   );

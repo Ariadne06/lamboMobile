@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TextInput,
@@ -8,25 +8,57 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { useRegister } from '@/context/registercontext';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterStep3() {
   const { formData, setFormData } = useRegister();
 
-  const handleNext = () => {
-    if (!formData.username || !formData.password || !formData.confirm_password) {
-      Alert.alert('Missing Info', 'Please fill out all fields.');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+
+    const handleNext = () => {
+    if (!formData.username?.trim()) {
+      Alert.alert('Missing Info', 'Please enter a username.');
       return;
     }
+    if (!formData.password?.trim()) {
+      Alert.alert('Missing Info', 'Please enter a password.');
+      return;
+    }
+    if (!formData.confirm_password?.trim()) {
+      Alert.alert('Missing Info', 'Please confirm your password.');
+      return;
+    }
+    
+    // Username validation
+    if (formData.username.length < 3) {
+      Alert.alert('Invalid Username', 'Username must be at least 3 characters long.');
+      return;
+    }
+    
+    // Password validation
+    if (formData.password.length < 8) {
+      Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
+      return;
+    }
+    
+    // Password match validation
     if (formData.password !== formData.confirm_password) {
       Alert.alert('Password Mismatch', 'Passwords do not match.');
       return;
     }
+    
+    // All validations passed, proceed to next step
     router.push('/(auth)/register/chooseDocument');
   };
+
+  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
@@ -51,28 +83,54 @@ export default function RegisterStep3() {
           </View>
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Password</ThemedText>
-            <TextInput
-              placeholder="Password"
-              value={formData.password}
-              onChangeText={text => setFormData({ ...formData, password: text })}
-              style={styles.input}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                placeholder="Password"
+                value={formData.password}
+                onChangeText={text => setFormData({ ...formData, password: text })}
+                style={styles.passwordInput}
+                secureTextEntry={!showPassword} 
+                autoCapitalize="none"
+              />
+              
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color="#6b7280"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
+
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Confirm Password</ThemedText>
-            <TextInput
-              placeholder="Confirm Password"
-              value={formData.confirm_password}
-              onChangeText={text => setFormData({ ...formData, confirm_password: text })}
-              style={styles.input}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                placeholder="Confirm Password"
+                value={formData.confirm_password}
+                onChangeText={text => setFormData({ ...formData, confirm_password: text })}
+                style={styles.passwordInput}
+                secureTextEntry={!showConfirmPassword} 
+              />
+             
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color="#6b7280"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-        <View style={styles.buttonContainer}>
           <Pressable
             onPress={handleNext}
             style={styles.nextButton}
@@ -130,6 +188,25 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 2,
     textAlign: 'left',
+  },
+  passwordContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+    marginBottom: 2,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 15,
+  },
+  eyeButton: {
+    padding: 12,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   label: {
     fontSize: 13,

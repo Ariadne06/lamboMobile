@@ -44,6 +44,11 @@ export const fetchResidentProfile = async (): Promise<ResidentProfile | null> =>
 
     console.log(`Fetching profile for resident_id: ${session.user_id}`);
 
+    // timeout and proper error handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.RESIDENT_PROFILE}${session.user_id}/`, {
         method: 'GET',
         headers: {
@@ -52,7 +57,11 @@ export const fetchResidentProfile = async (): Promise<ResidentProfile | null> =>
             // Add session token for authentication if needed
             // 'Authorization': `Bearer ${session.session_token}`,
         },
+        signal: controller.signal, // abort signal
     });
+
+    clearTimeout(timeoutId); // Clear timeout if request completes
+
 
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -77,7 +86,11 @@ export const fetchResidentProfile = async (): Promise<ResidentProfile | null> =>
         return {
             ...data.profile,
             // Ensure profile_image_path is properly handled
-            profile_image_path: data.profile.profile_image_path || null,
+              profile_image_path: (data.profile.profile_image_path === "NULL" || 
+                                   data.profile.profile_image_path === null || 
+                                   data.profile.profile_image_path === undefined) 
+                                   ? null 
+                                   : data.profile.profile_image_path,
         };
     }
 

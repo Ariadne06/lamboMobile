@@ -5,12 +5,23 @@ import { useRouter } from 'expo-router';
 import { useRegister } from '@/context/registercontext';
 import { API_BASE_URL } from '@/constants/apiConfig';
 import { Ionicons } from '@expo/vector-icons';
+import { ErrorModal } from '@/components/ui/ErrorModal';
+
 
 export default function UploadDocument() {
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [verified, setVerified] = useState(false);
   const [mismatches, setMismatches] = useState<any>(null);
+  const [errorModal, setErrorModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    icon: 'alert-circle' as keyof typeof Ionicons.glyphMap,
+    iconColor: '#ef4444',
+    actions: [] as any[],
+  });
+
   const { formData, setFormData } = useRegister();
   const router = useRouter();
 
@@ -162,16 +173,43 @@ export default function UploadDocument() {
       
       // Updated condition - Check for success AND resident_id
       if (data.success && data.resident_id) {
-        Alert.alert('Success', 'Registration complete!');
-        
-        // UPDATED ROUTING LOGIC FOR ALL VERIFICATION TYPES:
-        if (formData.verification_type === 'GUARDIAN') {
-          // Guardian verification - check if auto-verified or pending
+      //  UPDATED ROUTING LOGIC: Simple and clean
+      if (formData.verification_type === 'SUPPORTING') {
+        // Supporting documents - Always need manual review
+        router.replace({
+          pathname: '/(auth)/register/verificationStatus',
+          params: {
+            isVerified: 'false',
+            message: 'Your documents are being reviewed by our team. You will be notified when approved.',
+          }
+        });
+      } 
+      else if (formData.verification_type === 'GUARDIAN') {
+        if (formData.guardian_type === 'GUARDIAN_SUPPORTING') {
+          // Guardian supporting documents - Always need manual review
+          router.replace({
+            pathname: '/(auth)/register/verificationStatus',
+            params: {
+              isVerified: 'false',
+              message: 'Your guardian documents are being reviewed by our team. You will be notified when approved.',
+            }
+          });
+        } else {
+          // Guardian ID documents - Check if verified
           if (data.is_verified) {
-            // Guardian ID documents may auto-verify
-            router.replace('/(tabs)/menu');
+            //  Verified - Redirect to login
+            Alert.alert(
+              'Registration Successful!', 
+              'Your guardian document has been verified. Please log in to continue.',
+              [
+                {
+                  text: 'Login Now',
+                  onPress: () => router.replace('/(auth)/login')
+                }
+              ]
+            );
           } else {
-            // Guardian supporting documents need review
+            //  Needs review - Show status screen
             router.replace({
               pathname: '/(auth)/register/verificationStatus',
               params: {
@@ -180,41 +218,151 @@ export default function UploadDocument() {
               }
             });
           }
-        } else if (formData.verification_type === 'SUPPORTING') {
-          // Supporting documents → Always go to verification status screen
+        }
+      } 
+      else {
+        // ID documents - Check if verified
+        if (data.is_verified) {
+          //  Verified - Redirect to login
+          Alert.alert(
+            'Registration Successful!', 
+            'Your ID has been verified. Please log in to continue.',
+            [
+              {
+                text: 'Login Now',
+                onPress: () => router.replace('/(auth)/login')
+              }
+            ]
+          );
+        } else {
+          //  Needs review - Show status screen
           router.replace({
             pathname: '/(auth)/register/verificationStatus',
             params: {
               isVerified: 'false',
-              message: 'Your documents are being reviewed by our team. You will be notified when approved.',
+              message: 'Your account is pending verification.',
             }
           });
-        } else {
-          // ID document logic remains the same
-          if (data.is_verified) {
-            // Auto-verified → Go to main app
-            router.replace('/(tabs)/menu');
-          } else {
-            // Not verified for some reason → Go to status screen
-            router.replace({
-              pathname: '/(auth)/register/verificationStatus',
-              params: {
-                isVerified: 'false',
-                message: 'Your account is pending verification.',
-              }
-            });
-          }
         }
-      } else {
-        // Better error handling
-        const errorMessage = data.error || data.details || 'Registration failed.';
-        Alert.alert('Error', errorMessage);
       }
-    } catch (err) {
-      console.error('Network error:', err);
-      Alert.alert('Error', 'Network error occurred.');
+    } else {
+       handleRegistrationError(data);
     }
-    setUploading(false);
+  } catch (err) {
+    console.error('Network error:', err);
+    Alert.alert('Network Error', 'Please check your internet connection and try again.');
+  }
+  setUploading(false);
+};
+
+const showErrorModal = (errorCode: string, errorMessage: string) => {
+    switch (errorCode) {
+      case 'DUPLICATE_PERSON':
+        setErrorModal({
+          visible: true,
+          title: 'Account Already Exists',
+          message: 'A person with this name and birthdate already exists in our system. This might be you or someone with identical information.',
+          icon: 'person-circle',
+          iconColor: '#f59e0b',
+          actions: [
+            {
+              text: 'Edit My Information',
+              style: 'secondary',
+              onPress: () => {
+                setErrorModal(prev => ({ ...prev, visible: false }));
+                router.back();
+                router.back();
+              },
+            },
+            {
+              text: 'Try Login Instead',
+              style: 'primary',
+              onPress: () => {
+                setErrorModal(prev => ({ ...prev, visible: false }));
+                router.replace('/(auth)/login');
+              },
+            },
+          ],
+        });
+        break;
+
+      case 'MISSING_DOCUMENT_TYPE':
+        setErrorModal({
+          visible: true,
+          title: 'Document Required',
+          message: 'Please select a valid document type to continue with your registration.',
+          icon: 'document-text',
+          iconColor: '#3b82f6',
+          actions: [
+            {
+              text: 'Choose Document',
+              style: 'primary',
+              onPress: () => {
+                setErrorModal(prev => ({ ...prev, visible: false }));
+                router.back();
+              },
+            },
+          ],
+        });
+        break;
+
+      case 'NETWORK_ERROR':
+        setErrorModal({
+          visible: true,
+          title: 'Connection Problem',
+          message: 'Unable to connect to our servers. Please check your internet connection and try again.',
+          icon: 'wifi',
+          iconColor: '#ef4444',
+          actions: [
+            {
+              text: 'Try Again',
+              style: 'primary',
+              onPress: () => {
+                setErrorModal(prev => ({ ...prev, visible: false }));
+                handleSubmitRegistration();
+              },
+            },
+            {
+              text: 'Cancel',
+              style: 'secondary',
+              onPress: () => setErrorModal(prev => ({ ...prev, visible: false })),
+            },
+          ],
+        });
+        break;
+
+      default:
+        setErrorModal({
+          visible: true,
+          title: 'Registration Failed',
+          message: errorMessage || 'Something unexpected happened. Please try again or contact support if the problem persists.',
+          icon: 'warning',
+          iconColor: '#ef4444',
+          actions: [
+            {
+              text: 'Try Again',
+              style: 'primary',
+              onPress: () => setErrorModal(prev => ({ ...prev, visible: false })),
+            },
+            {
+              text: 'Contact Support',
+              style: 'secondary',
+              onPress: () => {
+                setErrorModal(prev => ({ ...prev, visible: false }));
+                // Add contact support logic
+              },
+            },
+          ],
+        });
+        break;
+    }
+  };
+
+ const handleRegistrationError = (data: any) => {
+    const errorCode = data.error_code || 'REGISTRATION_ERROR';
+    const errorMessage = data.error;
+    
+    showErrorModal(errorCode, errorMessage);
   };
 
   // Helper to update mismatched fields in context
@@ -394,6 +542,16 @@ export default function UploadDocument() {
           </TouchableOpacity>
         </View>
       )}
+
+      <ErrorModal
+        visible={errorModal.visible}
+        title={errorModal.title}
+        message={errorModal.message}
+        icon={errorModal.icon}
+        iconColor={errorModal.iconColor}
+        actions={errorModal.actions}
+        onClose={() => setErrorModal(prev => ({ ...prev, visible: false }))}
+      />
     </ScrollView>
   );
 }
@@ -405,6 +563,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
     paddingBottom: 40,
+    backgroundColor: '#f3f4f6'
   },
   // Header Styles
   guardianHeaderContainer: {

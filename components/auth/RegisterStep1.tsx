@@ -1,17 +1,96 @@
 import React, { useState } from 'react';
-import { View, TextInput, Pressable, Platform, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, TextInput, Pressable, Platform, ScrollView, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRegister, ReligionOption, CivilStatusOption, EducationOption, StatusOption } from '@/context/registercontext';
 import { ThemedText } from '@/components/ThemedText';
+import { router } from 'expo-router';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function RegisterStep1() {
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const { formData, setFormData, religionOptions, civilStatusOptions, educationOptions, statusOptions } = useRegister();
+  const { formData, setFormData, religionOptions, civilStatusOptions, educationOptions, statusOptions, occupationOptions, nationalityOptions, employmentStatusOptions } = useRegister();
 
   const isNonResident = formData.user_type === 'non_resident';
+
+   const handleNext = () => {
+    // Check required fields for all users
+    if (!formData.first_name?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your first name.');
+      return;
+    }
+    if (!formData.last_name?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your last name.');
+      return;
+    }
+    if (!formData.dob) {
+      Alert.alert('Missing Info', 'Please select your date of birth.');
+      return;
+    }
+    if (!formData.sex) {
+      Alert.alert('Missing Info', 'Please select your sex.');
+      return;
+    }
+    if (!formData.email?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your email.');
+      return;
+    }
+    if (!formData.phone_number?.trim()) {
+      Alert.alert('Missing Info', 'Please enter your phone number.');
+      return;
+    }
+
+    // Email validation
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    // Phone validation (simple)
+    if (formData.phone_number.length < 10) {
+      Alert.alert('Invalid Phone', 'Please enter a valid phone number.');
+      return;
+    }
+
+    // Additional validation for residents only
+    if (!isNonResident) {
+      if (!formData.civil_status_id) {
+        Alert.alert('Missing Info', 'Please select your civil status.');
+        return;
+      }
+      if (!formData.religion_cat_id) {
+        Alert.alert('Missing Info', 'Please select your religion.');
+        return;
+      }
+      if (!formData.educational_attainment_id) {
+        Alert.alert('Missing Info', 'Please select your educational attainment.');
+        return;
+      }
+      if (!formData.occupation_id) {
+        Alert.alert('Missing Info', 'Please select your occupation.');
+        return;
+      }
+      if (!formData.nationality_id) {
+        Alert.alert('Missing Info', 'Please select your nationality.');
+        return;
+      }
+      if (!formData.employment_status_id) {
+        Alert.alert('Missing Info', 'Please select your employment status.');
+        return;
+      }
+      
+      // Check if "Others" religion is selected and requires specification
+      if (formData.religion_cat_id === 8 && !formData.other_religion?.trim()) {
+        Alert.alert('Missing Info', 'Please specify your religion.');
+        return;
+      }
+    }
+
+    // All validations passed, proceed to next step
+    router.push('/(auth)/register/step2');
+  };
+
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -163,6 +242,101 @@ export default function RegisterStep1() {
                 </Picker>
               </View>
             </View>
+           {/* Occupation */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Occupation</ThemedText>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={formData.occupation_id}
+                  onValueChange={itemValue => setFormData({ ...formData, occupation_id: itemValue })}
+                >
+                  <Picker.Item label="Select Occupation" value="" />
+                  {occupationOptions.map((occupation: any) => (
+                    <Picker.Item 
+                      key={occupation.occupation_id} 
+                      label={occupation.occupation_name} 
+                      value={occupation.occupation_id} 
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {/* Nationality */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Nationality</ThemedText>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={formData.nationality_id}
+                  onValueChange={itemValue => setFormData({ ...formData, nationality_id: itemValue })}
+                >
+                  <Picker.Item label="Select Nationality" value="" />
+                  {nationalityOptions.map((nationality: any) => (
+                    <Picker.Item 
+                      key={nationality.nationality_id} 
+                      label={nationality.nationality} 
+                      value={nationality.nationality_id} 
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {/* Employment Status */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Employment Status</ThemedText>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={formData.employment_status_id}
+                  onValueChange={itemValue => setFormData({ ...formData, employment_status_id: itemValue })}
+                >
+                  <Picker.Item label="Select Employment Status" value="" />
+                  {employmentStatusOptions.map((status: any) => (
+                    <Picker.Item 
+                      key={status.employment_status_id} 
+                      label={status.employment_status_name} 
+                      value={status.employment_status_id} 
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {/* PWD Status */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Person with Disability (PWD)</ThemedText>
+              <View style={styles.pwdRow}>
+                <Pressable 
+                  style={[
+                    styles.pwdToggle, 
+                    !formData.is_pwd && styles.pwdToggleActive
+                  ]}
+                  onPress={() => setFormData({ ...formData, is_pwd: false })}
+                >
+                  <ThemedText style={[
+                    styles.pwdToggleText, 
+                    !formData.is_pwd && styles.pwdToggleTextActive
+                  ]}>
+                    No
+                  </ThemedText>
+                </Pressable>
+                <Pressable 
+                  style={[
+                    styles.pwdToggle, 
+                    formData.is_pwd && styles.pwdToggleActive
+                  ]}
+                  onPress={() => setFormData({ ...formData, is_pwd: true })}
+                >
+                  <ThemedText style={[
+                    styles.pwdToggleText, 
+                    formData.is_pwd && styles.pwdToggleTextActive
+                  ]}>
+                    Yes
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+            
           </>
         )}
         <View style={styles.inputGroup}>
@@ -186,7 +360,14 @@ export default function RegisterStep1() {
             keyboardType="phone-pad"
           />
         </View>
-
+        <Pressable
+          onPress={handleNext}
+          style={styles.nextButton}
+        >
+          <ThemedText style={styles.nextButtonText}>
+            Next: Address Information
+          </ThemedText>
+        </Pressable>
 
       </View>
     </ScrollView>
@@ -264,43 +445,62 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginLeft: 2,
   },
-  // voterLabel: {
-  //   marginBottom: 10,
-  //   marginTop: 28,
-  //   fontWeight: '600' as const,
-  //   fontSize: 15,
-  //   color: '#374151',
-  //   textAlign: 'center' as const,
-  // },
-  // voterRow: {
-  //   flexDirection: 'row' as const,
-  //   justifyContent: 'center' as const,
-  //   marginBottom: 8,
-  //   marginTop: 2,
-  // },
-  // voterToggle: {
-  //   flex: 1,
-  //   backgroundColor: '#f3f4f6',
-  //   paddingVertical: 12,
-  //   borderWidth: 1,
-  //   borderColor: '#d1d5db',
-  //   alignItems: 'center' as const,
-  //   justifyContent: 'center' as const,
-  //   borderRadius: 8,
-  // },
-  // voterToggleActive: {
-  //   backgroundColor: '#1e40af',
-  //   borderColor: '#1e40af',
-  //   zIndex: 1,
-  // },
-  // voterToggleText: {
-  //   color: '#1e40af',
-  //   fontWeight: 'bold' as const,
-  //   textAlign: 'center' as const,
-  //   fontSize: 15,
-  //   letterSpacing: 0.2,
-  // },
-  // voterToggleTextActive: {
-  //   color: '#fff',
-  // },
+  pwdRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 8,
+    marginTop: 2,
+  },
+  pwdToggle: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderRadius: 8,
+    marginHorizontal: 2,
+  },
+  pwdToggleActive: {
+    backgroundColor: '#1e40af',
+    borderColor: '#1e40af',
+    zIndex: 1,
+  },
+  pwdToggleText: {
+    color: '#1e40af',
+    fontWeight: 'bold' as const,
+    textAlign: 'center' as const,
+    fontSize: 15,
+    letterSpacing: 0.2,
+  },
+  pwdToggleTextActive: {
+    color: '#fff',
+  },
+
+  requiredField: {
+    color: '#dc2626', 
+  },
+  errorInput: {
+    borderColor: '#dc2626', 
+    borderWidth: 2,
+  },
+
+   nextButton: {
+    backgroundColor: '#FF3D33',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
