@@ -1,14 +1,18 @@
-const isDevelopment = __DEV__;
+// const isDevelopment = __DEV__;
 
-// Automatic environment switching
-export const API_BASE_URL = isDevelopment 
-  ? 'http://192.168.254.110:8000/'                    //  current development server
-  : 'https://your-future-production-server.com';  // future production server
+// // Automatic environment switching
+// export const API_BASE_URL = isDevelopment 
+//   ? 'http://192.168.254.184:8000/'                    //  current development server
+//   : 'https://lambo-web-5mka.onrender.com/';  // future production server
+
+export const API_BASE_URL = 'https://lambo-web-5mka.onrender.com';
+
 
 // All API endpoints
 export const API_ENDPOINTS = {
   // Authentication
   MOBILE_LOGIN: '/api/mobile-login/',
+  CHANGE_PERSONNEL_PASSWORD: '/api/change-personnel-password/',
   
   // Registration 
   RESIDENT_REGISTER: '/api/register/',
