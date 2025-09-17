@@ -26,7 +26,7 @@ export default function UserTypeSelection() {
     setFormData((prev: any) => ({
       ...prev,
       user_type: 'non_resident',
-      registration_function: 'register_verified_business_owner'
+      registration_function: 'register_verified_non_resident'
     }));
     router.push('/(auth)/register');
   };
