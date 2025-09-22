@@ -1,7 +1,7 @@
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
 import { storeUserSession } from '@/utils/session';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -142,7 +142,7 @@ export default function LoginForm() {
       </View>
 
       {/* Forgot Password Link */}
-      <Pressable onPress={() => Alert.alert('Info', 'Forgot password feature coming soon!')}>
+      <Pressable onPress={() => router.push('/(auth)/forgotPassword' as Href)}>
         <Text style={styles.forgotPassword}>Forgot Password?</Text>
       </Pressable>
 

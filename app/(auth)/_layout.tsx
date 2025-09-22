@@ -16,6 +16,14 @@ export default function AuthLayout() {
           headerShown: false,
         }} 
       />
+
+      {/* Forgot Password screen */}
+      <Stack.Screen 
+        name="forgotPassword" 
+        options={{ 
+          headerShown: false,
+        }} 
+      />
     </Stack>
   );
 }
