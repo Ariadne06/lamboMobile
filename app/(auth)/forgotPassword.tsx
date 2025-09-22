@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 // Change this to your backend base
-const API_URL = "https://lambo-web-5mka.onrender.com//authentication/api/forgot_password/";
+const API_URL = "https://lambo-web-5mka.onrender.com/authentication/api/forgot_password/";
 // If you're using Android emulator, use:  "http://10.0.2.2:8000/authentication/api/forgot_password/"
 // If iOS simulator on macOS: "http://localhost:8000/authentication/api/forgot_password/"
 
