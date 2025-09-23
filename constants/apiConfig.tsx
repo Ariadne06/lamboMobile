@@ -1,11 +1,11 @@
-// const isDevelopment = __DEV__;
+const isDevelopment = __DEV__;
 
-// // Automatic environment switching
-// export const API_BASE_URL = isDevelopment 
-//   ? 'http://192.168.254.184:8000/'                    //  current development server
-//   : 'https://lambo-web-5mka.onrender.com/';  // future production server
+// Automatic environment switching
+export const API_BASE_URL = isDevelopment 
+  ? 'http://192.168.254.184:8000/'                    //  current development server
+  : 'https://lambo-web-5mka.onrender.com/';  // future production server
 
-export const API_BASE_URL = 'https://lambo-web-5mka.onrender.com';
+// export const API_BASE_URL = 'https://lambo-web-5mka.onrender.com';
 
 
 // All API endpoints
@@ -28,6 +28,11 @@ export const API_ENDPOINTS = {
   EDUCATIONAL_ATTAINMENTS: '/api/educational-attainments/',
   SITIOS: '/api/sitios/',
   RELIGIONS: '/api/religions/',
+  
+  // Certificate/Document requests
+  DOCUMENT_TYPES: '/certificate_api/document-types/',
+  CLEARANCE_PURPOSES: '/certificate_api/clearance-purposes/',
+  APPLICATION_STATUS: '/certificate_api/application-status/',
 };
 
 // API settings

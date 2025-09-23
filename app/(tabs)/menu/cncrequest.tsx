@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import { ScrollView, View, StyleSheet, TextInput, TouchableOpacity, Platform } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { ThemedText } from '@/components/ThemedText';
-
-const requestTypes = ['Barangay Clearance', 'Business Permit', 'Residency Certificate'];
-const purposes = ['Employment', 'Business', 'School', 'Other'];
+import { ClearancePurpose, DocumentType, fetchClearancePurposes, fetchDocumentTypes } from '@/utils/documentService';
+import { Picker } from '@react-native-picker/picker';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function CnCRequestScreen() {
   const [request, setRequest] = useState('');
@@ -12,14 +10,66 @@ export default function CnCRequestScreen() {
   const [businessType, setBusinessType] = useState('');
   const [numUnit, setNumUnit] = useState('');
   const [cost, setCost] = useState(0);
+  
+  // API data states
+  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
+  const [clearancePurposes, setClearancePurposes] = useState<ClearancePurpose[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dummy cost calculation (customize as needed)
-  React.useEffect(() => {
-    if (request === 'Barangay Clearance') setCost(100);
-    else if (request === 'Business Permit') setCost(300);
-    else if (request === 'Residency Certificate') setCost(150);
-    else setCost(0);
-  }, [request]);
+  // Load data from API on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [docTypes, purposes] = await Promise.all([
+          fetchDocumentTypes(),
+          fetchClearancePurposes(),
+        ]);
+        
+        console.log('🎯 Document types received in component:', docTypes);
+        console.log('🎯 Purposes received in component:', purposes);
+        
+        setDocumentTypes(docTypes);
+        setClearancePurposes(purposes);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        Alert.alert('Error', 'Failed to load document types and purposes. Please check your connection.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Update cost calculation based on selected document type
+  useEffect(() => {
+    const selectedDoc = documentTypes.find(doc => doc.document_type_name === request);
+    if (selectedDoc && selectedDoc.cost) {
+      setCost(selectedDoc.cost);
+    } else {
+      // You could also use the fee from clearance purposes if needed
+      const selectedPurpose = clearancePurposes.find(p => p.purpose_name === purpose);
+      if (selectedPurpose && selectedPurpose.fee) {
+        setCost(parseFloat(selectedPurpose.fee));
+      } else {
+        // Fallback to dummy cost calculation if cost not provided by API
+        if (request === 'Barangay Clearance') setCost(100);
+        else if (request === 'Business Permit') setCost(300);
+        else if (request === 'Residency Certificate') setCost(150);
+        else setCost(0);
+      }
+    }
+  }, [request, purpose, documentTypes, clearancePurposes]);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#FF3D33" />
+        <ThemedText style={{ marginTop: 10 }}>Loading document types...</ThemedText>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -36,8 +86,8 @@ export default function CnCRequestScreen() {
               dropdownIconColor="#FF3D33"
             >
               <Picker.Item label="Select request type" value="" />
-              {requestTypes.map((item) => (
-                <Picker.Item label={item} value={item} key={item} />
+              {documentTypes.map((item) => (
+                <Picker.Item label={item.document_type_name} value={item.document_type_name} key={item.document_type_id} />
               ))}
             </Picker>
           </View>
@@ -53,8 +103,8 @@ export default function CnCRequestScreen() {
               dropdownIconColor="#FF3D33"
             >
               <Picker.Item label="Select purpose" value="" />
-              {purposes.map((item) => (
-                <Picker.Item label={item} value={item} key={item} />
+              {clearancePurposes.map((item) => (
+                <Picker.Item label={item.purpose_name} value={item.purpose_name} key={item.clearance_purpose_id} />
               ))}
             </Picker>
           </View>
