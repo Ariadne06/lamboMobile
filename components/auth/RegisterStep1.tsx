@@ -79,12 +79,6 @@ export default function RegisterStep1() {
         Alert.alert('Missing Info', 'Please select your employment status.');
         return;
       }
-      
-      // Check if "Others" religion is selected and requires specification
-      if (formData.religion_cat_id === 8 && !formData.other_religion?.trim()) {
-        Alert.alert('Missing Info', 'Please specify your religion.');
-        return;
-      }
     }
 
     // All validations passed, proceed to next step
