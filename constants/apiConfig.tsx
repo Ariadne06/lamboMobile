@@ -2,7 +2,7 @@ const isDevelopment = __DEV__;
 
 // Automatic environment switching
 export const API_BASE_URL = isDevelopment 
-  ? 'http://192.168.254.184:8000/'                    //  current development server
+  ? 'http://10.107.112.20:8000/'                    //  current development server
   : 'https://lambo-web-5mka.onrender.com/';  // future production server
 
 // export const API_BASE_URL = 'https://lambo-web-5mka.onrender.com';
