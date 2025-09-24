@@ -361,6 +361,12 @@ const showErrorModal = (errorCode: string, errorMessage: string) => {
  const handleRegistrationError = (data: any) => {
     const errorCode = data.error_code || 'REGISTRATION_ERROR';
     const errorMessage = data.error;
+
+    if (errorCode === 'DOCUMENT_MISMATCH') {
+    Alert.alert('Incorrect Document',
+      errorMessage || 'Please upload a clear photo of the correct document (header/title must be visible).');
+    return;
+  }
     
     showErrorModal(errorCode, errorMessage);
   };
@@ -464,15 +470,21 @@ const showErrorModal = (errorCode: string, errorMessage: string) => {
         )}
 
         {/* Verify Button - Show for ID documents AND Guardian IDs */}
-        {image && !uploading && !verified && !mismatches && 
-         (formData.verification_type === 'ID' || 
-          (formData.verification_type === 'GUARDIAN' && formData.guardian_type === 'GUARDIAN_ID')) && (
+        {image && !uploading && !verified && !mismatches && (
           <TouchableOpacity
             style={styles.verifyButton}
-            onPress={formData.verification_type === 'GUARDIAN' ? handleGuardianVerify : handleVerify}
+            onPress={
+              formData.verification_type === 'GUARDIAN'
+                ? handleGuardianVerify
+                : handleVerify
+            }
           >
             <Text style={styles.verifyButtonText}>
-              {formData.verification_type === 'GUARDIAN' ? 'Verify Guardian Document' : 'Verify ID'}
+              {formData.verification_type === 'GUARDIAN'
+                ? 'Verify Guardian Document'
+                : formData.verification_type === 'SUPPORTING'
+                ? 'Verify Document'
+                : 'Verify ID'}
             </Text>
           </TouchableOpacity>
         )}
@@ -486,10 +498,10 @@ const showErrorModal = (errorCode: string, errorMessage: string) => {
         {(
           // Regular ID verification (verified required)
           (verified && !uploading && formData.verification_type === 'ID') || 
-          // Supporting documents (no verification needed)
-          (image && !uploading && formData.verification_type === 'SUPPORTING') ||
-          // Guardian Supporting documents (no verification needed)
-          (image && !uploading && formData.verification_type === 'GUARDIAN' && formData.guardian_type === 'GUARDIAN_SUPPORTING') ||
+          // Supporting documents (verification needed - header/title only)
+          (verified && !uploading && formData.verification_type === 'SUPPORTING') ||
+          // Guardian Supporting documents (verification needed - header/title only)
+          (verified && !uploading && formData.verification_type === 'GUARDIAN' && formData.guardian_type === 'GUARDIAN_SUPPORTING') ||
           // Guardian ID documents (verification required)
           (verified && !uploading && formData.verification_type === 'GUARDIAN' && formData.guardian_type === 'GUARDIAN_ID')
         ) && (
