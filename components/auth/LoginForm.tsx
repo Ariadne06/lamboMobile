@@ -65,9 +65,10 @@ export default function LoginForm() {
             pathname: '/(auth)/register/rejectionResubmission',
             params: {
               message: data.message,
-              resident_id: data.resident_id, // must be a number or string, not undefined!
-              identity_doc_type_id: data.identity_doc_type_id, // must be a number or string, not undefined!
+              resident_id: data.resident_id,
+              identity_doc_type_id: data.identity_doc_type_id, 
               identity_doc_type_name: data.identity_doc_type_name,
+              review_notes: data.review_notes,
               username: data.username,
             }
           });
@@ -77,6 +78,7 @@ export default function LoginForm() {
             params: {
               message: data.message || 'Your application was rejected. Please re-register.',
               resident_id: data.resident_id,
+              review_notes: data.review_notes,
               username: data.username,
             }
           });
