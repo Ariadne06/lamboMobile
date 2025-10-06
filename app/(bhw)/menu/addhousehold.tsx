@@ -1,489 +1,560 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
-  TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   TextInput,
   Alert,
-  FlatList,
+  ActivityIndicator,
+  ScrollView,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
+import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
+import ResidentSearchModal from './residentSearchModal';
 
 interface FormData {
-  sitio: string;
-  householdNumber: string;
-  barangay: string;
-  familyNumber: string;
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  relationship: string;
-  isRenter: boolean | null;
-  monthsRenting: string;
-  waterSource: string;
-  toiletFacility: string;
-  wasteManagement: string;
-  hasBlincDrainage: boolean | null;
+  houseOwnershipId: number | null;
+  houseTypeId: number | null;
+  sitioId: number | null;
+  cityMunicipality: string;
+  houseNumber: string;
+  street: string;
+  country: string;
+  householdHeadId: string;
+  respondentId: string;
+  respondentRthId: number | null;
 }
-
-// Define item types kept for the FlatList
-type ListItemType =
-  | { type: 'householdData' }
-  | { type: 'respondent' }
-  | { type: 'socioEconomic' }
-  | { type: 'saveButton' }
-  | { type: 'spacer' };
 
 export default function AddHousehold() {
   const router = useRouter();
 
+  // Dropdown options
+  const [houseOwnershipOptions, setHouseOwnershipOptions] = useState<any[]>([]);
+  const [houseTypeOptions, setHouseTypeOptions] = useState<any[]>([]);
+  const [sitioOptions, setSitioOptions] = useState<any[]>([]);
+  const [relationshipOptions, setRelationshipOptions] = useState<any[]>([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(true);
+  const [showHeadSearch, setShowHeadSearch] = useState(false);
+  const [showRespondentSearch, setShowRespondentSearch] = useState(false);
+  const [selectedHead, setSelectedHead] = useState<any>(null);
+  const [selectedRespondent, setSelectedRespondent] = useState<any>(null);
+
+  // Example: get personnel_id from context/session
+  const user = { personnel_id: 1 }; // Replace with actual user context
+
   const [formData, setFormData] = useState<FormData>({
-    sitio: '',
-    householdNumber: '',
-    barangay: '',
-    familyNumber: '',
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    relationship: '',
-    isRenter: null,
-    monthsRenting: '',
-    waterSource: '',
-    toiletFacility: '',
-    wasteManagement: '',
-    hasBlincDrainage: null,
+    houseOwnershipId: null,
+    houseTypeId: null,
+    sitioId: null,
+    cityMunicipality: 'Consolacion',
+    houseNumber: '',
+    street: '',
+    country: 'Philippines',
+    householdHeadId: '',
+    respondentId: '',
+    respondentRthId: null,
   });
 
-  const waterSources = ['Piped Water', 'Deep Well', 'Shallow Well', 'Spring', 'River/Stream', 'Rainwater', 'Other'];
-  const toiletFacilities = ['Water-sealed toilet', 'Pit latrine', 'Pour-flush toilet', 'Composting toilet', 'No toilet facility', 'Other'];
-  const wasteManagements = ['Collected by truck', 'Burning', 'Burying', 'Composting', 'Throwing anywhere', 'Other'];
-  const relationships = ['Head', 'Spouse', 'Son', 'Daughter', 'Father', 'Mother', 'Brother', 'Sister', 'Grandchild', 'Other relative', 'Non-relative'];
+  // Fetch dropdown data
+  useEffect(() => {
+    const fetchDropdowns = async () => {
+      try {
+        const [ownershipRes, houseTypeRes, sitioRes, relationshipRes] = await Promise.all([
+          fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSEHOLD_OWNERSHIP_TYPE}`),
+          fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSE_TYPE}`),
+          fetch(`${API_BASE_URL}${API_ENDPOINTS.SITIOS}`),
+          fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSEHOLD_RELATIONSHIP}`),
+        ]);
+        setHouseOwnershipOptions(await ownershipRes.json());
+        setHouseTypeOptions(await houseTypeRes.json());
+        setSitioOptions(await sitioRes.json());
+        const relJson = await relationshipRes.json();
+        const relArray = Array.isArray(relJson) ? relJson : relJson.results || relJson.data || [];
+        setRelationshipOptions(relArray);
+      } catch (err) {
+        Alert.alert('Error', 'Failed to load dropdowns. Please check your internet or API endpoints.');
+      } finally {
+        setLoadingDropdowns(false);
+      }
+    };
+    fetchDropdowns();
+  }, []);
 
-  const updateFormData = (field: keyof FormData, value: string | boolean | null) => {
+  const updateFormData = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
-    Alert.alert(
-      'Save Household',
-      'Do you want to save this household?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Save', onPress: () => saveHousehold() },
-      ]
-    );
+    if (formData.houseTypeId === null || formData.houseTypeId === undefined) {
+      Alert.alert('Missing Info', 'Please select a House Type.');
+      return;
+    }
+    if (formData.houseOwnershipId === null || formData.houseOwnershipId === undefined) {
+      Alert.alert('Missing Info', 'Please select a House Ownership Type.');
+      return;
+    }
+    if (formData.sitioId === null || formData.sitioId === undefined) {
+      Alert.alert('Missing Info', 'Please select a Sitio/Purok.');
+      return;
+    }
+    saveHousehold();
   };
 
-  const saveHousehold = () => {
-    console.log('Saving household:', { formData });
-    Alert.alert('Success', 'Household saved successfully!');
-    router.back();
-  };
+  const saveHousehold = async () => {
+    try {
+      const payload = {
+        house_ownership_id: formData.houseOwnershipId,
+        house_type_id: formData.houseTypeId,
+        barangay: 'Cansaga',
+        city_municipality: formData.cityMunicipality,
+        sitio_id: formData.sitioId,
+        personnel_id: user.personnel_id,
+        house_number: formData.houseNumber || '',
+        street: formData.street || '',
+        country: formData.country || 'Philippines',
+        household_head_id: formData.householdHeadId ? parseInt(formData.householdHeadId) : '',
+        respondent_id: formData.respondentId ? parseInt(formData.respondentId) : '',
+        respondent_rth_id: formData.respondentRthId || '',
+        performed_by_id: user.personnel_id,
+        performed_by_type: 'personnel',
+        enforce_bhw_assignment: false,
+      };
 
-  const createListData = (): ListItemType[] => {
-    return [
-      { type: 'householdData' },
-      { type: 'respondent' },
-      { type: 'socioEconomic' },
-      { type: 'saveButton' },
-      { type: 'spacer' },
-    ];
-  };
+      const formDataToSend = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        formDataToSend.append(key, String(value));
+      });
 
-  const renderListItem = ({ item }: { item: ListItemType }) => {
-    switch (item.type) {
-      case 'householdData':
-        return (
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>1. Household Data</ThemedText>
-            <ThemedText style={styles.sectionSubtitle}>Household information</ThemedText>
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSEHOLD_INSERT}`, {
+        method: 'POST',
+        body: formDataToSend,
+      });
 
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Sitio/Purok</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.sitio}
-                onChangeText={(value) => updateFormData('sitio', value)}
-                placeholder="Enter sitio/purok"
-              />
-            </View>
+      const data = await response.json();
 
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Household Number</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.householdNumber}
-                onChangeText={(value) => updateFormData('householdNumber', value)}
-                placeholder="Enter household number"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Barangay</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.barangay}
-                onChangeText={(value) => updateFormData('barangay', value)}
-                placeholder="Enter barangay"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Family Number</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.familyNumber}
-                onChangeText={(value) => updateFormData('familyNumber', value)}
-                placeholder="Enter family number"
-              />
-            </View>
-          </View>
-        );
-
-      case 'respondent':
-        return (
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>2. Respondent</ThemedText>
-            <ThemedText style={styles.sectionSubtitle}>Name of respondent</ThemedText>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>First Name</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.firstName}
-                onChangeText={(value) => updateFormData('firstName', value)}
-                placeholder="Enter first name"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Middle Name</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.middleName}
-                onChangeText={(value) => updateFormData('middleName', value)}
-                placeholder="Enter middle name"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Last Name</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.lastName}
-                onChangeText={(value) => updateFormData('lastName', value)}
-                placeholder="Enter last name"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Relationship to Household Head</ThemedText>
-              <View style={styles.horizontalContainer}>
-                {relationships.map((rel) => (
-                  <TouchableOpacity
-                    key={rel}
-                    style={[
-                      styles.chipButton,
-                      formData.relationship === rel && styles.chipButtonSelected
-                    ]}
-                    onPress={() => updateFormData('relationship', rel)}
-                  >
-                    <ThemedText style={[
-                      styles.chipText,
-                      formData.relationship === rel && styles.chipTextSelected
-                    ]}>
-                      {rel}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Renter?</ThemedText>
-              <View style={styles.radioGroup}>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => updateFormData('isRenter', true)}
-                >
-                  <Ionicons
-                    name={formData.isRenter === true ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={formData.isRenter === true ? '#FF3D33' : '#9CA3AF'}
-                  />
-                  <ThemedText style={styles.radioText}>Yes</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => updateFormData('isRenter', false)}
-                >
-                  <Ionicons
-                    name={formData.isRenter === false ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={formData.isRenter === false ? '#FF3D33' : '#9CA3AF'}
-                  />
-                  <ThemedText style={styles.radioText}>No</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {formData.isRenter === true && (
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Number of Months</ThemedText>
-                <TextInput
-                  style={styles.input}
-                  value={formData.monthsRenting}
-                  onChangeText={(value) => updateFormData('monthsRenting', value)}
-                  placeholder="Enter number of months"
-                  keyboardType="numeric"
-                />
-              </View>
-            )}
-          </View>
-        );
-
-      case 'socioEconomic':
-        return (
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>3. Socio Economic</ThemedText>
-            <ThemedText style={styles.sectionSubtitle}>Socio Economic</ThemedText>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Type of Water Source</ThemedText>
-              <View style={styles.horizontalContainer}>
-                {waterSources.map((source) => (
-                  <TouchableOpacity
-                    key={source}
-                    style={[
-                      styles.chipButton,
-                      formData.waterSource === source && styles.chipButtonSelected
-                    ]}
-                    onPress={() => updateFormData('waterSource', source)}
-                  >
-                    <ThemedText style={[
-                      styles.chipText,
-                      formData.waterSource === source && styles.chipTextSelected
-                    ]}>
-                      {source}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Toilet Facility</ThemedText>
-              <View style={styles.horizontalContainer}>
-                {toiletFacilities.map((facility) => (
-                  <TouchableOpacity
-                    key={facility}
-                    style={[
-                      styles.chipButton,
-                      formData.toiletFacility === facility && styles.chipButtonSelected
-                    ]}
-                    onPress={() => updateFormData('toiletFacility', facility)}
-                  >
-                    <ThemedText style={[
-                      styles.chipText,
-                      formData.toiletFacility === facility && styles.chipTextSelected
-                    ]}>
-                      {facility}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Type of Waste Management</ThemedText>
-              <View style={styles.horizontalContainer}>
-                {wasteManagements.map((waste) => (
-                  <TouchableOpacity
-                    key={waste}
-                    style={[
-                      styles.chipButton,
-                      formData.wasteManagement === waste && styles.chipButtonSelected
-                    ]}
-                    onPress={() => updateFormData('wasteManagement', waste)}
-                  >
-                    <ThemedText style={[
-                      styles.chipText,
-                      formData.wasteManagement === waste && styles.chipTextSelected
-                    ]}>
-                      {waste}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>With Blinc Drainage?</ThemedText>
-              <View style={styles.radioGroup}>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => updateFormData('hasBlincDrainage', true)}
-                >
-                  <Ionicons
-                    name={formData.hasBlincDrainage === true ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={formData.hasBlincDrainage === true ? '#FF3D33' : '#9CA3AF'}
-                  />
-                  <ThemedText style={styles.radioText}>Yes</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => updateFormData('hasBlincDrainage', false)}
-                >
-                  <Ionicons
-                    name={formData.hasBlincDrainage === false ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={formData.hasBlincDrainage === false ? '#FF3D33' : '#9CA3AF'}
-                  />
-                  <ThemedText style={styles.radioText}>No</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'saveButton':
-        return (
-          <View style={styles.saveButtonsContainer}>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Ionicons name="save" size={20} color="#FFFFFF" />
-              <ThemedText style={styles.saveButtonText}>Save Household</ThemedText>
-            </TouchableOpacity>
-          </View>
-        );
-
-      case 'spacer':
-        return <View style={{ height: 50 }} />;
-
-      default:
-        return null;
+      if (response.ok) {
+        Alert.alert('Success', data.message || 'Household saved successfully!');
+        router.back();
+      } else {
+        Alert.alert('Error', data.message || 'Failed to save household.');
+      }
+    } catch (err) {
+      console.error('Network error:', err);
+      Alert.alert('Error', 'Network error occurred. Please try again.');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader title="Household Registration" />
-      <FlatList
-        data={createListData()}
-        renderItem={renderListItem}
-        keyExtractor={(_, index) => `item-${index}`}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.formCard}>
+            <ThemedText style={styles.formTitle}>Household Data</ThemedText>
+            <View style={styles.sectionDivider} />
+
+            {loadingDropdowns ? (
+              <ActivityIndicator size="large" color="#FF3D33" />
+            ) : (
+              <>
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>House Ownership Type</ThemedText>
+                  <View style={styles.picker}>
+                    <Picker
+                      selectedValue={formData.houseOwnershipId}
+                      onValueChange={(value) => updateFormData('houseOwnershipId', value)}
+                    >
+                      <Picker.Item label="Select House Ownership Type" value={null} />
+                      {houseOwnershipOptions.map((option, idx) => (
+                        <Picker.Item
+                          key={option.house_ownership_id ?? idx}
+                          label={option.description ?? `Option ${idx + 1}`}
+                          value={option.house_ownership_id}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>House Type</ThemedText>
+                  <View style={styles.picker}>
+                    <Picker
+                      selectedValue={formData.houseTypeId}
+                      onValueChange={(value) => updateFormData('houseTypeId', value)}
+                    >
+                      <Picker.Item label="Select House Type" value={null} />
+                      {houseTypeOptions.map((option, idx) => (
+                        <Picker.Item
+                          key={option.house_type_id ?? idx}
+                          label={option.description ?? `Option ${idx + 1}`}
+                          value={option.house_type_id}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>Sitio/Purok</ThemedText>
+                  <View style={styles.picker}>
+                    <Picker
+                      selectedValue={formData.sitioId}
+                      onValueChange={(value) => updateFormData('sitioId', value)}
+                    >
+                      <Picker.Item label="Select Sitio/Purok" value={null} />
+                      {sitioOptions.map((option, idx) => (
+                        <Picker.Item
+                          key={option.sitio_id ?? idx}
+                          label={option.sitio_name ?? `Sitio ${idx + 1}`}
+                          value={option.sitio_id}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
+                <View style={styles.inputGroupRow}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <ThemedText style={styles.label}>House Number</ThemedText>
+                    <TextInput
+                      style={styles.input}
+                      value={formData.houseNumber}
+                      onChangeText={(value) => updateFormData('houseNumber', value)}
+                      placeholder="House #"
+                    />
+                  </View>
+                  <View style={{ flex: 2 }}>
+                    <ThemedText style={styles.label}>Street</ThemedText>
+                    <TextInput
+                      style={styles.input}
+                      value={formData.street}
+                      onChangeText={(value) => updateFormData('street', value)}
+                      placeholder="Street"
+                    />
+                  </View>
+                </View>
+                <View style={styles.inputGroupRow}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <ThemedText style={styles.label}>Barangay</ThemedText>
+                    <View style={[styles.input, styles.fixedInput]}>
+                      <ThemedText style={styles.fixedInputText}>Cansaga</ThemedText>
+                    </View>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText style={styles.label}>City/Municipality</ThemedText>
+                    <View style={[styles.input, styles.fixedInput]}>
+                      <ThemedText style={styles.fixedInputText}>{formData.cityMunicipality}</ThemedText>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>Country</ThemedText>
+                  <View style={[styles.input, styles.fixedInput]}>
+                    <ThemedText style={styles.fixedInputText}>{formData.country}</ThemedText>
+                  </View>
+                </View>
+
+                <View style={styles.sectionDivider} />
+
+                {/* Section: Household Members */}
+                <View style={styles.sectionHeader}>
+                  <MaterialIcons name="people" size={20} color="#0ea5e9" />
+                  <ThemedText style={styles.sectionHeaderText}>Household Members</ThemedText>
+                </View>
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>Household Head</ThemedText>
+                  <Pressable style={[styles.input, styles.searchInput]} onPress={() => setShowHeadSearch(true)}>
+                    <Ionicons name="search" size={18} color="#888" style={{ marginRight: 8 }} />
+                    <ThemedText style={!selectedHead ? styles.placeholderText : undefined}>
+                      {selectedHead
+                        ? `${selectedHead.full_name} (${selectedHead.resident_code})`
+                        : 'Search & select household head'}
+                    </ThemedText>
+                  </Pressable>
+                  {selectedHead && (
+                    <View style={styles.selectedResidentCard}>
+                      <Ionicons name="person" size={20} color="#0ea5e9" style={{ marginRight: 8 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.selectedResidentName}>{selectedHead.full_name}</Text>
+                        <Text style={styles.selectedResidentCode}>Code: {selectedHead.resident_code}</Text>
+                        <Text style={styles.selectedResidentStatus}>
+                          {selectedHead.resident_status} | {selectedHead.sex} | DOB: {selectedHead.dob}
+                        </Text>
+                        {selectedHead.is_verified && (
+                          <Text style={styles.selectedResidentVerified}>
+                            <Ionicons name="checkmark-circle" size={14} color="#22c55e" /> Verified
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                </View>
+                <ResidentSearchModal
+                  visible={showHeadSearch}
+                  onClose={() => setShowHeadSearch(false)}
+                  onSelect={resident => {
+                    setSelectedHead(resident);
+                    updateFormData('householdHeadId', resident.resident_id);
+                  }}
+                />
+
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>Respondent</ThemedText>
+                  <Pressable style={[styles.input, styles.searchInput]} onPress={() => setShowRespondentSearch(true)}>
+                    <Ionicons name="search" size={18} color="#888" style={{ marginRight: 8 }} />
+                     <ThemedText style={!selectedHead ? styles.placeholderText : undefined}>
+                      {selectedRespondent
+                        ? `${selectedRespondent.full_name} (${selectedRespondent.resident_code})`
+                        : 'Search & select respondent'}
+                    </ThemedText>
+                  </Pressable>
+                  {selectedRespondent && (
+                    <View style={styles.selectedResidentCard}>
+                      <Ionicons name="person" size={20} color="#0ea5e9" style={{ marginRight: 8 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.selectedResidentName}>{selectedRespondent.full_name}</Text>
+                        <Text style={styles.selectedResidentCode}>Code: {selectedRespondent.resident_code}</Text>
+                        <Text style={styles.selectedResidentStatus}>
+                          {selectedRespondent.resident_status} | {selectedRespondent.sex} | DOB: {selectedRespondent.dob}
+                        </Text>
+                        {selectedRespondent.is_verified && (
+                          <Text style={styles.selectedResidentVerified}>
+                            <Ionicons name="checkmark-circle" size={14} color="#22c55e" /> Verified
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                </View>
+                <ResidentSearchModal
+                  visible={showRespondentSearch}
+                  onClose={() => setShowRespondentSearch(false)}
+                  onSelect={resident => {
+                    setSelectedRespondent(resident);
+                    updateFormData('respondentId', resident.resident_id);
+                  }}
+                />
+
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>Respondent Relationship to Household Head</ThemedText>
+                  <View style={styles.picker}>
+                    <Picker
+                      selectedValue={formData.respondentRthId}
+                      onValueChange={(value) => updateFormData('respondentRthId', value)}
+                    >
+                      <Picker.Item label="Select Relationship" value={null} />
+                      {relationshipOptions.map((option, idx) => (
+                        <Picker.Item
+                          key={option.rth_id ?? idx}
+                          label={option.description ?? `Relationship ${idx + 1}`}
+                          value={option.rth_id}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
+              </>
+            )}
+
+            <View style={styles.saveButtonsContainer}>
+              <Pressable style={styles.saveButton} onPress={handleSave}>
+                <Ionicons name="save" size={20} color="#FFFFFF" />
+                <ThemedText style={styles.saveButtonText}>Save Household</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create({  
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#f3f4f6',
   },
-  listContent: {
+  scrollContent: {
     padding: 16,
+    paddingBottom: 40,
+    minHeight: 1,
   },
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 32,
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
+  formTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF3D33',
+    marginBottom: 2,
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 16,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    marginTop: 18,
+    gap: 8,
+  },
+  sectionHeaderText: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#0ea5e9',
+    marginLeft: 4,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginVertical: 12,
+    borderRadius: 2,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 14,
+    width: '100%',
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+  inputGroupRow: {
+    flexDirection: 'row',
+    marginBottom: 14,
+    width: '100%',
+    gap: 0,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#e5e7eb',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  horizontalContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  chipButton: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  chipButtonSelected: {
-    backgroundColor: '#FF3D33',
-    borderColor: '#FF3D33',
-  },
-  chipText: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  chipTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  radioGroup: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  radioOption: {
+    padding: 12,
+    backgroundColor: '#f9fafb',
+    fontSize: 15,
+    width: '100%',
+    marginBottom: 2,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  radioText: {
-    fontSize: 16,
+  searchInput: {
+    backgroundColor: '#f1f5f9',
+    borderColor: '#0ea5e9',
+    borderWidth: 1,
+  },
+  picker: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+    width: '100%',
+    marginBottom: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+    height: 48,
+    justifyContent: 'center',
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
     color: '#374151',
+    marginBottom: 4,
+    marginLeft: 2,
+  },
+  fixedInput: {
+    backgroundColor: '#f0f9ff',
+    borderColor: '#0ea5e9',
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  fixedInputText: {
+    color: '#0c4a6e',
+    fontSize: 15,
+    fontWeight: '600',
   },
   saveButtonsContainer: {
     marginTop: 20,
-    marginHorizontal: 16,
+    alignItems: 'center',
   },
   saveButton: {
     backgroundColor: '#FF3D33',
-    flexDirection: 'row',
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
+    width: '100%',
     gap: 8,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 16,
-    fontWeight: '600',
+    marginLeft: 8,
   },
+  selectedResidentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    borderColor: '#0ea5e9',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 6,
+    marginBottom: 2,
+    shadowColor: '#0ea5e9',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  selectedResidentName: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#334155',
+  },
+  selectedResidentCode: {
+    fontSize: 13,
+    color: '#0ea5e9',
+    marginTop: 2,
+  },
+  selectedResidentStatus: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+  selectedResidentVerified: {
+    fontSize: 11,
+    color: '#22c55e',
+    marginTop: 2,
+    fontWeight: 'bold',
+  },
+  placeholderText: {
+    color: '#6b7280',
+  fontWeight: '400',
+},
 });
