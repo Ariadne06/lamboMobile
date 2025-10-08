@@ -265,10 +265,10 @@ export default function AddHousehold() {
 
                 <View style={styles.sectionDivider} />
 
-                {/* Section: Household Members */}
+                {/* Section: Household Info*/}
                 <View style={styles.sectionHeader}>
                   <MaterialIcons name="people" size={20} color="#0ea5e9" />
-                  <ThemedText style={styles.sectionHeaderText}>Household Members</ThemedText>
+                  <ThemedText style={styles.sectionHeaderText}>Household Info</ThemedText>
                 </View>
                 <View style={styles.inputGroup}>
                   <ThemedText style={styles.label}>Household Head</ThemedText>

@@ -23,8 +23,12 @@ interface Household {
   full_address: string;
   is_visited: boolean;
   date_visited: string | null;
+  visited_by: string | null;
   is_active: boolean;
+  deactivation_reason: string | null;
+  deactivated_by: string | null;
   created_by: string | null;
+  quarter_id: number | null;
 }
 
 export default function ViewHouseholds() {
@@ -74,6 +78,11 @@ export default function ViewHouseholds() {
     fetchHouseholds();
   };
 
+  const getQuarterText = (quarterId: number | null): string => {
+    if (!quarterId) return 'Live';
+    return `Q${quarterId}`;
+  };
+
   // Filter households based on search query (frontend filtering)
   const filteredHouseholds = households.filter((household) => {
     if (!searchQuery) return true;
@@ -85,6 +94,7 @@ export default function ViewHouseholds() {
       household.full_address?.toLowerCase().includes(query)
     );
   });
+  
 
   const renderHouseholdCard = ({ item }: { item: Household }) => (
     <TouchableOpacity
@@ -97,7 +107,18 @@ export default function ViewHouseholds() {
     >
       <View style={styles.cardHeader}>
         <View style={styles.householdInfo}>
-          <ThemedText style={styles.householdId}>{item.household_number}</ThemedText>
+          <View style={styles.headerRow}>
+            <ThemedText style={styles.householdId}>{item.household_number}</ThemedText>
+            <View style={[
+              styles.quarterBadge,
+              item.quarter_id ? styles.historicalBadge : styles.liveBadge
+            ]}>
+              <ThemedText style={styles.quarterText}>
+                {getQuarterText(item.quarter_id)}
+              </ThemedText>
+            </View>
+          </View>
+          {/* ✅ ADD THESE TWO LINES HERE (after the headerRow closes) */}
           <ThemedText style={styles.householdHead}>
             Head: {item.household_head || 'Not assigned'}
           </ThemedText>
@@ -161,6 +182,7 @@ export default function ViewHouseholds() {
       </SafeAreaView>
     );
   }
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -445,6 +467,28 @@ const styles = StyleSheet.create({
   clearButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  quarterBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  liveBadge: {
+    backgroundColor: '#3B82F6', // Blue for live data
+  },
+  historicalBadge: {
+    backgroundColor: '#8B5CF6', // Purple for historical data
+  },
+  quarterText: {
+    color: '#FFFFFF',
+    fontSize: 10,
     fontWeight: '600',
   },
 });
