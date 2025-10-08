@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -9,56 +9,111 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRegister } from '@/context/registercontext';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
+import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
 
 export default function RegisterStep3() {
   const { formData, setFormData } = useRegister();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<'available' | 'taken' | 'checking' | null>(null);
+  const [usernameMessage, setUsernameMessage] = useState('');
 
+  // Debounce timer for username checking
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.username && formData.username.trim().length >= 3) {
+        checkUsernameAvailability(formData.username.trim());
+      } else {
+        setUsernameStatus(null);
+        setUsernameMessage('');
+      }
+    }, 500); // Wait 500ms after user stops typing
 
-    const handleNext = () => {
+    return () => clearTimeout(timer);
+  }, [formData.username]);
+
+  const checkUsernameAvailability = async (username: string) => {
+    setIsCheckingUsername(true);
+    setUsernameStatus('checking');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CHECK_USERNAME}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      const data = await response.json();
+      
+      if (data.available) {
+        setUsernameStatus('available');
+        setUsernameMessage('✓ Username is available');
+      } else {
+        setUsernameStatus('taken');
+        setUsernameMessage('✗ Username is already taken');
+      }
+    } catch (error) {
+      console.error('Username check error:', error);
+      setUsernameStatus(null);
+      setUsernameMessage('Could not verify username');
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+  const handleNext = () => {
+    // Username validation
     if (!formData.username?.trim()) {
       Alert.alert('Missing Info', 'Please enter a username.');
       return;
     }
-    if (!formData.password?.trim()) {
-      Alert.alert('Missing Info', 'Please enter a password.');
-      return;
-    }
-    if (!formData.confirm_password?.trim()) {
-      Alert.alert('Missing Info', 'Please confirm your password.');
-      return;
-    }
     
-    // Username validation
     if (formData.username.length < 3) {
       Alert.alert('Invalid Username', 'Username must be at least 3 characters long.');
       return;
     }
-    
+
+    // Check if username is taken
+    if (usernameStatus === 'taken') {
+      Alert.alert('Username Taken', 'This username is already taken. Please choose another one.');
+      return;
+    }
+
     // Password validation
+    if (!formData.password?.trim()) {
+      Alert.alert('Missing Info', 'Please enter a password.');
+      return;
+    }
+    
     if (formData.password.length < 8) {
       Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
       return;
     }
     
-    // Password match validation
+    // Confirm password validation
+    if (!formData.confirm_password?.trim()) {
+      Alert.alert('Missing Info', 'Please confirm your password.');
+      return;
+    }
+    
     if (formData.password !== formData.confirm_password) {
       Alert.alert('Password Mismatch', 'Passwords do not match.');
       return;
     }
     
-    // All validations passed, proceed to next step
+    // All validations passed
     router.push('/(auth)/register/chooseDocument');
   };
-
-  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
@@ -73,14 +128,36 @@ export default function RegisterStep3() {
 
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Username</ThemedText>
-            <TextInput
-              placeholder="Username"
-              value={formData.username}
-              onChangeText={text => setFormData({ ...formData, username: text })}
-              style={styles.input}
-              autoCapitalize="none"
-            />
+            <View style={styles.usernameContainer}>
+              <TextInput
+                placeholder="Username"
+                value={formData.username}
+                onChangeText={text => setFormData({ ...formData, username: text })}
+                style={styles.input}
+                autoCapitalize="none"
+              />
+              {isCheckingUsername && (
+                <ActivityIndicator 
+                  size="small" 
+                  color="#FF3D33" 
+                  style={styles.checkingIndicator}
+                />
+              )}
+            </View>
+            
+            {/* Username availability message */}
+            {usernameMessage && !isCheckingUsername && (
+              <ThemedText 
+                style={[
+                  styles.usernameMessage,
+                  usernameStatus === 'available' ? styles.availableMessage : styles.takenMessage
+                ]}
+              >
+                {usernameMessage}
+              </ThemedText>
+            )}
           </View>
+
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Password</ThemedText>
             <View style={styles.passwordContainer}>
@@ -131,9 +208,14 @@ export default function RegisterStep3() {
               </TouchableOpacity>
             </View>
           </View>
+
           <Pressable
             onPress={handleNext}
-            style={styles.nextButton}
+            style={[
+              styles.nextButton,
+              usernameStatus === 'taken' && styles.disabledButton
+            ]}
+            disabled={usernameStatus === 'taken'}
           >
             <ThemedText style={styles.nextButtonText}>
               Next: Choose Document
@@ -178,16 +260,35 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     width: '100%',
   },
+  usernameContainer: {
+    position: 'relative',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 8,
     padding: 12,
+    paddingRight: 40,
     backgroundColor: '#f9fafb',
     fontSize: 15,
     width: '100%',
-    marginBottom: 2,
     textAlign: 'left',
+  },
+  checkingIndicator: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+  },
+  usernameMessage: {
+    fontSize: 13,
+    marginTop: 4,
+    marginLeft: 2,
+  },
+  availableMessage: {
+    color: '#10b981',
+  },
+  takenMessage: {
+    color: '#ef4444',
   },
   passwordContainer: {
     flexDirection: 'row' as const,
@@ -215,17 +316,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginLeft: 2,
   },
-  buttonContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    backgroundColor: 'transparent',
-  },
   nextButton: {
     backgroundColor: '#FF3D33',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 20,
+  },
+  disabledButton: {
+    backgroundColor: '#d1d5db',
   },
   nextButtonText: {
     color: '#fff',
