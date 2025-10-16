@@ -60,6 +60,28 @@ export default function LoginForm() {
         } else if (data.account_type === 'resident') {
             router.replace('/(tabs)/announcement');        
           }      
+        } else if (data.rejection_action === 'RESUBMISSION') {
+          router.push({
+            pathname: '/(auth)/register/rejectionResubmission',
+            params: {
+              message: data.message,
+              resident_id: data.resident_id,
+              identity_doc_type_id: data.identity_doc_type_id, 
+              identity_doc_type_name: data.identity_doc_type_name,
+              review_notes: data.review_notes,
+              username: data.username,
+            }
+          });
+        } else if (data.rejection_action === 'RE_REGISTER') {
+          router.push({
+            pathname: '/(auth)/register/rejectionReRegister',
+            params: {
+              message: data.message || 'Your application was rejected. Please re-register.',
+              resident_id: data.resident_id,
+              review_notes: data.review_notes,
+              username: data.username,
+            }
+          });
         } else if (data.status === 'not_verified') {
             router.push({
             pathname: '/(auth)/register/verificationStatus',
