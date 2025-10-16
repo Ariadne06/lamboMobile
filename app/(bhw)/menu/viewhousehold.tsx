@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -31,78 +31,23 @@ interface Household {
   quarter_id: number | null;
 }
 
-export default function ViewHouseholds() {
-  const router = useRouter();
-  const [households, setHouseholds] = useState<Household[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Fetch households on mount
-  useEffect(() => {
-    fetchHouseholds();
-  }, []);
-
-  const fetchHouseholds = async () => {
-    try {  
-      const response = await fetch(`${API_BASE_URL}/household_api/households/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setHouseholds(data.data || []);
-        console.log(` Loaded ${data.count} households`);
-      } else {
-        Alert.alert('Error', data.message || 'Failed to load households');
-      }
-    } catch (error) {
-      console.error(' Fetch error:', error);
-      Alert.alert('Error', 'Failed to load households. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchHouseholds();
-  };
-
-  const getQuarterText = (quarterId: number | null): string => {
+//  OPTIMIZED: Memoized household card component
+const HouseholdCard = memo(({ 
+  item, 
+  onPress 
+}: { 
+  item: Household; 
+  onPress: (id: number) => void;
+}) => {
+  const getQuarterText = useCallback((quarterId: number | null): string => {
     if (!quarterId) return 'Live';
     return `Q${quarterId}`;
-  };
+  }, []);
 
-  // Filter households based on search query (frontend filtering)
-  const filteredHouseholds = households.filter((household) => {
-    if (!searchQuery) return true;
-    
-    const query = searchQuery.toLowerCase();
-    return (
-      household.household_number?.toLowerCase().includes(query) ||
-      household.household_head?.toLowerCase().includes(query) ||
-      household.full_address?.toLowerCase().includes(query)
-    );
-  });
-  
-
-  const renderHouseholdCard = ({ item }: { item: Household }) => (
+  return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => {
-        // TODO: Navigate to household details
-        Alert.alert('Household Details', `Household #${item.household_number}\n\nHead: ${item.household_head || 'Not assigned'}\nAddress: ${item.full_address}`);
-      }}
+      onPress={() => onPress(item.household_id)}
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
@@ -118,11 +63,12 @@ export default function ViewHouseholds() {
               </ThemedText>
             </View>
           </View>
-          {/* ✅ ADD THESE TWO LINES HERE (after the headerRow closes) */}
           <ThemedText style={styles.householdHead}>
             Head: {item.household_head || 'Not assigned'}
           </ThemedText>
-          <ThemedText style={styles.location}>{item.full_address}</ThemedText>
+          <ThemedText style={styles.location} numberOfLines={2}>
+            {item.full_address}
+          </ThemedText>
         </View>
         <View style={styles.rightSection}>
           <View style={[
@@ -170,8 +116,195 @@ export default function ViewHouseholds() {
       </View>
     </TouchableOpacity>
   );
+}, (prevProps, nextProps) => {
+  //  Custom comparison function - only re-render if data changes
+  return (
+    prevProps.item.household_id === nextProps.item.household_id &&
+    prevProps.item.is_visited === nextProps.item.is_visited &&
+    prevProps.item.is_active === nextProps.item.is_active
+  );
+});
 
-  if (loading) {
+export default function ViewHouseholds() {
+  const router = useRouter();
+  
+  //  State management
+  const [households, setHouseholds] = useState<Household[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  //  Pagination state
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const LIMIT = 20;
+
+  //  Fetch households with pagination
+  const fetchHouseholds = useCallback(async (isLoadMore = false) => {
+    if (loadingMore && isLoadMore) return;
+    
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+
+    const currentOffset = isLoadMore ? offset : 0;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      console.log(` Fetching households: limit=${LIMIT}, offset=${currentOffset}`);
+      
+      const response = await fetch(
+        `${API_BASE_URL}/household_api/households/?limit=${LIMIT}&offset=${currentOffset}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        const newHouseholds = data.data || [];
+        
+        if (isLoadMore) {
+          setHouseholds(prev => [...prev, ...newHouseholds]);
+          setOffset(prev => prev + LIMIT);
+        } else {
+          setHouseholds(newHouseholds);
+          setOffset(LIMIT);
+        }
+
+        setHasMore(data.has_more !== false && newHouseholds.length === LIMIT);
+        
+        console.log(`Loaded ${newHouseholds.length} households`);
+      } else {
+        throw new Error(data.message || 'Failed to load households');
+      }
+    } catch (error: any) {
+      console.error('Fetch error:', error);
+      
+      if (error.name === 'AbortError') {
+        Alert.alert(
+          'Connection Timeout',
+          'The request took too long. Please check your internet connection and try again.'
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          `Failed to load households:\n${error.message || 'Unknown error'}\n\nPlease try again.`
+        );
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      setLoadingMore(false);
+      clearTimeout(timeoutId);
+    }
+  }, [offset, loadingMore]);
+
+  //  Initial fetch
+  useEffect(() => {
+    fetchHouseholds(false);
+  }, []);
+
+  //  Handle refresh
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    setOffset(0);
+    setHasMore(true);
+    fetchHouseholds(false);
+  }, [fetchHouseholds]);
+
+  //  Handle load more
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !loading && !loadingMore) {
+      fetchHouseholds(true);
+    }
+  }, [hasMore, loading, loadingMore, fetchHouseholds]);
+
+  //  Memoized navigation handler
+  const handleCardPress = useCallback((householdId: number) => {
+    router.push(`/(bhw)/household/${householdId}`);
+  }, [router]);
+
+  //  Client-side filtering (only for search)
+  const filteredHouseholds = useCallback(() => {
+    if (!searchQuery) return households;
+    
+    const query = searchQuery.toLowerCase();
+    return households.filter((household) => 
+      household.household_number?.toLowerCase().includes(query) ||
+      household.household_head?.toLowerCase().includes(query) ||
+      household.full_address?.toLowerCase().includes(query)
+    );
+  }, [households, searchQuery])();
+
+  //  Memoized render item
+  const renderHouseholdCard = useCallback(({ item }: { item: Household }) => (
+    <HouseholdCard item={item} onPress={handleCardPress} />
+  ), [handleCardPress]);
+
+  //  Key extractor
+  const keyExtractor = useCallback((item: Household) => 
+    `household-${item.household_id}`, 
+  []);
+
+  // Get item layout for better performance
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: 180, 
+    offset: 180 * index,
+    index,
+  }), []);
+
+  // Render footer
+  const renderFooter = useCallback(() => {
+    if (!loadingMore) return null;
+    
+    return (
+      <View style={styles.footerLoading}>
+        <ActivityIndicator size="small" color="#FF3D33" />
+        <ThemedText style={styles.footerText}>Loading more...</ThemedText>
+      </View>
+    );
+  }, [loadingMore]);
+
+  // Render empty component
+  const renderEmpty = useCallback(() => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="home-outline" size={80} color="#D1D5DB" />
+      <ThemedText style={styles.emptyText}>
+        {searchQuery 
+          ? 'No households found matching your search' 
+          : households.length === 0
+            ? 'No households registered yet'
+            : 'No households match your filter'}
+      </ThemedText>
+      {searchQuery && (
+        <TouchableOpacity 
+          style={styles.clearButton}
+          onPress={() => setSearchQuery('')}
+        >
+          <ThemedText style={styles.clearButtonText}>Clear Search</ThemedText>
+        </TouchableOpacity>
+      )}
+    </View>
+  ), [searchQuery, households.length]);
+
+  if (loading && households.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <CustomHeader title="Household List" />
@@ -182,7 +315,6 @@ export default function ViewHouseholds() {
       </SafeAreaView>
     );
   }
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -194,7 +326,7 @@ export default function ViewHouseholds() {
           <View style={styles.stats}>
             <View style={styles.statItem}>
               <ThemedText style={styles.statNumber}>{households.length}</ThemedText>
-              <ThemedText style={styles.statLabel}>Total</ThemedText>
+              <ThemedText style={styles.statLabel}>Loaded</ThemedText>
             </View>
             <View style={styles.statItem}>
               <ThemedText style={[styles.statNumber, { color: '#10B981' }]}>
@@ -228,43 +360,35 @@ export default function ViewHouseholds() {
           </View>
         </View>
 
-        {/* Household List */}
-        {filteredHouseholds.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="home-outline" size={80} color="#D1D5DB" />
-            <ThemedText style={styles.emptyText}>
-              {searchQuery 
-                ? 'No households found matching your search' 
-                : households.length === 0
-                  ? 'No households registered yet'
-                  : 'No households match your filter'}
-            </ThemedText>
-            {searchQuery && (
-              <TouchableOpacity 
-                style={styles.clearButton}
-                onPress={() => setSearchQuery('')}
-              >
-                <ThemedText style={styles.clearButtonText}>Clear Search</ThemedText>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <FlatList
-            data={filteredHouseholds}
-            renderItem={renderHouseholdCard}
-            keyExtractor={(item) => item.household_id.toString()}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={['#FF3D33']}
-                tintColor="#FF3D33"
-              />
-            }
-          />
-        )}
+        {/* PTIMIZED FlatList */}
+        <FlatList
+          data={filteredHouseholds}
+          renderItem={renderHouseholdCard}
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#FF3D33']}
+              tintColor="#FF3D33"
+            />
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={renderEmpty}
+          // Performance optimizations
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+          windowSize={10}
+          removeClippedSubviews={true}
+          // Prevent unnecessary re-renders
+          extraData={searchQuery}
+        />
       </View>
     </SafeAreaView>
   );
@@ -338,6 +462,15 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 20,
   },
+  footerLoading: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  footerText: {
+    marginTop: 8,
+    color: '#6B7280',
+    fontSize: 14,
+  },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -349,6 +482,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    minHeight: 170, 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -359,6 +493,12 @@ const styles = StyleSheet.create({
   householdInfo: {
     flex: 1,
     marginRight: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   householdId: {
     fontSize: 16,
@@ -469,22 +609,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
   quarterBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   liveBadge: {
-    backgroundColor: '#3B82F6', // Blue for live data
+    backgroundColor: '#3B82F6',
   },
   historicalBadge: {
-    backgroundColor: '#8B5CF6', // Purple for historical data
+    backgroundColor: '#8B5CF6',
   },
   quarterText: {
     color: '#FFFFFF',

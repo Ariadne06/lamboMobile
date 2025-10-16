@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -26,21 +26,43 @@ export default function RegisterStep3() {
   const [usernameStatus, setUsernameStatus] = useState<'available' | 'taken' | 'checking' | null>(null);
   const [usernameMessage, setUsernameMessage] = useState('');
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+
   // Debounce timer for username checking
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (formData.username && formData.username.trim().length >= 3) {
-        checkUsernameAvailability(formData.username.trim());
-      } else {
-        setUsernameStatus(null);
-        setUsernameMessage('');
-      }
-    }, 500); // Wait 500ms after user stops typing
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-    return () => clearTimeout(timer);
+    // Reset if username is too short
+    if (!formData.username || formData.username.trim().length < 3) {
+      setUsernameStatus(null);
+      setUsernameMessage('');
+      setIsCheckingUsername(false);
+      return;
+    }
+
+    // Debounce: wait 1 second after user stops typing
+    const timer = setTimeout(() => {
+      checkUsernameAvailability(formData.username.trim());
+    }, 1000); // 
+
+    return () => {
+      clearTimeout(timer);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [formData.username]);
 
+
+
   const checkUsernameAvailability = async (username: string) => {
+    
+    abortControllerRef.current = new AbortController();
+ 
     setIsCheckingUsername(true);
     setUsernameStatus('checking');
     
@@ -51,6 +73,7 @@ export default function RegisterStep3() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username }),
+        signal: abortControllerRef.current.signal, 
       });
 
       const data = await response.json();
@@ -62,7 +85,12 @@ export default function RegisterStep3() {
         setUsernameStatus('taken');
         setUsernameMessage('✗ Username is already taken');
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Username check was cancelled');
+        return;
+      }
+      
       console.error('Username check error:', error);
       setUsernameStatus(null);
       setUsernameMessage('Could not verify username');
@@ -70,6 +98,7 @@ export default function RegisterStep3() {
       setIsCheckingUsername(false);
     }
   };
+
 
   const handleNext = () => {
     // Username validation

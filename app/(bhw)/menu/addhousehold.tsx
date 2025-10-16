@@ -19,6 +19,7 @@ import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
 import ResidentSearchModal from './residentSearchModal';
+import { getUserSession } from '@/utils/session'; 
 
 interface FormData {
   houseOwnershipId: number | null;
@@ -46,9 +47,7 @@ export default function AddHousehold() {
   const [showRespondentSearch, setShowRespondentSearch] = useState(false);
   const [selectedHead, setSelectedHead] = useState<any>(null);
   const [selectedRespondent, setSelectedRespondent] = useState<any>(null);
-
-  // Example: get personnel_id from context/session
-  const user = { personnel_id: 1 }; // Replace with actual user context
+  const [userSession, setUserSession] = useState<any>(null);
 
   const [formData, setFormData] = useState<FormData>({
     houseOwnershipId: null,
@@ -65,28 +64,35 @@ export default function AddHousehold() {
 
   // Fetch dropdown data
   useEffect(() => {
-    const fetchDropdowns = async () => {
-      try {
-        const [ownershipRes, houseTypeRes, sitioRes, relationshipRes] = await Promise.all([
-          fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSEHOLD_OWNERSHIP_TYPE}`),
-          fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSE_TYPE}`),
-          fetch(`${API_BASE_URL}${API_ENDPOINTS.SITIOS}`),
-          fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSEHOLD_RELATIONSHIP}`),
-        ]);
-        setHouseOwnershipOptions(await ownershipRes.json());
-        setHouseTypeOptions(await houseTypeRes.json());
-        setSitioOptions(await sitioRes.json());
-        const relJson = await relationshipRes.json();
-        const relArray = Array.isArray(relJson) ? relJson : relJson.results || relJson.data || [];
-        setRelationshipOptions(relArray);
-      } catch (err) {
-        Alert.alert('Error', 'Failed to load dropdowns. Please check your internet or API endpoints.');
-      } finally {
-        setLoadingDropdowns(false);
-      }
-    };
-    fetchDropdowns();
+    loadUserAndFetchDropdowns();
   }, []);
+
+  const loadUserAndFetchDropdowns = async () => {
+    try {
+      // Load user session first
+      const session = await getUserSession();
+      setUserSession(session);
+      
+      // Then fetch dropdowns
+      const [ownershipRes, houseTypeRes, sitioRes, relationshipRes] = await Promise.all([
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSEHOLD_OWNERSHIP_TYPE}`),
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSE_TYPE}`),
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.SITIOS}`),
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.HOUSEHOLD_RELATIONSHIP}`),
+      ]);
+      setHouseOwnershipOptions(await ownershipRes.json());
+      setHouseTypeOptions(await houseTypeRes.json());
+      setSitioOptions(await sitioRes.json());
+      const relJson = await relationshipRes.json();
+      const relArray = Array.isArray(relJson) ? relJson : relJson.results || relJson.data || [];
+      setRelationshipOptions(relArray);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      Alert.alert('Error', 'Failed to load form data. Please try again.');
+    } finally {
+      setLoadingDropdowns(false);
+    }
+  };
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -110,20 +116,23 @@ export default function AddHousehold() {
 
   const saveHousehold = async () => {
     try {
+
+      const personnelId = userSession?.user_id || 1;
+
       const payload = {
         house_ownership_id: formData.houseOwnershipId,
         house_type_id: formData.houseTypeId,
         barangay: 'Cansaga',
         city_municipality: formData.cityMunicipality,
         sitio_id: formData.sitioId,
-        personnel_id: user.personnel_id,
+        personnel_id: personnelId,
         house_number: formData.houseNumber || '',
         street: formData.street || '',
         country: formData.country || 'Philippines',
         household_head_id: formData.householdHeadId ? parseInt(formData.householdHeadId) : '',
         respondent_id: formData.respondentId ? parseInt(formData.respondentId) : '',
         respondent_rth_id: formData.respondentRthId || '',
-        performed_by_id: user.personnel_id,
+        performed_by_id: personnelId,
         performed_by_type: 'personnel',
         enforce_bhw_assignment: false,
       };
