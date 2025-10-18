@@ -87,6 +87,13 @@ export default function BHWTabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="family/[family_id]/member/[member_id]/update-general-health"
+        options={{
+          href: null,
+        }}
+      />
+
     </Tabs>
     
   );

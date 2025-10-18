@@ -51,6 +51,16 @@ export default function FamilyDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log(' Family detail screen focused - fetching latest data');
+      setLoading(false);
+      fetchFamilyDetails();
+      return () => {};
+    }, [id])
+  );
+
+
   // Centralized back press handler
   const handleBackPress = () => {
     if (family?.household_id) {
@@ -74,23 +84,32 @@ export default function FamilyDetailScreen() {
     }, [family])
   );
 
-  // Fetch on mount/id change
-  useEffect(() => {
-    fetchFamilyDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+ 
+ 
 
   const fetchFamilyDetails = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/household_api/families/${id}/details/`);
+      //  Add cache-busting parameter to force fresh data
+      const timestamp = new Date().getTime();
+      const response = await fetch(
+        `${API_BASE_URL}/household_api/families/${id}/details/?t=${timestamp}`
+      );
       const data = await response.json();
 
       if (data?.success) {
         const familyData: FamilyDetail = {
           ...data.data,
-          members_json: Array.isArray(data.data?.members_json) ? data.data.members_json : null,
+          members_json: Array.isArray(data.data?.members_json) 
+            ? data.data.members_json 
+            : null,
         };
         setFamily(familyData);
+        
+        console.log(' Family data refreshed:', {
+          family_id: familyData.family_id,
+          members_count: familyData.members_json?.length || 0,
+          members_with_gh: familyData.members_json?.filter(m => m.has_gh === 1).length || 0
+        });
       } else {
         Alert.alert('Error', data?.message || 'Failed to load family details');
       }

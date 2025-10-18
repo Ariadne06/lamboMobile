@@ -65,6 +65,14 @@ export default function HouseholdDetailScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
+      console.log('🔄 Household detail screen focused - fetching latest data');
+      fetchHouseholdDetails();
+      return () => {};
+    }, [id])
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
       const onBackPress = () => {
         router.push('/(bhw)/menu/viewhousehold');
         return true;

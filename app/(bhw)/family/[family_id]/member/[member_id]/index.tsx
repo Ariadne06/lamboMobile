@@ -26,6 +26,7 @@ interface FamilyMemberDetail {
   rtf_name: string;
   resident_id: number;
   resident_full_name: string;
+  sex: string; // ✅ 'Male' or 'Female'
   philhealthid_number: string | null;
   membership_type: 'M' | 'D' | null;
   philhealth_category_id: number | null;
@@ -35,6 +36,23 @@ interface FamilyMemberDetail {
   date_added: string;
   added_by_id: number;
   added_by_full_name: string;
+  
+  // ✅ General Health fields
+  has_general_health: boolean;
+  gh_id: number | null;
+  gh_class_id: number | null;
+  gh_class_description: string | null;
+  gh_medical_history_ids: number[] | null;
+  gh_medical_history_names: string[] | null;
+  gh_age: number | null;
+  
+  // ✅ Female-only fields
+  gh_last_menstrual_period: string | null;
+  gh_fp_method_yn: boolean | null;
+  gh_fp_method_id: number | null;
+  gh_fp_method_name: string | null;
+  gh_fp_status_id: number | null;
+  gh_fp_status_name: string | null;
 }
 
 export default function FamilyMemberDetailScreen() {
@@ -52,6 +70,14 @@ export default function FamilyMemberDetailScreen() {
     fetchMemberDetails();
   }, [member_id]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log(' Member detail screen focused - fetching latest data');
+      fetchMemberDetails();
+      return () => {}; 
+    }, [member_id])
+  );
+
   const handleBackPress = () => {
     router.push(`/(bhw)/family/${family_id}` as any);
   };
@@ -62,12 +88,7 @@ export default function FamilyMemberDetailScreen() {
         handleBackPress();
         return true;
       };
-
-      const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        onBackPress
-      );
-
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => backHandler.remove();
     }, [family_id])
   );
@@ -98,13 +119,11 @@ export default function FamilyMemberDetailScreen() {
     fetchMemberDetails();
   };
 
-  // ✅ Helper function for membership type
   const getMembershipTypeText = (type: 'M' | 'D' | null): string => {
     if (!type) return 'Not specified';
     return type === 'M' ? 'Member (Principal)' : 'Dependent';
   };
 
-  // ✅ Helper function for formatting dates
   const formatDate = (dateString: string): string => {
     try {
       return new Date(dateString).toLocaleDateString('en-US', {
@@ -181,6 +200,22 @@ export default function FamilyMemberDetailScreen() {
           <View style={styles.infoGroup}>
             <ThemedText style={styles.label}>Resident ID</ThemedText>
             <ThemedText style={styles.value}>#{member.resident_id}</ThemedText>
+          </View>
+
+          {/* ✅ Sex Display */}
+          <View style={styles.infoGroup}>
+            <ThemedText style={styles.label}>Sex</ThemedText>
+            <View style={[
+              styles.sexBadge,
+              member.sex?.toLowerCase() === 'female' ? styles.femaleBadge : styles.maleBadge
+            ]}>
+              <Ionicons 
+                name={member.sex?.toLowerCase() === 'female' ? 'female' : 'male'} 
+                size={14} 
+                color="#FFFFFF" 
+              />
+              <ThemedText style={styles.sexText}>{member.sex || 'Not specified'}</ThemedText>
+            </View>
           </View>
         </View>
 
@@ -293,6 +328,133 @@ export default function FamilyMemberDetailScreen() {
           </View>
         </View>
 
+       {/* 🏥 General Health Profile Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Ionicons name="medkit" size={24} color="#8B5CF6" />
+          <ThemedText style={[styles.cardTitle, { color: '#8B5CF6' }]}>
+            General Health Profile
+          </ThemedText>
+        </View>
+
+        {/* ✅ Show existing GH data OR "Add GH" button */}
+        {member.has_general_health ? (
+          <>
+            {/* ✅ Display existing General Health data */}
+            <View style={styles.ghDataContainer}>
+              {/* Population Group */}
+              <View style={styles.ghRow}>
+                <ThemedText style={styles.ghLabel}>Population Group:</ThemedText>
+                <ThemedText style={styles.ghValue}>
+                  {member.gh_class_description || 'N/A'}
+                </ThemedText>
+              </View>
+
+              {/* Age - ✅ FIXED: Added {member.gh_age} */}
+              {member.gh_age && (
+                <View style={styles.ghRow}>
+                  <ThemedText style={styles.ghLabel}>Age at Record:</ThemedText>
+                  <ThemedText style={styles.ghValue}>{member.gh_age} years</ThemedText>
+                </View>
+              )}
+
+              {/* ✅ Medical History - COMPLETE VERSION */}
+              {member.gh_medical_history_names && 
+              Array.isArray(member.gh_medical_history_names) && 
+              member.gh_medical_history_names.length > 0 && (
+                <View style={styles.ghRow}>
+                  <ThemedText style={styles.ghLabel}>Medical History:</ThemedText>
+                  <View style={styles.medicalHistoryList}>
+                    {member.gh_medical_history_names.map((name, index) => (
+                      <View key={index} style={styles.medicalHistoryItem}>
+                        <Ionicons name="alert-circle" size={12} color="#EF4444" />
+                        <ThemedText style={styles.medicalHistoryText}>
+                          {name || 'Unknown condition'}
+                        </ThemedText>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* ✅ Female-specific fields - COMPLETE VERSION */}
+              {member.sex?.toLowerCase() === 'female' && (
+                <>
+                  {/* LMP */}
+                  {member.gh_last_menstrual_period && (
+                    <View style={styles.ghRow}>
+                      <ThemedText style={styles.ghLabel}>Last Menstrual Period:</ThemedText>
+                      <ThemedText style={styles.ghValue}>
+                        {new Date(member.gh_last_menstrual_period).toLocaleDateString()}
+                      </ThemedText>
+                    </View>
+                  )}
+
+                  {/* FP Usage */}
+                  {member.gh_fp_method_yn !== null && (
+                    <View style={styles.ghRow}>
+                      <ThemedText style={styles.ghLabel}>Using Family Planning:</ThemedText>
+                      <ThemedText style={styles.ghValue}>
+                        {member.gh_fp_method_yn ? 'Yes' : 'No'}
+                      </ThemedText>
+                    </View>
+                  )}
+
+                  {/* FP Method */}
+                  {member.gh_fp_method_yn && member.gh_fp_method_name && (
+                    <View style={styles.ghRow}>
+                      <ThemedText style={styles.ghLabel}>FP Method:</ThemedText>
+                      <ThemedText style={styles.ghValue}>
+                        {member.gh_fp_method_name}
+                      </ThemedText>
+                    </View>
+                  )}
+
+                  {/* FP Status */}
+                  {member.gh_fp_method_yn && member.gh_fp_status_name && (
+                    <View style={styles.ghRow}>
+                      <ThemedText style={styles.ghLabel}>FP Status:</ThemedText>
+                      <ThemedText style={styles.ghValue}>
+                        {member.gh_fp_status_name}
+                      </ThemedText>
+                    </View>
+                  )}
+                </>
+              )}
+
+              {/* ✅ Update Button */}
+              <Pressable
+                style={styles.updateGHButton}
+                onPress={() => router.push(
+                  `/(bhw)/family/${family_id}/member/${member_id}/update-general-health` as any
+                )}
+              >
+                <Ionicons name="create-outline" size={18} color="#8B5CF6" />
+                <ThemedText style={styles.updateGHButtonText}>
+                  Update General Health
+                </ThemedText>
+              </Pressable>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* ✅ "Add GH" button - only shown if no GH exists */}
+            <Pressable
+              style={styles.addGHButton}
+              onPress={() => router.push(
+                `/(bhw)/family/${family_id}/member/${member_id}/add-general-health` as any
+              )}
+            >
+              <Ionicons name="add-circle" size={20} color="#8B5CF6" />
+              <ThemedText style={styles.addGHButtonText}>
+                Add General Health Record
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={20} color="#8B5CF6" />
+            </Pressable>
+          </>
+        )}
+      </View>
+
         {/* 📅 Record Information Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -321,28 +483,6 @@ export default function FamilyMemberDetailScreen() {
               </ThemedText>
             </View>
           </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="medkit" size={24} color="#8B5CF6" />
-            <ThemedText style={[styles.cardTitle, { color: '#8B5CF6' }]}>
-              General Health Profile
-            </ThemedText>
-          </View>
-
-          <Pressable
-            style={styles.addGHButton}
-            onPress={() => router.push(
-              `/(bhw)/family/${family_id}/member/${member_id}/add-general-health` as any
-            )}
-          >
-            <Ionicons name="add-circle" size={20} color="#8B5CF6" />
-            <ThemedText style={styles.addGHButtonText}>
-              Add General Health Record
-            </ThemedText>
-            <Ionicons name="chevron-forward" size={20} color="#8B5CF6" />
-          </Pressable>
         </View>
 
         {/* Bottom Spacing */}
@@ -457,6 +597,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  sexBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  femaleBadge: {
+    backgroundColor: '#EC4899',
+  },
+  maleBadge: {
+    backgroundColor: '#3B82F6',
+  },
+  sexText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   relationshipItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -503,21 +663,77 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     borderRadius: 8,
   },
+  
+  // ✅ General Health Display Styles
+  ghDataContainer: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+  },
+  ghRow: {
+    marginBottom: 10,
+  },
+  ghLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  ghValue: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  medicalHistoryList: {
+    marginTop: 4,
+    gap: 6,
+  },
+  medicalHistoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  medicalHistoryText: {
+    fontSize: 12,
+    color: '#EF4444',
+    fontWeight: '600',
+  },
+  updateGHButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F3FF',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#8B5CF6',
+    marginTop: 12,
+    gap: 8,
+  },
+  updateGHButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8B5CF6',
+  },
   addGHButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  backgroundColor: '#F5F3FF',
-  padding: 14,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#8B5CF6',
-},
-addGHButtonText: {
-  flex: 1,
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#8B5CF6',
-  marginLeft: 8,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F3FF',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#8B5CF6',
+  },
+  addGHButtonText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8B5CF6',
+    marginLeft: 8,
+  },
 });
