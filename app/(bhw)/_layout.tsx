@@ -44,6 +44,57 @@ export default function BHWTabLayout() {
           tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
         }}
       />
+
+       <Tabs.Screen
+        name="household/[id]"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="household/[household_id]/add-family"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="family/[id]"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="family/[family_id]/add-member"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="family/[family_id]/member/[member_id]/add-general-health"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="family/[family_id]/member/[member_id]/index"
+        options={{
+          href: null, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="family/[family_id]/member/[member_id]/update-general-health"
+        options={{
+          href: null,
+        }}
+      />
+
     </Tabs>
+    
   );
 }

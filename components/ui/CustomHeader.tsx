@@ -7,13 +7,31 @@ import { ThemedText } from '@/components/ThemedText';
 type CustomHeaderProps = {
   title: string;
   showBackButton?: boolean;
+  onBackPress?: () => void;
 };
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 24;
 const HEADER_HEIGHT = 56;
 
-export default function CustomHeader({ title, showBackButton = true }: CustomHeaderProps) {
+export default function CustomHeader({ 
+  title, 
+  showBackButton = true,
+  onBackPress
+}: CustomHeaderProps) {
   const router = useRouter();
+
+ 
+  const handleBackPress = () => {
+    if (onBackPress) {
+      onBackPress();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      // Fallback: navigate to menu if no history
+      router.back();
+    }
+  };
+
   return (
     <View style={styles.safeArea}>
       <StatusBar 
@@ -25,7 +43,7 @@ export default function CustomHeader({ title, showBackButton = true }: CustomHea
         <View style={styles.header}>
           {showBackButton ? (
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={handleBackPress} 
               style={styles.backButton}
               accessibilityLabel="Go back"
             >
