@@ -345,7 +345,7 @@ export default function AddGeneralHealthScreen() {
             <>
               <View style={styles.sectionSubheader}>
                 <Ionicons name="female" size={16} color="#EC4899" />
-                <ThemedText style={styles.sectionSubtitle}>Women's Health</ThemedText>
+                <ThemedText style={styles.sectionSubtitle}>Women&apos;s Health</ThemedText>
               </View>
 
               {/* LMP */}

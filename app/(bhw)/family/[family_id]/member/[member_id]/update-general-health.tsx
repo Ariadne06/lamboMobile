@@ -292,7 +292,7 @@ export default function UpdateGeneralHealthScreen() {
           {isFemale && (
             <>
               <View style={styles.divider} />
-              <ThemedText style={styles.sectionSubtitle}>Women's Health</ThemedText>
+              <ThemedText style={styles.sectionSubtitle}>Women&apos;s Health</ThemedText>
 
               {/* LMP */}
               <View style={styles.inputGroup}>

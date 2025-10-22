@@ -250,6 +250,8 @@ const FamilyCard = memo(({
   );
 });
 
+FamilyCard.displayName = 'FamilyCard';
+
 export default function HouseholdDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

@@ -125,6 +125,8 @@ const HouseholdCard = memo(({
   );
 });
 
+HouseholdCard.displayName = 'HouseholdCard';
+
 export default function ViewHouseholds() {
   const router = useRouter();
   
