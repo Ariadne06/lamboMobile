@@ -600,7 +600,7 @@ export default function AddGeneralHealthScreen() {
         {/* Women's Health Section */}
         {isFemale && (
           <View style={[styles.card, styles.womensHealthCard]}>
-            <ThemedText style={styles.cardTitle}>Women's Health</ThemedText>
+            <ThemedText style={styles.cardTitle}>Women&apos;s Health</ThemedText>
             <ThemedText style={styles.cardDescription}>
               Reproductive health information
             </ThemedText>

@@ -473,7 +473,7 @@ export default function FamilyMemberDetailScreen() {
                   <View style={styles.womensHealthTitleRow}>
                     <Ionicons name="flower-outline" size={16} color={theme.colors.female} />
                     <ThemedText style={[styles.sectionTitle, { color: theme.colors.female }]}>
-                      Women's Health
+                      Women&apos;s Health
                     </ThemedText>
                   </View>
 

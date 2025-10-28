@@ -600,7 +600,7 @@ export default function AddFamilyScreen() {
             {selectedRespondent && selectedFamilyHead && !isSamePerson && (
               <View style={styles.fieldContainer}>
                 <ThemedText style={styles.fieldLabel}>
-                  Respondent's Relationship to Family Head
+                  Respondent&apos;s Relationship to Family Head
                   <ThemedText style={styles.required}> *</ThemedText>
                 </ThemedText>
                 <ThemedText style={styles.fieldHint}>

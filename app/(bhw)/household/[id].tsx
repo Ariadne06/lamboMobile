@@ -649,7 +649,7 @@ export default function HouseholdDetailScreen() {
           </View>
           <ThemedText style={styles.emptyTitle}>No Data for Selected Quarter</ThemedText>
           <ThemedText style={styles.emptySubtext}>
-            This household doesn't have any records for the selected quarter. Try selecting a different quarter or check back later.
+            This household doesn&apos;t have any records for the selected quarter. Try selecting a different quarter or check back later.
           </ThemedText>
         </View>
       </SafeAreaView>

@@ -531,7 +531,7 @@ export default function UpdateFamilyScreen() {
             {/* Respondent Relationship to Household Head */}
             <View style={styles.fieldContainer}>
               <ThemedText style={styles.fieldLabel}>
-                Respondent's Relationship to Household Head <ThemedText style={styles.required}>*</ThemedText>
+                Respondent&apos;s Relationship to Household Head <ThemedText style={styles.required}>*</ThemedText>
               </ThemedText>
               <View style={[styles.pickerContainer, errors.respondent_rth_id && styles.fieldError]}>
                 <Ionicons name="people" size={18} color={theme.colors.textMuted} />
@@ -622,7 +622,7 @@ export default function UpdateFamilyScreen() {
             {/* Family Head Relationship to Household Head */}
             <View style={styles.fieldContainer}>
               <ThemedText style={styles.fieldLabel}>
-                Family Head's Relationship to Household Head <ThemedText style={styles.required}>*</ThemedText>
+                Family Head&apos;s Relationship to Household Head <ThemedText style={styles.required}>*</ThemedText>
               </ThemedText>
               <View style={[styles.pickerContainer, errors.head_rth_id && styles.fieldError]}>
                 <Ionicons name="people" size={18} color={theme.colors.textMuted} />
@@ -648,7 +648,7 @@ export default function UpdateFamilyScreen() {
             {!isSamePerson && (
               <View style={styles.fieldContainer}>
                 <ThemedText style={styles.fieldLabel}>
-                  Respondent's Relationship to Family Head <ThemedText style={styles.required}>*</ThemedText>
+                  Respondent&apos;s Relationship to Family Head <ThemedText style={styles.required}>*</ThemedText>
                 </ThemedText>
                 <View style={[styles.pickerContainer, errors.respondent_relationship_to_fh_id && styles.fieldError]}>
                   <Ionicons name="people" size={18} color={theme.colors.textMuted} />

@@ -90,6 +90,8 @@ const FilterModal = memo(({
     setTempFilters(clearedFilters);
   };
 
+FilterModal.displayName = 'FilterModal';
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.filterModalOverlay}>
@@ -499,7 +501,7 @@ export default function ViewHouseholds() {
             {searchQuery && (
               <View style={styles.filterChip}>
                 <Ionicons name="search" size={10} color="#64748b" />
-                <Text style={styles.filterChipText}>"{searchQuery}"</Text>
+                <Text style={styles.filterChipText}>&quot;{searchQuery}&quot;</Text>
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
                   <Ionicons name="close" size={10} color="#64748b" />
                 </TouchableOpacity>
