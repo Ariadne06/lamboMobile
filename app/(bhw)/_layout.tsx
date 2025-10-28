@@ -60,6 +60,13 @@ export default function BHWTabLayout() {
       />
 
       <Tabs.Screen
+        name="household/[household_id]/update-household"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
         name="family/[id]"
         options={{
           href: null,
@@ -94,6 +101,12 @@ export default function BHWTabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="family/[family_id]/update-family"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
     
   );

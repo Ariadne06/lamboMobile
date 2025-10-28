@@ -135,7 +135,9 @@ const theme = {
 };
 
 export default function FamilyDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, refresh } = useLocalSearchParams<{ id: string; refresh?: string }>();
+
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 360;
@@ -155,6 +157,13 @@ export default function FamilyDetailScreen() {
       return () => {};
     }, [id])
   );
+
+  useEffect(() => {
+    if (refresh) {
+      console.log('🔄 Force refreshing family details due to update');
+      fetchFamilyDetails();
+    }
+  }, [refresh]);
 
   const handleBackPress = () => {
     if (family?.household_id) {
@@ -480,9 +489,46 @@ export default function FamilyDetailScreen() {
                 styles.statRowValue,
                 { color: family.is_visited ? theme.colors.success : theme.colors.warning }
               ]}>
-                {family.is_visited ? 'Completed' : 'Pending'}
+                {family.is_visited ? 'Visited' : 'Pending'}
               </ThemedText>
             </View>
+
+            {/* Visit Details - Show when visited */}
+            {family.is_visited && (family.date_visited || family.visited_by_full_name) && (
+              <>
+                {family.date_visited && (
+                  <View style={styles.quickStatRow}>
+                    <View style={styles.statRowLeft}>
+                      <View style={[styles.statIconSmall, { backgroundColor: theme.colors.infoLight }]}>
+                        <Ionicons name="calendar-outline" size={12} color={theme.colors.info} />
+                      </View>
+                      <ThemedText style={styles.statRowLabel}>Date Visited</ThemedText>
+                    </View>
+                    <ThemedText style={styles.statRowValue}>
+                      {new Date(family.date_visited).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric', 
+                        year: 'numeric'
+                      })}
+                    </ThemedText>
+                  </View>
+                )}
+                
+                {family.visited_by_full_name && (
+                  <View style={styles.quickStatRow}>
+                    <View style={styles.statRowLeft}>
+                      <View style={[styles.statIconSmall, { backgroundColor: theme.colors.primaryLight }]}>
+                        <Ionicons name="person-outline" size={12} color={theme.colors.primary} />
+                      </View>
+                      <ThemedText style={styles.statRowLabel}>Visited By</ThemedText>
+                    </View>
+                    <ThemedText style={styles.statRowValue}>
+                      {family.visited_by_full_name}
+                    </ThemedText>
+                  </View>
+                )}
+              </>
+            )}
           </View>
 
           {/* GH Progress */}
@@ -692,126 +738,91 @@ export default function FamilyDetailScreen() {
         </View>
 
         {/* 5. VISIT MANAGEMENT */}
-        <View style={styles.sectionCard}>
-          {family.is_visited ? (
-            // Visited state
-            <View style={styles.visitedSection}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIcon}>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
-                </View>
-                <ThemedText style={[styles.sectionTitle, { color: theme.colors.success }]}>
-                  Visit Completed
-                </ThemedText>
+        {family && !family.is_visited && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                <Ionicons name="options-outline" size={20} color={theme.colors.primary} />
               </View>
-              
-              <View style={styles.visitDetails}>
-                <View style={styles.visitDetailItem}>
-                  <Ionicons name="calendar-outline" size={16} color={theme.colors.success} />
-                  <View style={styles.visitDetailContent}>
-                    <ThemedText style={styles.visitDetailLabel}>Date</ThemedText>
-                    <ThemedText style={styles.visitDetailValue} numberOfLines={2} ellipsizeMode="tail">
-                      {family.date_visited
-                        ? new Date(family.date_visited).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
-                        : 'Not available'}
+              <ThemedText style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+                Family Actions
+              </ThemedText>
+            </View>
+
+            <View style={styles.actionButtonsContainer}>
+              {/* Update Family Button */}
+              <Pressable
+                style={styles.actionButton}
+                onPress={() => router.push(`/(bhw)/family/${id}/update-family` as any)}
+              >
+                <View style={styles.actionButtonContent}>
+                  <View style={styles.actionButtonIcon}>
+                    <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.actionButtonTextContainer}>
+                    <ThemedText style={styles.actionButtonTitle}>Update Family</ThemedText>
+                    <ThemedText style={styles.actionButtonSubtitle}>
+                      Edit family information
                     </ThemedText>
                   </View>
+                  <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
                 </View>
+              </Pressable>
 
-                {family.visited_by_full_name && (
-                  <View style={styles.visitDetailItem}>
-                    <Ionicons name="person-outline" size={16} color={theme.colors.success} />
-                    <View style={styles.visitDetailContent}>
-                      <ThemedText style={styles.visitDetailLabel}>Visited by</ThemedText>
-                      <ThemedText style={styles.visitDetailValue} numberOfLines={1} ellipsizeMode="tail">
-                        {family.visited_by_full_name}
-                      </ThemedText>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
-          ) : (
-            // Not visited state
-            <View style={styles.markVisitSection}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryLight }]}>
-                  <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} />
-                </View>
-                <ThemedText style={[styles.sectionTitle, { color: theme.colors.primary }]}>
-                  Mark Visit
-                </ThemedText>
-              </View>
-
-              {checkingReadiness ? (
-                <View style={styles.checkingContainer}>
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
-                  <ThemedText style={styles.checkingText}>Checking readiness...</ThemedText>
-                </View>
-              ) : (
-                <>
-                  {ghReadiness && (
-                    <View style={styles.readinessContainer}>
-                      <View style={styles.readinessHeader}>
-                        <Ionicons 
-                          name={ghReadiness.ready ? "shield-checkmark-outline" : "alert-circle-outline"} 
-                          size={16} 
-                          color={ghReadiness.ready ? theme.colors.success : theme.colors.danger}
-                        />
-                        <ThemedText style={[
-                          styles.readinessText,
-                          { color: ghReadiness.ready ? theme.colors.success : theme.colors.danger }
-                        ]}>
-                          {ghReadiness.ready ? 'Ready to mark as visited' : 'Cannot mark as visited'}
-                        </ThemedText>
-                      </View>
-                      
-                      {!ghReadiness.ready && (
-                        <View style={styles.warningContainer}>
-                          <Ionicons name="information-circle-outline" size={14} color={theme.colors.warning} />
-                          <ThemedText style={styles.warningText}>
-                            Complete GH records for all members first
-                          </ThemedText>
-                        </View>
-                      )}
-                    </View>
-                  )}
-
-                  <Pressable
-                    style={[
-                      styles.markVisitButton,
-                      (!ghReadiness?.ready || markingVisit) && styles.markVisitButtonDisabled
-                    ]}
-                    onPress={handleMarkFamilyVisited}
-                    disabled={!ghReadiness?.ready || markingVisit}
-                  >
-                    {markingVisit ? (
+              {/* Mark as Visited Button with GH Validation */}
+              <Pressable
+                style={[
+                  styles.actionButton,
+                  styles.markVisitActionButton,
+                  (!ghReadiness?.ready || markingVisit || checkingReadiness) && styles.actionButtonDisabled
+                ]}
+                onPress={handleMarkFamilyVisited}
+                disabled={!ghReadiness?.ready || markingVisit || checkingReadiness}
+              >
+                <View style={styles.actionButtonContent}>
+                  <View style={[styles.actionButtonIcon, styles.markVisitIcon]}>
+                    {markingVisit || checkingReadiness ? (
                       <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
-                      <>
-                        <Ionicons
-                          name={ghReadiness?.ready ? "checkmark-circle-outline" : "lock-closed-outline"}
-                          size={18}
-                          color="#FFFFFF"
-                        />
-                        <ThemedText style={styles.markVisitButtonText}>
-                          {ghReadiness?.ready ? 'Mark as Visited' : 'Complete GH Data First'}
-                        </ThemedText>
-                      </>
+                      <Ionicons 
+                        name={ghReadiness?.ready ? "checkmark-circle" : "lock-closed"} 
+                        size={20} 
+                        color="#FFFFFF" 
+                      />
                     )}
-                  </Pressable>
-                </>
-              )}
+                  </View>
+                  <View style={styles.actionButtonTextContainer}>
+                    <ThemedText style={[styles.actionButtonTitle, styles.markVisitTitle]}>
+                      {markingVisit ? 'Marking as Visited...' : 
+                      checkingReadiness ? 'Checking...' :
+                      ghReadiness?.ready ? 'Mark as Visited' : 'Complete GH Data First'}
+                    </ThemedText>
+                    <ThemedText style={[styles.actionButtonSubtitle, styles.markVisitSubtitle]}>
+                      {ghReadiness?.ready ? 'Complete family visit' : 
+                      `${ghReadiness?.missing_count || 0} member(s) need GH records`}
+                    </ThemedText>
+                  </View>
+                  {!markingVisit && !checkingReadiness && (
+                    <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                  )}
+                </View>
+              </Pressable>
             </View>
-          )}
-        </View>
+
+            {/* GH Readiness Details */}
+            {!ghReadiness?.ready && ghReadiness?.missing_count > 0 && (
+              <View style={styles.ghWarningCard}>
+                <View style={styles.ghWarningHeader}>
+                  <Ionicons name="information-circle-outline" size={16} color={theme.colors.warning} />
+                  <ThemedText style={styles.ghWarningTitle}>Missing General Health Records</ThemedText>
+                </View>
+                <ThemedText style={styles.ghWarningText}>
+                  {ghReadiness.missing_count} member(s) need their General Health data completed for the current quarter before this family can be marked as visited.
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        )}
         
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -1507,5 +1518,80 @@ statIconSmall: {
   justifyContent: 'center',
   alignItems: 'center',
   flexShrink: 0,
+},
+actionButtonsContainer: {
+  gap: theme.spacing.md,
+},
+actionButton: {
+  backgroundColor: theme.colors.borderLight,
+  borderRadius: theme.radius.lg,
+  overflow: 'hidden',
+},
+markVisitActionButton: {
+  backgroundColor: theme.colors.success,
+},
+actionButtonDisabled: {
+  backgroundColor: theme.colors.textLight,
+  opacity: 0.6,
+},
+actionButtonContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: theme.spacing.lg,
+  gap: theme.spacing.lg,
+},
+actionButtonIcon: {
+  width: 40,
+  height: 40,
+  borderRadius: theme.radius.lg,
+  backgroundColor: theme.colors.primaryLight,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+markVisitIcon: {
+  backgroundColor: 'rgba(255,255,255,0.2)',
+},
+actionButtonTextContainer: {
+  flex: 1,
+  gap: 2,
+},
+actionButtonTitle: {
+  fontSize: 15,
+  fontWeight: '700',
+  color: theme.colors.textPrimary,
+},
+markVisitTitle: {
+  color: '#FFFFFF',
+},
+actionButtonSubtitle: {
+  fontSize: 13,
+  color: theme.colors.textSecondary,
+},
+markVisitSubtitle: {
+  color: 'rgba(255,255,255,0.8)',
+},
+ghWarningCard: {
+  backgroundColor: theme.colors.warningLight,
+  borderWidth: 1,
+  borderColor: theme.colors.warningBorder,
+  borderRadius: theme.radius.lg,
+  padding: theme.spacing.lg,
+  marginTop: theme.spacing.md,
+},
+ghWarningHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: theme.spacing.sm,
+  marginBottom: theme.spacing.sm,
+},
+ghWarningTitle: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: theme.colors.warning,
+},
+ghWarningText: {
+  fontSize: 12,
+  color: theme.colors.warning,
+  lineHeight: 16,
 },
 });

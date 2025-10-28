@@ -1,37 +1,183 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
+  View,
   FlatList,
-  TextInput,
+  Text,
+  TouchableOpacity,
   ActivityIndicator,
   Alert,
-  RefreshControl,
+  Modal,
+  Dimensions,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { router } from 'expo-router';
 import CustomHeader from '@/components/ui/CustomHeader';
+import { ThemedText } from '@/components/ThemedText';
 import { API_BASE_URL } from '@/constants/apiConfig';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface Household {
   household_id: number;
   household_number: string;
-  household_head: string | null;
+  household_head: string;
   full_address: string;
   is_visited: boolean;
   date_visited: string | null;
   visited_by: string | null;
-  is_active: boolean;
-  deactivation_reason: string | null;
-  deactivated_by: string | null;
+  quarter_id: number;
   created_by: string | null;
-  quarter_id: number | null;
+  is_active: boolean;
 }
 
-//  OPTIMIZED: Memoized household card component
+interface Quarter {
+  quarter_id: number;
+  quarter_name: string;
+  quarter_number: number;
+  year: number;
+}
+
+interface Sitio {
+  sitio_id: number;
+  sitio_name: string;
+}
+
+// Minimal Filter Modal Component
+const FilterModal = memo(({ 
+  visible, 
+  onClose, 
+  filters, 
+  onFiltersChange,
+  quarters,
+  sitios 
+}: {
+  visible: boolean;
+  onClose: () => void;
+  filters: {
+    quarter_id: number | null;
+    sitio_name: string | null;
+    visit_status: 'all' | 'visited' | 'not_visited';
+  };
+  onFiltersChange: (filters: any) => void;
+  quarters: Quarter[];
+  sitios: string[];
+}) => {
+  const [tempFilters, setTempFilters] = useState(filters);
+
+  useEffect(() => {
+    if (visible) {
+      setTempFilters(filters);
+    }
+  }, [visible, filters]);
+
+  const applyFilters = () => {
+    onFiltersChange(tempFilters);
+    onClose();
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      quarter_id: null,
+      sitio_name: null,
+      visit_status: 'all' as const,
+    };
+    setTempFilters(clearedFilters);
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.filterModalOverlay}>
+        <View style={styles.filterModalContent}>
+          {/* Simple Header */}
+          <View style={styles.filterModalHeader}>
+            <Text style={styles.filterModalTitle}>Filters</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.filterModalBody}>
+            {/* Quarter Filter */}
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Quarter</Text>
+              <View style={styles.filterPickerContainer}>
+                <Picker
+                  selectedValue={tempFilters.quarter_id}
+                  onValueChange={(value) => setTempFilters(prev => ({ ...prev, quarter_id: value }))}
+                  style={styles.filterPicker}
+                >
+                  <Picker.Item label="All Quarters" value={null} />
+                  {quarters.map(quarter => (
+                    <Picker.Item 
+                      key={quarter.quarter_id}
+                      label={`${quarter.quarter_name}`}
+                      value={quarter.quarter_id}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {/* Sitio Filter */}
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Sitio</Text>
+              <View style={styles.filterPickerContainer}>
+                <Picker
+                  selectedValue={tempFilters.sitio_name}
+                  onValueChange={(value) => setTempFilters(prev => ({ ...prev, sitio_name: value }))}
+                  style={styles.filterPicker}
+                >
+                  <Picker.Item label="All Sitios" value={null} />
+                  {sitios.map((sitio, index) => (
+                    <Picker.Item 
+                      key={`${sitio}-${index}`}
+                      label={sitio}
+                      value={sitio}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            {/* Visit Status Filter */}
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Visit Status</Text>
+              <View style={styles.filterPickerContainer}>
+                <Picker
+                  selectedValue={tempFilters.visit_status}
+                  onValueChange={(value) => setTempFilters(prev => ({ ...prev, visit_status: value }))}
+                  style={styles.filterPicker}
+                >
+                  <Picker.Item label="All Status" value="all" />
+                  <Picker.Item label="Visited" value="visited" />
+                  <Picker.Item label="Not Visited" value="not_visited" />
+                </Picker>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Simple Actions */}
+          <View style={styles.filterModalActions}>
+            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+              <Text style={styles.applyButtonText}>Apply</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+});
+
+// Enhanced Household Card Component
 const HouseholdCard = memo(({ 
   item, 
   onPress 
@@ -39,10 +185,19 @@ const HouseholdCard = memo(({
   item: Household; 
   onPress: (id: number) => void;
 }) => {
-  const getQuarterText = useCallback((quarterId: number | null): string => {
-    if (!quarterId) return 'Live';
-    return `Q${quarterId}`;
-  }, []);
+  const sitioName = useMemo(() => {
+    const addressParts = item.full_address.split(', ');
+    return addressParts.length >= 2 ? addressParts[1].replace('Sitio ', '') : '';
+  }, [item.full_address]);
+
+  const formatDate = useMemo(() => {
+    if (!item.date_visited) return null;
+    return new Date(item.date_visited).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }, [item.date_visited]);
 
   return (
     <TouchableOpacity
@@ -50,269 +205,224 @@ const HouseholdCard = memo(({
       onPress={() => onPress(item.household_id)}
       activeOpacity={0.7}
     >
+      {/* Header */}
       <View style={styles.cardHeader}>
-        <View style={styles.householdInfo}>
-          <View style={styles.headerRow}>
-            <ThemedText style={styles.householdId}>{item.household_number}</ThemedText>
-            <View style={[
-              styles.quarterBadge,
-              item.quarter_id ? styles.historicalBadge : styles.liveBadge
-            ]}>
-              <ThemedText style={styles.quarterText}>
-                {getQuarterText(item.quarter_id)}
-              </ThemedText>
-            </View>
+        <View style={styles.cardLeft}>
+          <View style={styles.iconContainer}>
+            <MaterialIcons name="home" size={18} color="#0ea5e9" />
           </View>
-          <ThemedText style={styles.householdHead}>
-            Head: {item.household_head || 'Not assigned'}
-          </ThemedText>
-          <ThemedText style={styles.location} numberOfLines={2}>
-            {item.full_address}
-          </ThemedText>
+          <View>
+            <Text style={styles.householdNumber}>{item.household_number}</Text>
+            <Text style={styles.householdHead} numberOfLines={1}>
+              {item.household_head || 'No head assigned'}
+            </Text>
+          </View>
         </View>
-        <View style={styles.rightSection}>
-          <View style={[
-            styles.statusBadge, 
-            item.is_visited ? styles.visitedBadge : styles.notVisitedBadge
-          ]}>
-            <Ionicons 
-              name={item.is_visited ? 'checkmark-circle' : 'time-outline'} 
-              size={14} 
-              color="#FFFFFF" 
-            />
-            <ThemedText style={styles.statusText}>
-              {item.is_visited ? 'Visited' : 'Pending'}
-            </ThemedText>
-          </View>
-          {item.is_active ? (
-            <View style={styles.activeBadge}>
-              <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
-              <ThemedText style={styles.activeText}>Active</ThemedText>
+        
+        <View style={[
+          styles.statusBadge,
+          item.is_visited ? styles.visitedBadge : styles.pendingBadge
+        ]}>
+          <Ionicons 
+            name={item.is_visited ? "checkmark-circle" : "time-outline"} 
+            size={12} 
+            color="#ffffff" 
+          />
+          <Text style={styles.statusText}>
+            {item.is_visited ? 'Visited' : 'Pending'}
+          </Text>
+        </View>
+      </View>
+
+      {/* Address */}
+      <View style={styles.addressContainer}>
+        <Ionicons name="location-outline" size={14} color="#64748b" />
+        <Text style={styles.address} numberOfLines={2}>
+          {item.full_address}
+        </Text>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.cardFooter}>
+        <View style={styles.footerRow}>
+          {/* Added by */}
+          {item.created_by && (
+            <View style={styles.createdInfo}>
+              <Ionicons name="person-add-outline" size={12} color="#64748b" />
+              <Text style={styles.createdByText}>Added by {item.created_by}</Text>
             </View>
-          ) : (
-            <View style={styles.inactiveBadge}>
-              <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
-              <ThemedText style={styles.inactiveText}>Inactive</ThemedText>
+          )}
+          
+          {/* Date visited (if visited) - Now same color as "added by" */}
+          {item.is_visited && formatDate && (
+            <View style={styles.dateInfo}>
+              <Ionicons name="calendar-outline" size={12} color="#64748b" />
+              <Text style={styles.dateText}>{formatDate}</Text>
             </View>
           )}
         </View>
       </View>
-      
-      <View style={styles.cardFooter}>
-        <View style={styles.dateInfo}>
-          <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-          <ThemedText style={styles.dateText}>
-            {item.date_visited 
-              ? `Visited: ${new Date(item.date_visited).toLocaleDateString()}` 
-              : 'Not visited yet'}
-          </ThemedText>
-        </View>
-        {item.created_by && (
-          <View style={styles.creatorInfo}>
-            <Ionicons name="person-outline" size={14} color="#6B7280" />
-            <ThemedText style={styles.creatorText}>By: {item.created_by}</ThemedText>
-          </View>
-        )}
-      </View>
     </TouchableOpacity>
   );
 }, (prevProps, nextProps) => {
-  //  Custom comparison function - only re-render if data changes
-  return (
-    prevProps.item.household_id === nextProps.item.household_id &&
-    prevProps.item.is_visited === nextProps.item.is_visited &&
-    prevProps.item.is_active === nextProps.item.is_active
-  );
+  return prevProps.item.household_id === nextProps.item.household_id &&
+         prevProps.item.is_visited === nextProps.item.is_visited &&
+         prevProps.item.date_visited === nextProps.item.date_visited;
 });
 
 HouseholdCard.displayName = 'HouseholdCard';
 
 export default function ViewHouseholds() {
-  const router = useRouter();
-  
-  //  State management
-  const [households, setHouseholds] = useState<Household[]>([]);
+  const [allHouseholds, setAllHouseholds] = useState<Household[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [quarters, setQuarters] = useState<Quarter[]>([]);
+  const [sitios, setSitios] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  //  Pagination state
-  const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
-  const LIMIT = 20;
 
-  //  Fetch households with pagination
-  const fetchHouseholds = useCallback(async (isLoadMore = false) => {
-    if (loadingMore && isLoadMore) return;
-    
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
+  const [filters, setFilters] = useState({
+    quarter_id: null as number | null,
+    sitio_name: null as string | null,
+    visit_status: 'all' as 'all' | 'visited' | 'not_visited',
+  });
+
+  // Memoized filtered households with search
+  const filteredHouseholds = useMemo(() => {
+    let filtered = [...allHouseholds];
+
+    // Apply search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(h => 
+        h.household_number.toLowerCase().includes(query) ||
+        h.household_head?.toLowerCase().includes(query) ||
+        h.full_address.toLowerCase().includes(query) ||
+        h.visited_by?.toLowerCase().includes(query) ||
+        h.created_by?.toLowerCase().includes(query)
+      );
     }
 
-    const currentOffset = isLoadMore ? offset : 0;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    // Apply filters
+    if (filters.quarter_id) {
+      filtered = filtered.filter(h => h.quarter_id === filters.quarter_id);
+    }
 
-    try {
-      console.log(` Fetching households: limit=${LIMIT}, offset=${currentOffset}`);
-      
-      const response = await fetch(
-        `${API_BASE_URL}/household_api/households/?limit=${LIMIT}&offset=${currentOffset}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          signal: controller.signal,
-        }
+    if (filters.sitio_name) {
+      filtered = filtered.filter(h => 
+        h.full_address.toLowerCase().includes(filters.sitio_name!.toLowerCase())
       );
+    }
 
-      clearTimeout(timeoutId);
+    if (filters.visit_status !== 'all') {
+      filtered = filtered.filter(h => {
+        if (filters.visit_status === 'visited') return h.is_visited;
+        if (filters.visit_status === 'not_visited') return !h.is_visited;
+        return true;
+      });
+    }
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+    return filtered;
+  }, [allHouseholds, filters, searchQuery]);
 
-      const data = await response.json();
+  // Active filter count (including search)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.quarter_id) count++;
+    if (filters.sitio_name) count++;
+    if (filters.visit_status !== 'all') count++;
+    if (searchQuery.trim()) count++;
+    return count;
+  }, [filters, searchQuery]);
 
-      if (data.success) {
-        const newHouseholds = data.data || [];
-        
-        if (isLoadMore) {
-          setHouseholds(prev => [...prev, ...newHouseholds]);
-          setOffset(prev => prev + LIMIT);
-        } else {
-          setHouseholds(newHouseholds);
-          setOffset(LIMIT);
-        }
+  // Load all data
+  const loadAllData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        setHasMore(data.has_more !== false && newHouseholds.length === LIMIT);
-        
-        console.log(`Loaded ${newHouseholds.length} households`);
-      } else {
-        throw new Error(data.message || 'Failed to load households');
-      }
-    } catch (error: any) {
-      console.error('Fetch error:', error);
+      const householdResponse = await fetch(
+        `${API_BASE_URL}/household_api/households/?limit=1000&offset=0`
+      );
       
-      if (error.name === 'AbortError') {
-        Alert.alert(
-          'Connection Timeout',
-          'The request took too long. Please check your internet connection and try again.'
-        );
-      } else {
-        Alert.alert(
-          'Error',
-          `Failed to load households:\n${error.message || 'Unknown error'}\n\nPlease try again.`
-        );
+      if (!householdResponse.ok) {
+        throw new Error(`HTTP ${householdResponse.status}`);
       }
+
+      const householdData = await householdResponse.json();
+      
+      const [quartersRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/household_api/quarters/`)
+      ]);
+
+      const quartersData = await quartersRes.json();
+
+      setAllHouseholds(householdData.data || []);
+      setQuarters(quartersData || []);
+      
+      // Extract unique sitios
+      const uniqueSitios = new Set<string>();
+      householdData.data?.forEach((household: Household) => {
+        const addressParts = household.full_address.split(', ');
+        if (addressParts.length >= 2) {
+          const sitio = addressParts[1].replace('Sitio ', '');
+          uniqueSitios.add(sitio);
+        }
+      });
+      setSitios(Array.from(uniqueSitios).sort());
+
+    } catch (error) {
+      console.error('❌ Failed to load households:', error);
+      Alert.alert('Error', 'Failed to load households. Please try again.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-      clearTimeout(timeoutId);
     }
-  }, [offset, loadingMore]);
-
-  //  Initial fetch
-  useEffect(() => {
-    fetchHouseholds(false);
   }, []);
 
-  //  Handle refresh
-  const handleRefresh = useCallback(() => {
+  // Handlers
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    setOffset(0);
-    setHasMore(true);
-    fetchHouseholds(false);
-  }, [fetchHouseholds]);
+    await loadAllData();
+    setRefreshing(false);
+  }, [loadAllData]);
 
-  //  Handle load more
-  const handleLoadMore = useCallback(() => {
-    if (hasMore && !loading && !loadingMore) {
-      fetchHouseholds(true);
-    }
-  }, [hasMore, loading, loadingMore, fetchHouseholds]);
+  const handleHouseholdPress = useCallback((householdId: number) => {
+    router.push(`/(bhw)/household/${householdId}` as any);
+  }, []);
 
-  //  Memoized navigation handler
-  const handleCardPress = useCallback((householdId: number) => {
-    router.push(`/(bhw)/household/${householdId}`);
-  }, [router]);
+  const handleFiltersChange = useCallback((newFilters: typeof filters) => {
+    setFilters(newFilters);
+  }, []);
 
-  //  Client-side filtering (only for search)
-  const filteredHouseholds = useCallback(() => {
-    if (!searchQuery) return households;
-    
-    const query = searchQuery.toLowerCase();
-    return households.filter((household) => 
-      household.household_number?.toLowerCase().includes(query) ||
-      household.household_head?.toLowerCase().includes(query) ||
-      household.full_address?.toLowerCase().includes(query)
-    );
-  }, [households, searchQuery])();
+  const clearAllFilters = useCallback(() => {
+    setFilters({ 
+      quarter_id: null, 
+      sitio_name: null, 
+      visit_status: 'all' 
+    });
+    setSearchQuery('');
+  }, []);
 
-  //  Memoized render item
-  const renderHouseholdCard = useCallback(({ item }: { item: Household }) => (
-    <HouseholdCard item={item} onPress={handleCardPress} />
-  ), [handleCardPress]);
+  // Load data on mount
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
 
-  //  Key extractor
+  // Render functions
+  const renderHousehold = useCallback(({ item }: { item: Household }) => (
+    <HouseholdCard item={item} onPress={handleHouseholdPress} />
+  ), [handleHouseholdPress]);
+
   const keyExtractor = useCallback((item: Household) => 
-    `household-${item.household_id}`, 
-  []);
+    item.household_id.toString(), []
+  );
 
-  // Get item layout for better performance
-  const getItemLayout = useCallback((data: any, index: number) => ({
-    length: 180, 
-    offset: 180 * index,
-    index,
-  }), []);
-
-  // Render footer
-  const renderFooter = useCallback(() => {
-    if (!loadingMore) return null;
-    
-    return (
-      <View style={styles.footerLoading}>
-        <ActivityIndicator size="small" color="#FF3D33" />
-        <ThemedText style={styles.footerText}>Loading more...</ThemedText>
-      </View>
-    );
-  }, [loadingMore]);
-
-  // Render empty component
-  const renderEmpty = useCallback(() => (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="home-outline" size={80} color="#D1D5DB" />
-      <ThemedText style={styles.emptyText}>
-        {searchQuery 
-          ? 'No households found matching your search' 
-          : households.length === 0
-            ? 'No households registered yet'
-            : 'No households match your filter'}
-      </ThemedText>
-      {searchQuery && (
-        <TouchableOpacity 
-          style={styles.clearButton}
-          onPress={() => setSearchQuery('')}
-        >
-          <ThemedText style={styles.clearButtonText}>Clear Search</ThemedText>
-        </TouchableOpacity>
-      )}
-    </View>
-  ), [searchQuery, households.length]);
-
-  if (loading && households.length === 0) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <CustomHeader title="Household List" />
+        <CustomHeader title="Households" showBackButton={false} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF3D33" />
-          <ThemedText style={styles.loadingText}>Loading households...</ThemedText>
+          <ActivityIndicator size="large" color="#0ea5e9" />
+          <Text style={styles.loadingText}>Loading households...</Text>
         </View>
       </SafeAreaView>
     );
@@ -320,78 +430,193 @@ export default function ViewHouseholds() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Household List" />
+      <CustomHeader title="Households" showBackButton={false} />
       
-      <View style={styles.content}>
-        <View style={styles.header}>
-          {/* Stats Summary */}
-          <View style={styles.stats}>
-            <View style={styles.statItem}>
-              <ThemedText style={styles.statNumber}>{households.length}</ThemedText>
-              <ThemedText style={styles.statLabel}>Loaded</ThemedText>
-            </View>
-            <View style={styles.statItem}>
-              <ThemedText style={[styles.statNumber, { color: '#10B981' }]}>
-                {households.filter(h => h.is_visited).length}
-              </ThemedText>
-              <ThemedText style={styles.statLabel}>Visited</ThemedText>
-            </View>
-            <View style={styles.statItem}>
-              <ThemedText style={[styles.statNumber, { color: '#F59E0B' }]}>
-                {households.filter(h => !h.is_visited).length}
-              </ThemedText>
-              <ThemedText style={styles.statLabel}>Pending</ThemedText>
-            </View>
-          </View>
-          
-          {/* Search Bar */}
+      {/* Minimal Search and Actions */}
+      <View style={styles.headerSection}>
+        {/* Compact Search Row */}
+        <View style={styles.searchRow}>
           <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+            <Ionicons name="search" size={14} color="#64748b" />
             <TextInput
               style={styles.searchInput}
               placeholder="Search households..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#94a3b8"
+              returnKeyType="search"
             />
             {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={14} color="#64748b" />
               </TouchableOpacity>
             ) : null}
           </View>
+
+          {/* Filter Button beside search */}
+          <TouchableOpacity 
+            style={[
+              styles.filterButton,
+              activeFilterCount > 0 && styles.filterButtonActive
+            ]} 
+            onPress={() => setShowFilters(true)}
+          >
+            <Ionicons 
+              name="options-outline" 
+              size={16} 
+              color={activeFilterCount > 0 ? "#ffffff" : "#0ea5e9"} 
+            />
+            {/* red circle filter badge */}
+            {/* {activeFilterCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{activeFilterCount}</Text>
+              </View>
+            )} */}
+          </TouchableOpacity>
         </View>
 
-        {/* PTIMIZED FlatList */}
-        <FlatList
-          data={filteredHouseholds}
-          renderItem={renderHouseholdCard}
-          keyExtractor={keyExtractor}
-          getItemLayout={getItemLayout}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={['#FF3D33']}
-              tintColor="#FF3D33"
-            />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmpty}
-          // Performance optimizations
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={50}
-          initialNumToRender={10}
-          windowSize={10}
-          removeClippedSubviews={true}
-          // Prevent unnecessary re-renders
-          extraData={searchQuery}
-        />
+        {/* Add Button - Now matches header color */}
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={() => router.push('/(bhw)/menu/addhousehold' as any)}
+        >
+          <Ionicons name="add" size={16} color="#ffffff" />
+          <Text style={styles.addButtonText}>Add Household</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Active Filters */}
+      {activeFilterCount > 0 && (
+        <View style={styles.activeFilters}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersScroll}
+          >
+            {searchQuery && (
+              <View style={styles.filterChip}>
+                <Ionicons name="search" size={10} color="#64748b" />
+                <Text style={styles.filterChipText}>"{searchQuery}"</Text>
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close" size={10} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.quarter_id && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>
+                  {quarters.find(q => q.quarter_id === filters.quarter_id)?.quarter_name}
+                </Text>
+                <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, quarter_id: null }))}>
+                  <Ionicons name="close" size={10} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.sitio_name && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>{filters.sitio_name}</Text>
+                <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, sitio_name: null }))}>
+                  <Ionicons name="close" size={10} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.visit_status !== 'all' && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>
+                  {filters.visit_status === 'visited' ? 'Visited' : 'Pending'}
+                </Text>
+                <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, visit_status: 'all' }))}>
+                  <Ionicons name="close" size={10} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+            )}
+            <TouchableOpacity style={styles.clearAllChip} onPress={clearAllFilters}>
+              <Text style={styles.clearAllChipText}>Clear All</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Simple Stats */}
+      <View style={styles.stats}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{filteredHouseholds.length}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: '#10b981' }]}>
+            {filteredHouseholds.filter(h => h.is_visited).length}
+          </Text>
+          <Text style={styles.statLabel}>Visited</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: '#f59e0b' }]}>
+            {filteredHouseholds.filter(h => !h.is_visited).length}
+          </Text>
+          <Text style={styles.statLabel}>Pending</Text>
+        </View>
+      </View>
+
+      {/* Households List */}
+      <FlatList
+        data={filteredHouseholds}
+        renderItem={renderHousehold}
+        keyExtractor={keyExtractor}
+        style={styles.list}
+        contentContainerStyle={[
+          styles.listContent,
+          filteredHouseholds.length === 0 && styles.emptyListContent
+        ]}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={15}
+        updateCellsBatchingPeriod={50}
+        windowSize={10}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIcon}>
+              <MaterialIcons name="home" size={48} color="#cbd5e1" />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {activeFilterCount > 0 
+                ? 'No households match your criteria'
+                : 'No households found'
+              }
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {activeFilterCount > 0 
+                ? 'Try adjusting your search or filters'
+                : 'Get started by adding your first household'
+              }
+            </Text>
+            {activeFilterCount > 0 && (
+              <TouchableOpacity 
+                style={styles.emptyButton}
+                onPress={clearAllFilters}
+              >
+                <Text style={styles.emptyButtonText}>Clear Filters</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        }
+      />
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        quarters={quarters}
+        sitios={sitios}
+      />
     </SafeAreaView>
   );
 }
@@ -399,232 +624,423 @@ export default function ViewHouseholds() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#f8fafc',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 12,
   },
   loadingText: {
-    marginTop: 16,
-    color: '#6B7280',
-    fontSize: 16,
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
   },
-  content: {
+
+  // Minimal Header Section
+  headerSection: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    gap: 10,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchContainer: {
     flex: 1,
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 6,
   },
-  header: {
-    marginBottom: 20,
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1e293b',
+    fontWeight: '500',
   },
+  filterButton: {
+    backgroundColor: '#f1f5f9',
+    borderColor: '#0ea5e9',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    position: 'relative',
+    minWidth: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#0ea5e9',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    borderRadius: 6,
+    minWidth: 14,
+    height: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF3D33', // Changed to match header color
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 6,
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    fontSize: 13,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+
+  // Active Filters
+  activeFilters: {
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    paddingVertical: 6,
+  },
+  filtersScroll: {
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    gap: 3,
+  },
+  filterChipText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#475569',
+  },
+  clearAllChip: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  clearAllChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#dc2626',
+  },
+
+  // Simple Stats
   stats: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    padding: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 1,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
-  statNumber: {
-    fontSize: 20,
+  statDivider: {
+    width: 1,
+    backgroundColor: '#f1f5f9',
+    marginHorizontal: 12,
+  },
+  statValue: {
+    fontSize: 18,
     fontWeight: '700',
-    color: '#FF3D33',
+    color: '#0f172a',
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B7280',
-    marginTop: 4,
-    textAlign: 'center',
+    color: '#64748b',
+    marginTop: 1,
+    fontWeight: '500',
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#374151',
-  },
+
+  // List
   list: {
-    gap: 12,
-    paddingBottom: 20,
+    flex: 1,
   },
-  footerLoading: {
-    paddingVertical: 20,
-    alignItems: 'center',
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 80,
+    gap: 6,
   },
-  footerText: {
-    marginTop: 8,
-    color: '#6B7280',
-    fontSize: 14,
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
+
+  // Enhanced Card
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    minHeight: 170, 
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 1,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  householdInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  headerRow: {
+  cardLeft: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    flex: 1,
+    gap: 8,
   },
-  householdId: {
-    fontSize: 16,
+  iconContainer: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  householdNumber: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#FF3D33',
-    marginBottom: 4,
+    color: '#0ea5e9',
+    marginBottom: 1,
   },
   householdHead: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 2,
-  },
-  location: {
     fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-  rightSection: {
-    alignItems: 'flex-end',
-    gap: 8,
+    fontWeight: '600',
+    color: '#0f172a',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 3,
   },
   visitedBadge: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#10b981',
   },
-  notVisitedBadge: {
-    backgroundColor: '#F59E0B',
+  pendingBadge: {
+    backgroundColor: '#f59e0b',
   },
   statusText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#ffffff',
+    textTransform: 'uppercase',
   },
-  activeBadge: {
+  addressContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    alignItems: 'flex-start',
+    gap: 5,
+    marginBottom: 10,
   },
-  activeText: {
-    fontSize: 11,
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  inactiveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  inactiveText: {
-    fontSize: 11,
-    color: '#EF4444',
-    fontWeight: '600',
+  address: {
+    flex: 1,
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 16,
   },
   cardFooter: {
-    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#f1f5f9',
+    paddingTop: 8,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
+  },
+  createdInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    flex: 1,
+  },
+  createdByText: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '400',
   },
   dateInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 3,
   },
   dateText: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 11,
+    color: '#64748b', // Changed to match "added by" color
+    fontWeight: '400', // Changed to match "added by" weight
   },
-  creatorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  creatorText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
+
+  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    paddingVertical: 60,
+    paddingHorizontal: 32,
   },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#9CA3AF',
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#f8fafc',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
     textAlign: 'center',
-    lineHeight: 24,
+    marginBottom: 6,
   },
-  clearButton: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#FF3D33',
-    borderRadius: 8,
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 16,
+    marginBottom: 20,
   },
-  clearButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  emptyButton: {
+    backgroundColor: '#0ea5e9',
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  emptyButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '600',
   },
-  quarterBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+
+  // Basic Filter Modal Styles
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  filterModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  filterModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  filterModalBody: {
+    maxHeight: 300,
+  },
+  filterRow: {
+    marginBottom: 20,
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#333',
+  },
+  filterPickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
+    backgroundColor: '#f9f9f9',
   },
-  liveBadge: {
-    backgroundColor: '#3B82F6',
+  filterPicker: {
+    height: 50,
   },
-  historicalBadge: {
-    backgroundColor: '#8B5CF6',
+  filterModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 10,
   },
-  quarterText: {
-    color: '#FFFFFF',
-    fontSize: 10,
+  clearButton: {
+    flex: 1,
+    padding: 15,
+    backgroundColor: '#f1f1f1',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  applyButton: {
+    flex: 1,
+    padding: 15,
+    backgroundColor: '#0ea5e9',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    fontSize: 16,
+    color: '#fff',
     fontWeight: '600',
   },
 });
