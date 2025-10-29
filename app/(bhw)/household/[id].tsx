@@ -15,9 +15,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
-import { API_BASE_URL } from '@/constants/apiConfig';
+import { API_BASE_URL, API_ENDPOINTS  } from '@/constants/apiConfig';
 import { useFocusEffect } from '@react-navigation/native';
 import { getUserSession } from '@/utils/session';
+import { Picker } from '@react-native-picker/picker';
 
 interface HouseholdDetail {
   household_id: number;
@@ -29,9 +30,14 @@ interface HouseholdDetail {
   full_address: string;
   is_visited: boolean;
   date_visited: string | null;
+  visited_by_full_name?: string;
   is_active: boolean;
   families_count: number;
   members_count: number;
+  is_current_quarter?: boolean;
+  quarter_id?: number;
+  quarter_name?: string;
+  year?: number;
 }
 
 interface Family {
@@ -50,6 +56,14 @@ interface Family {
     full_name: string;
     has_gh: number;  
   }>;
+}
+
+interface Quarter {
+  quarter_id: number;
+  quarter_name: string;
+  year: number;
+  start_date: string;
+  end_date: string;
 }
 
 const theme = {
@@ -129,7 +143,49 @@ const theme = {
   }
 };
 
-// ✅ Memoized Family Card Component for Performance
+// Helper function to filter out sentinel/placeholder families
+const filterActualFamilies = (rawFamilies: any[]) => {
+  if (!Array.isArray(rawFamilies)) return [];
+  
+  return rawFamilies.filter((family: any) => {
+    // Filter out families with invalid/sentinel IDs
+    if (!family.family_id || family.family_id === 0 || family.family_id < 1) {
+      console.log('Filtered out sentinel family (invalid ID):', family);
+      return false;
+    }
+    
+    // Filter out families with placeholder family codes
+    if (family.family_code && (
+      family.family_code.includes('PLACEHOLDER') ||
+      family.family_code.includes('TEMP') ||
+      family.family_code.includes('SENTINEL') ||
+      family.family_code.includes('DEFAULT') ||
+      family.family_code === '' ||
+      family.family_code === null ||
+      family.family_code === 'N/A'
+    )) {
+      console.log('Filtered out placeholder family (invalid code):', family);
+      return false;
+    }
+    
+    // Filter out families with no family head assigned (likely sentinel records)
+    if (!family.family_head || 
+        family.family_head === 'Not assigned' || 
+        family.family_head === '' ||
+        family.family_head === null ||
+        family.family_head === 'N/A' ||
+        family.family_head === 'TBD' ||
+        family.family_head === 'PENDING') {
+      console.log('Filtered out family with no head:', family);
+      return false;
+    }
+    
+    // If all checks pass, this is likely a real family
+    return true;
+  });
+};
+
+// Memoized Family Card Component for Performance
 const FamilyCard = memo(({ 
   family, 
   onPress 
@@ -257,35 +313,78 @@ export default function HouseholdDetailScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
 
-
+  // State
   const [household, setHousehold] = useState<HouseholdDetail | null>(null);
   const [families, setFamilies] = useState<Family[]>([]);
+  const [quarters, setQuarters] = useState<Quarter[]>([]);
+  const [selectedQuarterId, setSelectedQuarterId] = useState<number | null>(null);
+  
+  // UI State
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [markingVisit, setMarkingVisit] = useState(false);
   const [lastLoadedId, setLastLoadedId] = useState<string | null>(null);
-  const [transitioning, setTransitioning] = useState(false); 
+  const [transitioning, setTransitioning] = useState(false);
+  const [hasDataForQuarter, setHasDataForQuarter] = useState(true);
 
-  
+  // Load quarters and auto-select latest
+  const loadQuarters = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.QUARTERS}`);
+      const quartersData = await response.json();
+      
+      if (quartersData && Array.isArray(quartersData) && quartersData.length > 0) {
+        setQuarters(quartersData);
+        
+        // Always auto-select the latest quarter (first in array since it's ordered by latest)
+        const latestQuarter = quartersData[0];
+        setSelectedQuarterId(latestQuarter.quarter_id);
+        console.log(`Auto-selected latest quarter: ${latestQuarter.quarter_name} (ID: ${latestQuarter.quarter_id})`);
+      } else {
+        // If no quarters available, set to a default value to prevent null
+        console.log('No quarters available, using default');
+        setSelectedQuarterId(1); // Use 1 as default
+      }
+    } catch (error) {
+      console.error('Failed to load quarters:', error);
+      // On error, set to default instead of null
+      setSelectedQuarterId(1);
+    }
+  }, []); // Remove selectedQuarterId dependency to prevent loops
+
+  // Initialize and handle ID changes
   useEffect(() => {
     const currentId = id;
     
-    console.log(`🔄 Household ID changed to: ${currentId}`);
+    console.log(`Household ID changed to: ${currentId}`);
     
-   
     if (lastLoadedId && lastLoadedId !== currentId) {
-      console.log(` Switching from household ${lastLoadedId} to ${currentId}`);
+      console.log(`Switching from household ${lastLoadedId} to ${currentId}`);
       setTransitioning(true);
       setHousehold(null);
       setFamilies([]);
+      setSelectedQuarterId(null); // Reset quarter selection
     }
     
     setLoading(true);
     setLastLoadedId(currentId);
-    fetchHouseholdDetails();
-  }, [id]);
+    
+    // If no quarter selected yet, load quarters (which will auto-select latest)
+    if (selectedQuarterId === null) {
+      loadQuarters();
+    }
+  }, [id, lastLoadedId, selectedQuarterId, loadQuarters]);
 
-  
+  // Fetch data when quarter changes
+  useEffect(() => {
+    // Only fetch if we have a valid quarter ID (not null)
+    if (selectedQuarterId !== null && selectedQuarterId !== undefined) {
+      console.log(`Triggering fetch for quarter: ${selectedQuarterId}`);
+      fetchHouseholdDetails();
+    } else {
+      console.log(`Waiting for quarter selection...`);
+    }
+  }, [selectedQuarterId]);
 
   // Android back button handler
   useFocusEffect(
@@ -308,15 +407,19 @@ export default function HouseholdDetailScreen() {
     router.push('/(bhw)/menu/viewhousehold');
   }, [router]);
 
+  // WORKAROUND: Fetch household details with sentinel record filtering
   const fetchHouseholdDetails = useCallback(async () => {
+    if (!id) return;
+    
     try {
       const timestamp = new Date().getTime();
-      console.log(`📡 Fetching household ${id} details...`);
+      console.log(`Fetching household ${id} details for quarter ${selectedQuarterId}...`);
 
+      const quarterParam = selectedQuarterId ? `&quarter_id=${selectedQuarterId}` : '';
 
       const [hhResponse, famResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/household_api/households/${id}/details/?t=${timestamp}`),
-        fetch(`${API_BASE_URL}/household_api/households/${id}/families/?t=${timestamp}`)
+        fetch(`${API_BASE_URL}/household_api/households/${id}/details/?t=${timestamp}${quarterParam}`),
+        fetch(`${API_BASE_URL}/household_api/households/${id}/families/?t=${timestamp}${quarterParam}`)
       ]);
 
       const [hhData, famData] = await Promise.all([
@@ -324,16 +427,31 @@ export default function HouseholdDetailScreen() {
         famResponse.json()
       ]);
 
+      // Handle household data
       if (hhData.success) {
-        setHousehold(hhData.data);
-        console.log(` Household ${id} data loaded`);
+        if (hhData.data && hhData.has_data_for_quarter !== false) {
+          setHousehold(hhData.data);
+          setHasDataForQuarter(true);
+          console.log(`Household ${id} data loaded for quarter ${selectedQuarterId}`);
+        } else {
+          setHousehold(null);
+          setHasDataForQuarter(false);
+          console.log(`No household data for quarter ${selectedQuarterId}`);
+        }
       } else {
         throw new Error(hhData.message || 'Failed to load household details');
       }
 
+      // WORKAROUND: Handle families data with sentinel record filtering
       if (famData.success) {
-        //  Parse family_members if it's a string (JSONB from SQL)
-        const parsedFamilies = (famData.data || []).map((family: any) => {
+        const rawFamilies = famData.data || [];
+        console.log(`Raw families received: ${rawFamilies.length}`);
+        
+        // Filter out sentinel/placeholder families
+        const actualFamilies = filterActualFamilies(rawFamilies);
+        console.log(`Actual families after filtering: ${actualFamilies.length}`);
+
+        const parsedFamilies = actualFamilies.map((family: any) => {
           let members = family.family_members;
           if (typeof members === 'string') {
             try {
@@ -344,7 +462,6 @@ export default function HouseholdDetailScreen() {
             }
           }
           
-          // Ensure it's always an array
           if (!Array.isArray(members)) {
             members = [];
           }
@@ -356,23 +473,49 @@ export default function HouseholdDetailScreen() {
         });
 
         setFamilies(parsedFamilies);
-        console.log(` ${parsedFamilies.length} families loaded for household ${id}`);
+        console.log(`${parsedFamilies.length} ACTUAL families loaded for household ${id} (quarter ${selectedQuarterId})`);
+      } else {
+        setFamilies([]);
+        console.log(`No families found for household ${id} (quarter ${selectedQuarterId})`);
       }
 
     } catch (error) {
-      console.error(' Error fetching household details:', error);
+      console.error('Error fetching household details:', error);
       Alert.alert('Error', 'Failed to load household details. Please try again.');
+      setHasDataForQuarter(false);
+      setFamilies([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
-      setTransitioning(false); // ✅ Clear transition state
+      setTransitioning(false);
     }
-  }, [id]);
+  }, [id, selectedQuarterId]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     fetchHouseholdDetails();
   }, [fetchHouseholdDetails]);
+
+  // Clear cached data when quarter changes
+  const handleQuarterChange = useCallback((quarterId: number | null) => {
+    // Prevent null selection
+    if (quarterId === null || quarterId === undefined) {
+      console.log('Attempted to select null quarter, ignoring');
+      return;
+    }
+    
+    if (quarterId !== selectedQuarterId) {
+      console.log(`Quarter changed from ${selectedQuarterId} to ${quarterId}`);
+      setLoading(true);
+      
+      // Clear all cached data for the new quarter
+      setHousehold(null);
+      setFamilies([]);
+      setHasDataForQuarter(true); // Reset to true, will be updated by API response
+      
+      setSelectedQuarterId(quarterId);
+    }
+  }, [selectedQuarterId]);
 
   const handleAddFamily = useCallback(() => {
     router.push(`/(bhw)/household/${id}/add-family` as any);
@@ -422,7 +565,7 @@ export default function HouseholdDetailScreen() {
                   Alert.alert('Error', data.message || 'Failed to mark as visited');
                 }
               } catch (error) {
-                console.error(' Error:', error);
+                console.error('Error:', error);
                 Alert.alert('Error', 'Network error. Please try again.');
               } finally {
                 setMarkingVisit(false);
@@ -432,11 +575,11 @@ export default function HouseholdDetailScreen() {
         ]
       );
     } catch (error) {
-      console.error(' Error:', error);
+      console.error('Error:', error);
     }
   }, [id, fetchHouseholdDetails]);
 
-  
+  // Loading state during transition
   if (transitioning) {
     return (
       <SafeAreaView style={styles.container}>
@@ -451,8 +594,8 @@ export default function HouseholdDetailScreen() {
     );
   }
 
-  
-  if (loading || !household) {
+  // Initial loading state
+  if (loading && (selectedQuarterId === null || selectedQuarterId === undefined)) {
     return (
       <SafeAreaView style={styles.container}>
         <CustomHeader title="Household Details" onBackPress={handleBackPress} />
@@ -461,13 +604,59 @@ export default function HouseholdDetailScreen() {
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
           <ThemedText style={styles.loadingText}>
-            {lastLoadedId ? 'Loading household details...' : 'Loading...'}
+            Loading quarters and household details...
           </ThemedText>
         </View>
       </SafeAreaView>
     );
   }
 
+  // No data for selected quarter
+  if (!loading && !household && !hasDataForQuarter && selectedQuarterId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <CustomHeader title="Household Details" onBackPress={handleBackPress} />
+        
+        {/* Quarter Filter */}
+        <View style={styles.filterSection}>
+          <View style={styles.filterHeader}>
+            <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
+            <ThemedText style={styles.filterLabel}>Quarter:</ThemedText>
+          </View>
+          
+          <View style={styles.quarterPickerContainer}>
+            <Picker
+              selectedValue={selectedQuarterId}
+              onValueChange={handleQuarterChange}
+              style={styles.quarterPicker}
+            >
+              {/* REMOVED: Select Quarter option */}
+              {quarters.map((quarter) => (
+                <Picker.Item 
+                  key={quarter.quarter_id} 
+                  label={quarter.quarter_name}
+                  value={quarter.quarter_id} 
+                />
+              ))}
+            </Picker>
+          </View>
+        </View>
+
+        {/* No Data Message */}
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />
+          </View>
+          <ThemedText style={styles.emptyTitle}>No Data for Selected Quarter</ThemedText>
+          <ThemedText style={styles.emptySubtext}>
+            This household doesn&apos;t have any records for the selected quarter. Try selecting a different quarter or check back later.
+          </ThemedText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Main content
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader 
@@ -475,6 +664,41 @@ export default function HouseholdDetailScreen() {
         onBackPress={handleBackPress}
       />
       
+      {/* Quarter Filter Section */}
+      <View style={styles.filterSection}>
+        <View style={styles.filterHeader}>
+          <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
+          <ThemedText style={styles.filterLabel}>Quarter:</ThemedText>
+        </View>
+        
+        <View style={styles.quarterPickerContainer}>
+          <Picker
+            selectedValue={selectedQuarterId}
+            onValueChange={handleQuarterChange}
+            style={styles.quarterPicker}
+          >
+            {/* REMOVED: Select Quarter option that returns null */}
+            {quarters.map((quarter) => (
+              <Picker.Item 
+                key={quarter.quarter_id} 
+                label={quarter.quarter_name}
+                value={quarter.quarter_id} 
+              />
+            ))}
+          </Picker>
+        </View>
+      </View>
+
+      {/* Loading state for data refresh */}
+      {loading && (
+        <View style={styles.refreshLoadingContainer}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <ThemedText style={styles.refreshLoadingText}>
+            Loading data for selected quarter...
+          </ThemedText>
+        </View>
+      )}
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -488,178 +712,202 @@ export default function HouseholdDetailScreen() {
           />
         }
       >
-        {/* 1. HOUSEHOLD OVERVIEW */}
-        <View style={styles.overviewCard}>
-          {/* Header with status badge */}
-          <View style={styles.overviewHeader}>
-            <View style={styles.titleSection}>
-              <View style={styles.titleIcon}>
-                <Ionicons name="home" size={20} color={theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText style={styles.householdNumber}>
-                  {household.household_number}
-                </ThemedText>
-                <ThemedText style={styles.householdSubtitle}>
-                  {household.families_count} familie{household.families_count !== 1 ? 's' : ''} • {household.members_count} member{household.members_count !== 1 ? 's' : ''}
-                </ThemedText>
-              </View>
-            </View>
-            
-            <View style={styles.statusBadges}>
-              {!household.is_active && (
-                <View style={[styles.statusBadge, styles.inactiveBadge]}>
-                  <Ionicons name="close-circle" size={14} color="#FFFFFF" />
-                  <ThemedText style={styles.badgeText}>Inactive</ThemedText>
+        {/* Household Overview */}
+        {household && (
+          <View style={styles.overviewCard}>
+            {/* Header with status badge */}
+            <View style={styles.overviewHeader}>
+              <View style={styles.titleSection}>
+                <View style={styles.titleIcon}>
+                  <Ionicons name="home" size={20} color={theme.colors.primary} />
                 </View>
-              )}
-            </View>
-          </View>
-
-          {/* Quick Stats - Vertical List Style */}
-          <View style={styles.quickStatsList}>
-            <View style={styles.quickStatRow}>
-              <View style={styles.statRowLeft}>
-                <View style={[styles.statIconSmall, { backgroundColor: theme.colors.infoLight }]}>
-                  <Ionicons name="business-outline" size={12} color={theme.colors.info} />
-                </View>
-                <ThemedText style={styles.statRowLabel}>House Type</ThemedText>
-              </View>
-              <ThemedText style={styles.statRowValue} numberOfLines={2} ellipsizeMode="tail">
-                {household.house_type || 'Not specified'}
-              </ThemedText>
-            </View>
-
-            <View style={styles.quickStatRow}>
-              <View style={styles.statRowLeft}>
-                <View style={[styles.statIconSmall, { backgroundColor: theme.colors.primaryLight }]}>
-                  <Ionicons name="people-outline" size={12} color={theme.colors.primary} />
-                </View>
-                <ThemedText style={styles.statRowLabel}>Families</ThemedText>
-              </View>
-              <ThemedText style={styles.statRowValue}>{household.families_count}</ThemedText>
-            </View>
-
-            <View style={styles.quickStatRow}>
-              <View style={styles.statRowLeft}>
-                <View style={[
-                  styles.statIconSmall, 
-                  { backgroundColor: household.is_visited ? theme.colors.successLight : theme.colors.warningLight }
-                ]}>
-                  <Ionicons
-                    name={household.is_visited ? "checkmark-circle-outline" : "time-outline"}
-                    size={12}
-                    color={household.is_visited ? theme.colors.success : theme.colors.warning}
-                  />
-                </View>
-                <ThemedText style={styles.statRowLabel}>Visit Status</ThemedText>
-              </View>
-              <ThemedText style={[
-                styles.statRowValue,
-                { color: household.is_visited ? theme.colors.success : theme.colors.warning }
-              ]}>
-                {household.is_visited ? 'Completed' : 'Pending'}
-              </ThemedText>
-            </View>
-          </View>
-        </View>
-
-        {/* 2. VISIT MANAGEMENT */}
-        {!household.is_visited && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.successLight }]}>
-                <Ionicons name="checkmark-done" size={20} color={theme.colors.success} />
-              </View>
-              <ThemedText style={[styles.sectionTitle, { color: theme.colors.success }]}>
-                Mark as Visited
-              </ThemedText>
-            </View>
-
-            <Pressable
-              style={[styles.markVisitButton, markingVisit && styles.markVisitButtonDisabled]}
-              onPress={handleMarkHouseholdVisited}
-              disabled={markingVisit}
-              android_ripple={{ color: '#065F46' }}
-            >
-              {markingVisit ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                  <ThemedText style={styles.markVisitButtonText}>
-                    Mark Household as Visited
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={styles.householdNumber}>
+                    {household.household_number}
                   </ThemedText>
-                </>
-              )}
-            </Pressable>
-          </View>
-        )}
-
-        {/* 3. HOUSEHOLD DETAILS */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIcon, { backgroundColor: theme.colors.infoLight }]}>
-              <Ionicons name="information-circle" size={20} color={theme.colors.info} />
-            </View>
-            <ThemedText style={[styles.sectionTitle, { color: theme.colors.info }]}>
-              Household Details
-            </ThemedText>
-          </View>
-
-          <View style={styles.detailsGrid}>
-            <View style={styles.detailGroup}>
-              <ThemedText style={styles.detailGroupTitle}>Basic Information</ThemedText>
+                  <ThemedText style={styles.householdSubtitle}>
+                    {/* ALWAYS use filtered families array length */}
+                    {families.length} familie{families.length !== 1 ? 's' : ''} • {household.members_count} member{household.members_count !== 1 ? 's' : ''}
+                  </ThemedText>
+                </View>
+              </View>
               
-              <View style={styles.detailItem}>
-                <ThemedText style={styles.detailLabel}>Household Head</ThemedText>
-                <ThemedText style={styles.detailValue}>
-                  {household.household_head || 'Not assigned'}
-                </ThemedText>
-              </View>
-
-              <View style={styles.detailItem}>
-                <ThemedText style={styles.detailLabel}>Respondent</ThemedText>
-                <ThemedText style={styles.detailValue}>
-                  {household.respondent || 'Not assigned'}
-                </ThemedText>
-              </View>
-
-              <View style={[styles.detailItem, { marginBottom: 0 }]}>
-                <ThemedText style={styles.detailLabel}>Address</ThemedText>
-                <ThemedText style={styles.detailValue}>
-                  {household.full_address || 'Not specified'}
-                </ThemedText>
+              <View style={styles.statusBadges}>
+                {!household.is_active && (
+                  <View style={[styles.statusBadge, styles.inactiveBadge]}>
+                    <Ionicons name="close-circle" size={14} color="#FFFFFF" />
+                    <ThemedText style={styles.badgeText}>Inactive</ThemedText>
+                  </View>
+                )}
               </View>
             </View>
-
-            <View style={styles.detailGroup}>
-              <ThemedText style={styles.detailGroupTitle}>Property Information</ThemedText>
-              
-              <View style={styles.detailItem}>
-                <ThemedText style={styles.detailLabel}>House Ownership</ThemedText>
-                <ThemedText style={styles.detailValue}>
-                  {household.house_ownership || 'Not specified'}
-                </ThemedText>
-              </View>
-
-              <View style={[styles.detailItem, { marginBottom: 0 }]}>
-                <ThemedText style={styles.detailLabel}>House Type</ThemedText>
-                <ThemedText style={styles.detailValue}>
+            {/* Quick Stats */}
+            <View style={styles.quickStatsList}>
+              <View style={styles.quickStatRow}>
+                <View style={styles.statRowLeft}>
+                  <View style={[styles.statIconSmall, { backgroundColor: theme.colors.infoLight }]}>
+                    <Ionicons name="business-outline" size={12} color={theme.colors.info} />
+                  </View>
+                  <ThemedText style={styles.statRowLabel}>House Type</ThemedText>
+                </View>
+                <ThemedText style={styles.statRowValue} numberOfLines={2} ellipsizeMode="tail">
                   {household.house_type || 'Not specified'}
                 </ThemedText>
               </View>
+
+              <View style={styles.quickStatRow}>
+                <View style={styles.statRowLeft}>
+                  <View style={[styles.statIconSmall, { backgroundColor: theme.colors.primaryLight }]}>
+                    <Ionicons name="people-outline" size={12} color={theme.colors.primary} />
+                  </View>
+                  <ThemedText style={styles.statRowLabel}>Families</ThemedText>
+                </View>
+                {/* ALWAYS use filtered families count */}
+                <ThemedText style={styles.statRowValue}>{families.length}</ThemedText>
+              </View>
+
+              <View style={styles.quickStatRow}>
+                <View style={styles.statRowLeft}>
+                  <View style={[
+                    styles.statIconSmall, 
+                    { backgroundColor: household.is_visited ? theme.colors.successLight : theme.colors.warningLight }
+                  ]}>
+                    <Ionicons
+                      name={household.is_visited ? "checkmark-circle-outline" : "time-outline"}
+                      size={12}
+                      color={household.is_visited ? theme.colors.success : theme.colors.warning}
+                    />
+                  </View>
+                  <ThemedText style={styles.statRowLabel}>Visit Status</ThemedText>
+                </View>
+                <View style={styles.visitStatusContainer}>
+                  <ThemedText style={[
+                    styles.statRowValue,
+                    { color: household.is_visited ? theme.colors.success : theme.colors.warning }
+                  ]}>
+                    {household.is_visited ? 'Visited' : 'Pending'}
+                  </ThemedText>
+                </View>
+              </View>
+
+              {/* Visit Details - Show when visited */}
+              {household.is_visited && (household.date_visited || household.visited_by_full_name) && (
+                <>
+                  {household.date_visited && (
+                    <View style={styles.quickStatRow}>
+                      <View style={styles.statRowLeft}>
+                        <View style={[styles.statIconSmall, { backgroundColor: theme.colors.infoLight }]}>
+                          <Ionicons name="calendar-outline" size={12} color={theme.colors.info} />
+                        </View>
+                        <ThemedText style={styles.statRowLabel}>Date Visited</ThemedText>
+                      </View>
+                      <ThemedText style={styles.statRowValue}>
+                        {new Date(household.date_visited).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric', 
+                          year: 'numeric'
+                        })}
+                      </ThemedText>
+                    </View>
+                  )}
+                  
+                  {household.visited_by_full_name && (
+                    <View style={styles.quickStatRow}>
+                      <View style={styles.statRowLeft}>
+                        <View style={[styles.statIconSmall, { backgroundColor: theme.colors.primaryLight }]}>
+                          <Ionicons name="person-outline" size={12} color={theme.colors.primary} />
+                        </View>
+                        <ThemedText style={styles.statRowLabel}>Visited By</ThemedText>
+                      </View>
+                      <ThemedText style={styles.statRowValue}>
+                        {household.visited_by_full_name}
+                      </ThemedText>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+
+            {/* Minimal Update Button - Only show for current quarter, non-visited households */}
+            {/* {!household.is_visited && (household.is_current_quarter !== false) && (
+              <Pressable
+                style={styles.minimalUpdateButton}
+                onPress={() => router.push(`/(bhw)/household/${id}/update-household` as any)}
+              >
+                <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
+                <ThemedText style={styles.minimalUpdateText}>Edit</ThemedText>
+              </Pressable>
+            )} */}
+          </View>
+        )}
+
+        {/* Household Details */}
+        {household && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.infoLight }]}>
+                <Ionicons name="information-circle" size={20} color={theme.colors.info} />
+              </View>
+              <ThemedText style={[styles.sectionTitle, { color: theme.colors.info }]}>
+                Household Details
+              </ThemedText>
+            </View>
+
+            <View style={styles.detailsGrid}>
+              <View style={styles.detailGroup}>
+                <ThemedText style={styles.detailGroupTitle}>Basic Information</ThemedText>
+                
+                <View style={styles.detailItem}>
+                  <ThemedText style={styles.detailLabel}>Household Head</ThemedText>
+                  <ThemedText style={styles.detailValue}>
+                    {household.household_head || 'Not assigned'}
+                  </ThemedText>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <ThemedText style={styles.detailLabel}>Respondent</ThemedText>
+                  <ThemedText style={styles.detailValue}>
+                    {household.respondent || 'Not assigned'}
+                  </ThemedText>
+                </View>
+
+                <View style={[styles.detailItem, { marginBottom: 0 }]}>
+                  <ThemedText style={styles.detailLabel}>Address</ThemedText>
+                  <ThemedText style={styles.detailValue}>
+                    {household.full_address || 'Not specified'}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <View style={styles.detailGroup}>
+                <ThemedText style={styles.detailGroupTitle}>Property Information</ThemedText>
+                
+                <View style={styles.detailItem}>
+                  <ThemedText style={styles.detailLabel}>House Ownership</ThemedText>
+                  <ThemedText style={styles.detailValue}>
+                    {household.house_ownership || 'Not specified'}
+                  </ThemedText>
+                </View>
+
+                <View style={[styles.detailItem, { marginBottom: 0 }]}>
+                  <ThemedText style={styles.detailLabel}>House Type</ThemedText>
+                  <ThemedText style={styles.detailValue}>
+                    {household.house_type || 'Not specified'}
+                  </ThemedText>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
-        {/* 4. FAMILIES SECTION */}
+        {/* Families Section */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryLight }]}>
               <Ionicons name="people" size={20} color={theme.colors.primary} />
             </View>
             <ThemedText style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+              {/* ALWAYS use filtered families count */}
               Families ({families.length})
             </ThemedText>
             
@@ -690,7 +938,10 @@ export default function HouseholdDetailScreen() {
               </View>
               <ThemedText style={styles.emptyFamiliesTitle}>No families yet</ThemedText>
               <ThemedText style={styles.emptyFamiliesSubtitle}>
-                Add the first family to this household
+                {selectedQuarterId ? 
+                  'No families found for the selected quarter' : 
+                  'Add the first family to this household'
+                }
               </ThemedText>
               <Pressable
                 style={styles.addFamilyButton}
@@ -703,6 +954,75 @@ export default function HouseholdDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* Combined Actions Card - Only for non-visited households */}
+        {household && !household.is_visited && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                <Ionicons name="options-outline" size={20} color={theme.colors.primary} />
+              </View>
+              <ThemedText style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+                Household Actions
+              </ThemedText>
+            </View>
+
+            <View style={styles.actionButtonsContainer}>
+              {/* Update Household Button */}
+              {(household.is_current_quarter !== false) && (
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={() => router.push(`/(bhw)/household/${id}/update-household` as any)}
+                >
+                  <View style={styles.actionButtonContent}>
+                    <View style={styles.actionButtonIcon}>
+                      <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.actionButtonTextContainer}>
+                      <ThemedText style={styles.actionButtonTitle}>Update Household</ThemedText>
+                      <ThemedText style={styles.actionButtonSubtitle}>
+                        Edit household information
+                      </ThemedText>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
+                  </View>
+                </Pressable>
+              )}
+
+              {/* Mark as Visited Button */}
+              <Pressable
+                style={[
+                  styles.actionButton,
+                  styles.markVisitActionButton,
+                  markingVisit && styles.actionButtonDisabled
+                ]}
+                onPress={handleMarkHouseholdVisited}
+                disabled={markingVisit}
+              >
+                <View style={styles.actionButtonContent}>
+                  <View style={[styles.actionButtonIcon, styles.markVisitIcon]}>
+                    {markingVisit ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    )}
+                  </View>
+                  <View style={styles.actionButtonTextContainer}>
+                    <ThemedText style={[styles.actionButtonTitle, styles.markVisitTitle]}>
+                      {markingVisit ? 'Marking as Visited...' : 'Mark as Visited'}
+                    </ThemedText>
+                    <ThemedText style={[styles.actionButtonSubtitle, styles.markVisitSubtitle]}>
+                      Complete household visit
+                    </ThemedText>
+                  </View>
+                  {!markingVisit && (
+                    <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                  )}
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -724,7 +1044,7 @@ const styles = StyleSheet.create({
     height: theme.spacing.xxxl,
   },
 
-  // ✅ SOLUTION 2: Transition loading states
+  // Transition loading states
   transitionContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -763,6 +1083,95 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     fontWeight: '500',
+  },
+
+  // Refresh loading
+  refreshLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.lg,
+    backgroundColor: theme.colors.primaryLight,
+    gap: theme.spacing.md,
+  },
+  refreshLoadingText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: '500',
+  },
+
+  // Quarter Filter
+  filterSection: {
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderLight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.lg,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  quarterPickerContainer: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.background,
+  },
+  quarterPicker: {
+    color: theme.colors.textPrimary,
+  },
+
+  // Empty state
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.xxxl,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: theme.radius.xxl,
+    backgroundColor: theme.colors.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: theme.spacing.xl,
+  },
+  emptyButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.radius.md,
+  },
+  emptyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // Overview card
@@ -830,7 +1239,7 @@ const styles = StyleSheet.create({
     maxWidth: 80,
   },
 
-  // ✅ Quick stats - vertical list style
+  // Quick stats
   quickStatsList: {
     backgroundColor: theme.colors.borderLight,
     borderRadius: theme.radius.lg,
@@ -869,6 +1278,31 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: theme.spacing.lg,
   },
+  visitStatusContainer: {
+    alignItems: 'flex-end',
+    flex: 1,
+    marginLeft: theme.spacing.lg,
+  },
+
+  // Minimal Update Button
+  minimalUpdateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start', // Only takes needed space
+    backgroundColor: theme.colors.primaryLight,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.md,
+  },
+  minimalUpdateText: {
+    color: theme.colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
 
   // Section cards
   sectionCard: {
@@ -901,25 +1335,57 @@ const styles = StyleSheet.create({
     padding: theme.spacing.sm,
   },
 
-  // Visit button
-  markVisitButton: {
+  // Action Buttons Container
+  actionButtonsContainer: {
+    gap: theme.spacing.md,
+  },
+  actionButton: {
+    backgroundColor: theme.colors.borderLight,
+    borderRadius: theme.radius.lg,
+    overflow: 'hidden',
+  },
+  markVisitActionButton: {
+    backgroundColor: theme.colors.success,
+  },
+  actionButtonDisabled: {
+    backgroundColor: theme.colors.textLight,
+    opacity: 0.6,
+  },
+  actionButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.success,
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.lg,
+  },
+  actionButtonIcon: {
+    width: 40,
+    height: 40,
     borderRadius: theme.radius.lg,
-    gap: theme.spacing.sm,
-    ...theme.shadow.sm,
+    backgroundColor: theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  markVisitButtonDisabled: {
-    backgroundColor: theme.colors.textLight,
+  markVisitIcon: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  markVisitButtonText: {
-    color: '#FFFFFF',
+  actionButtonTextContainer: {
+    flex: 1,
+    gap: 2,
+  },
+  actionButtonTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  markVisitTitle: {
+    color: '#FFFFFF',
+  },
+  actionButtonSubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+  },
+  markVisitSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
   },
 
   // Families list
