@@ -9,6 +9,8 @@ import {
   RefreshControl,
   Pressable,
   BackHandler,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -98,6 +100,32 @@ interface FamilyMemberDetail {
   gh_age_of_menarche: number | null; 
 }
 
+interface ResidentRelationships {
+  mother_id?: number | null;
+  mother_name?: string | null;
+  mother_relationship_id?: number | null;
+  father_id?: number | null;
+  father_name?: string | null;
+  father_relationship_id?: number | null;
+  guardians?: Array<{
+    resident_id: number;
+    full_name: string;
+    relationship_id: number;
+  }> | null;
+  children?: Array<{
+    resident_id: number;
+    full_name: string;
+    relationship_id: number;
+  }> | null;
+}
+
+interface ResidentSearchResult {
+  resident_id: number;
+  full_name: string;
+  sex: string;
+  resident_code: string;
+}
+
 export default function FamilyMemberDetailScreen() {
   const { family_id, member_id } = useLocalSearchParams<{ 
     family_id: string; 
@@ -108,6 +136,21 @@ export default function FamilyMemberDetailScreen() {
   const [member, setMember] = useState<FamilyMemberDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Relationship management state
+  const [relationships, setRelationships] = useState<ResidentRelationships>({
+    guardians: [],
+    children: []
+  });
+  const [loadingRelationships, setLoadingRelationships] = useState(false);
+  
+  // Modal states
+  const [showAddRelationModal, setShowAddRelationModal] = useState(false);
+  const [showResidentSearch, setShowResidentSearch] = useState(false);
+  const [selectedRelationType, setSelectedRelationType] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ResidentSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
     fetchMemberDetails();
@@ -144,6 +187,10 @@ export default function FamilyMemberDetailScreen() {
 
       if (data.success) {
         setMember(data.data);
+        // Fetch relationships after member data loads
+        if (data.data.resident_id) {
+          fetchResidentRelationships(data.data.resident_id);
+        }
       } else {
         Alert.alert('Error', data.message || 'Failed to load member details');
       }
@@ -154,6 +201,149 @@ export default function FamilyMemberDetailScreen() {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const fetchResidentRelationships = async (residentId: number) => {
+    try {
+      setLoadingRelationships(true);
+      const response = await fetch(
+        `${API_BASE_URL}/household_api/resident/${residentId}/relationships/`
+      );
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        // Ensure arrays exist to prevent map errors
+        setRelationships({
+          mother_id: data.data.mother_id || null,
+          mother_name: data.data.mother_name || null,
+          mother_relationship_id: data.data.mother_relationship_id || null,
+          father_id: data.data.father_id || null,
+          father_name: data.data.father_name || null,
+          father_relationship_id: data.data.father_relationship_id || null,
+          guardians: Array.isArray(data.data.guardians) ? data.data.guardians : [],
+          children: Array.isArray(data.data.children) ? data.data.children : [],
+        });
+      } else {
+        // Set default empty structure
+        setRelationships({
+          guardians: [],
+          children: []
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching relationships:', error);
+      setRelationships({
+        guardians: [],
+        children: []
+      });
+    } finally {
+      setLoadingRelationships(false);
+    }
+  };
+
+ const searchResidents = async (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/household_api/search-resident/?q=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+      // Accept both .data and .results for compatibility
+      const arr = Array.isArray(data.data) ? data.data : (Array.isArray(data.results) ? data.results : []);
+      // Filter out the current member from search results
+      const filteredResults = arr.filter(
+        (resident: ResidentSearchResult) => resident.resident_id !== member?.resident_id
+      );
+      setSearchResults(filteredResults);
+    } catch (error) {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleLinkRelation = async (targetResidentId: number, relationshipId: number) => {
+    if (!member?.resident_id) return;
+
+    try {
+      const payload = {
+        origin_resident_id: member.resident_id,
+        target_resident_id: targetResidentId,
+        relationship_id: relationshipId
+      };
+
+      const response = await fetch(
+        `${API_BASE_URL}/household_api/resident/link-relation/`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        Alert.alert('Success', 'Relationship linked successfully!');
+        fetchResidentRelationships(member.resident_id); // Refresh relationships
+      } else {
+        Alert.alert('Error', data.message || 'Failed to link relationship');
+      }
+    } catch (error) {
+      console.error('Error linking relationship:', error);
+      Alert.alert('Error', 'Network error. Please try again.');
+    }
+  };
+
+  const handleUnlinkRelation = async (targetResidentId: number, relationshipId: number) => {
+    if (!member?.resident_id) return;
+
+    Alert.alert(
+      'Confirm Unlink',
+      'Are you sure you want to remove this relationship?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const payload = {
+                origin_resident_id: member.resident_id,
+                target_resident_id: targetResidentId,
+                relationship_id: relationshipId
+              };
+
+              const response = await fetch(
+                `${API_BASE_URL}/household_api/resident/unlink-relation/`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                }
+              );
+
+              const data = await response.json();
+
+              if (response.ok && data.success) {
+                Alert.alert('Success', 'Relationship removed successfully!');
+                fetchResidentRelationships(member.resident_id); // Refresh relationships
+              } else {
+                Alert.alert('Error', data.message || 'Failed to remove relationship');
+              }
+            } catch (error) {
+              console.error('Error unlinking relationship:', error);
+              Alert.alert('Error', 'Network error. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleRefresh = () => {
@@ -229,6 +419,7 @@ export default function FamilyMemberDetailScreen() {
     }
   };
 
+  // Loading state
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -241,6 +432,7 @@ export default function FamilyMemberDetailScreen() {
     );
   }
 
+  // Empty state
   if (!member || member.family_member_id === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -287,16 +479,16 @@ export default function FamilyMemberDetailScreen() {
                 styles.avatarText,
                 { color: isFemale ? theme.colors.female : theme.colors.primary }
               ]}>
-                {member.resident_full_name?.charAt(0) || '?'}
+                {member.resident_full_name?.charAt(0)?.toUpperCase() || '?'}
               </ThemedText>
             </View>
             
             <View style={styles.profileInfo}>
               <ThemedText style={styles.memberName}>
-                {member.resident_full_name}
+                {member.resident_full_name || 'Unknown Member'}
               </ThemedText>
               <ThemedText style={styles.memberCode}>
-                {member.family_member_code}
+                {member.family_member_code || 'No Code'}
               </ThemedText>
               <View style={[
                 styles.genderBadge,
@@ -322,7 +514,7 @@ export default function FamilyMemberDetailScreen() {
           
           <View style={styles.infoRow}>
             <ThemedText style={styles.infoLabel}>Resident ID</ThemedText>
-            <ThemedText style={styles.infoValue}>#{member.resident_id}</ThemedText>
+            <ThemedText style={styles.infoValue}>#{member.resident_id || 'N/A'}</ThemedText>
           </View>
           
           <View style={styles.infoRow}>
@@ -334,6 +526,127 @@ export default function FamilyMemberDetailScreen() {
             <ThemedText style={styles.infoLabel}>Family Relationship</ThemedText>
             <ThemedText style={styles.infoValue}>{member.rtf_name || 'Not specified'}</ThemedText>
           </View>
+        </View>
+
+        {/* Family Relationships */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <ThemedText style={styles.cardTitle}>Family Relationships</ThemedText>
+            <Pressable
+              style={styles.addButton}
+              onPress={() => setShowAddRelationModal(true)}
+              hitSlop={8}
+            >
+              <Ionicons name="add-circle-outline" size={22} color={theme.colors.primary} />
+            </Pressable>
+          </View>
+
+          {loadingRelationships ? (
+            <View style={styles.loadingRelationships}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <ThemedText style={styles.loadingText}>Loading relationships...</ThemedText>
+            </View>
+          ) : (
+            <View style={styles.relationshipsContent}>
+              {/* Mother */}
+              {relationships.mother_id && relationships.mother_name && (
+                <View style={styles.relationshipItem}>
+                  <View style={[styles.relationshipIcon, { backgroundColor: theme.colors.femaleLight }]}>
+                    <Ionicons name="woman-outline" size={18} color={theme.colors.female} />
+                  </View>
+                  <View style={styles.relationshipInfo}>
+                    <ThemedText style={styles.relationshipType}>Mother</ThemedText>
+                    <ThemedText style={styles.relationshipName}>{relationships.mother_name}</ThemedText>
+                  </View>
+                  <Pressable
+                    style={styles.unlinkButton}
+                    onPress={() => handleUnlinkRelation(relationships.mother_id!, relationships.mother_relationship_id!)}
+                  >
+                    <Ionicons name="close-circle-outline" size={18} color={theme.colors.danger} />
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Father */}
+              {relationships.father_id && relationships.father_name && (
+                <View style={styles.relationshipItem}>
+                  <View style={[styles.relationshipIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                    <Ionicons name="man-outline" size={18} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.relationshipInfo}>
+                    <ThemedText style={styles.relationshipType}>Father</ThemedText>
+                    <ThemedText style={styles.relationshipName}>{relationships.father_name}</ThemedText>
+                  </View>
+                  <Pressable
+                    style={styles.unlinkButton}
+                    onPress={() => handleUnlinkRelation(relationships.father_id!, relationships.father_relationship_id!)}
+                  >
+                    <Ionicons name="close-circle-outline" size={18} color={theme.colors.danger} />
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Guardians */}
+              {relationships.guardians && relationships.guardians.length > 0 && (
+                <>
+                  {relationships.guardians.map((guardian, index) => (
+                    <View key={index} style={styles.relationshipItem}>
+                      <View style={[styles.relationshipIcon, { backgroundColor: theme.colors.warningLight }]}>
+                        <Ionicons name="shield-outline" size={18} color={theme.colors.warning} />
+                      </View>
+                      <View style={styles.relationshipInfo}>
+                        <ThemedText style={styles.relationshipType}>Guardian</ThemedText>
+                        <ThemedText style={styles.relationshipName}>{guardian.full_name}</ThemedText>
+                      </View>
+                      <Pressable
+                        style={styles.unlinkButton}
+                        onPress={() => handleUnlinkRelation(guardian.resident_id, guardian.relationship_id)}
+                      >
+                        <Ionicons name="close-circle-outline" size={18} color={theme.colors.danger} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {/* Children */}
+              {relationships.children && relationships.children.length > 0 && (
+                <>
+                  <ThemedText style={styles.childrenTitle}>Children</ThemedText>
+                  {relationships.children.map((child, index) => (
+                    <View key={index} style={styles.relationshipItem}>
+                      <View style={[styles.relationshipIcon, { backgroundColor: theme.colors.successLight }]}>
+                        <Ionicons name="person-outline" size={18} color={theme.colors.success} />
+                      </View>
+                      <View style={styles.relationshipInfo}>
+                        <ThemedText style={styles.relationshipType}>Child</ThemedText>
+                        <ThemedText style={styles.relationshipName}>{child.full_name}</ThemedText>
+                      </View>
+                      <Pressable
+                        style={styles.unlinkButton}
+                        onPress={() => handleUnlinkRelation(child.resident_id, child.relationship_id)}
+                      >
+                        <Ionicons name="close-circle-outline" size={18} color={theme.colors.danger} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {/* No relationships message */}
+              {!relationships.mother_id && 
+               !relationships.father_id && 
+               (!relationships.guardians || relationships.guardians.length === 0) &&
+               (!relationships.children || relationships.children.length === 0) && (
+                <View style={styles.noRelationships}>
+                  <ThemedText style={styles.noRelationshipsText}>No family relationships linked</ThemedText>
+                  <ThemedText style={styles.noRelationshipsSubtext}>
+                    Tap + to add family members
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* PhilHealth Coverage */}
@@ -397,20 +710,20 @@ export default function FamilyMemberDetailScreen() {
           {member.has_general_health ? (
             <View style={styles.healthContent}>
               {/* Population Group */}
-              {member.gh_class_description && (
+              {member.gh_class_description ? (
                 <View style={styles.infoRow}>
                   <ThemedText style={styles.infoLabel}>Population Group</ThemedText>
                   <ThemedText style={styles.infoValue}>{member.gh_class_description}</ThemedText>
                 </View>
-              )}
+              ) : null}
 
               {/* Age */}
-              {member.gh_age && (
+              {member.gh_age ? (
                 <View style={styles.infoRow}>
                   <ThemedText style={styles.infoLabel}>Age at Record</ThemedText>
                   <ThemedText style={styles.infoValue}>{member.gh_age} years</ThemedText>
                 </View>
-              )}
+              ) : null}
 
               {/* Lifestyle Factors */}
               <View style={styles.lifestyleSection}>
@@ -448,7 +761,7 @@ export default function FamilyMemberDetailScreen() {
               {/* Medical History */}
               {member.gh_medical_history_names && 
               Array.isArray(member.gh_medical_history_names) && 
-              member.gh_medical_history_names.length > 0 && (
+              member.gh_medical_history_names.length > 0 ? (
                 <View style={styles.medicalSection}>
                   <View style={styles.medicalTitleRow}>
                     <Ionicons name="clipboard-outline" size={16} color={theme.colors.danger} />
@@ -465,10 +778,10 @@ export default function FamilyMemberDetailScreen() {
                     ))}
                   </View>
                 </View>
-              )}
+              ) : null}
 
               {/* Women's Health */}
-              {isFemale && (
+              {isFemale ? (
                 <View style={styles.womensHealthSection}>
                   <View style={styles.womensHealthTitleRow}>
                     <Ionicons name="flower-outline" size={16} color={theme.colors.female} />
@@ -477,23 +790,23 @@ export default function FamilyMemberDetailScreen() {
                     </ThemedText>
                   </View>
 
-                  {member.gh_age_of_menarche && (
+                  {member.gh_age_of_menarche ? (
                     <View style={styles.infoRow}>
                       <ThemedText style={styles.infoLabel}>Age of Menarche</ThemedText>
                       <ThemedText style={styles.infoValue}>{member.gh_age_of_menarche} years</ThemedText>
                     </View>
-                  )}
+                  ) : null}
 
-                  {member.gh_last_menstrual_period && (
+                  {member.gh_last_menstrual_period ? (
                     <View style={styles.infoRow}>
                       <ThemedText style={styles.infoLabel}>Last Menstrual Period</ThemedText>
                       <ThemedText style={styles.infoValue}>
-                        {new Date(member.gh_last_menstrual_period).toLocaleDateString()}
+                        {formatDate(member.gh_last_menstrual_period)}
                       </ThemedText>
                     </View>
-                  )}
+                  ) : null}
 
-                  {member.gh_fp_method_yn !== null && (
+                  {member.gh_fp_method_yn !== null ? (
                     <View style={styles.fpSection}>
                       <View style={styles.infoRow}>
                         <View style={styles.fpLabelRow}>
@@ -510,26 +823,26 @@ export default function FamilyMemberDetailScreen() {
                         </View>
                       </View>
 
-                      {member.gh_fp_method_yn && (
+                      {member.gh_fp_method_yn ? (
                         <>
-                          {member.gh_fp_method_name && (
+                          {member.gh_fp_method_name ? (
                             <View style={styles.infoRow}>
                               <ThemedText style={styles.infoLabel}>Method</ThemedText>
                               <ThemedText style={styles.infoValue}>{member.gh_fp_method_name}</ThemedText>
                             </View>
-                          )}
-                          {member.gh_fp_status_name && (
+                          ) : null}
+                          {member.gh_fp_status_name ? (
                             <View style={styles.infoRow}>
                               <ThemedText style={styles.infoLabel}>Status</ThemedText>
                               <ThemedText style={styles.infoValue}>{member.gh_fp_status_name}</ThemedText>
                             </View>
-                          )}
+                          ) : null}
                         </>
-                      )}
+                      ) : null}
                     </View>
-                  )}
+                  ) : null}
                 </View>
-              )}
+              ) : null}
 
               {/* Update Button */}
               <Pressable
@@ -571,19 +884,168 @@ export default function FamilyMemberDetailScreen() {
           
           <View style={styles.infoRow}>
             <ThemedText style={styles.recordLabel}>Created</ThemedText>
-            <ThemedText style={styles.recordValue}>{formatDate(member.date_added)}</ThemedText>
+            <ThemedText style={styles.recordValue}>
+              {member.date_added ? formatDate(member.date_added) : 'Unknown'}
+            </ThemedText>
           </View>
           
           <View style={styles.infoRow}>
             <ThemedText style={styles.recordLabel}>Created by</ThemedText>
             <ThemedText style={styles.recordValue}>
-              {member.added_by_full_name || `User #${member.added_by_id}`}
+              {member.added_by_full_name || `User #${member.added_by_id}` || 'Unknown'}
             </ThemedText>
           </View>
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Add Relationship Modal */}
+      <Modal
+        visible={showAddRelationModal}
+        animationType="slide"
+        transparent
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={styles.modalTitle}>Add Family Relationship</ThemedText>
+              <Pressable onPress={() => setShowAddRelationModal(false)}>
+                <Ionicons name="close" size={24} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
+
+            <View style={styles.relationshipOptions}>
+              <Pressable
+                style={styles.relationshipOption}
+                onPress={() => {
+                  setSelectedRelationType(1); // Mother relationship_id
+                  setShowAddRelationModal(false);
+                  setShowResidentSearch(true);
+                }}
+              >
+                <Ionicons name="woman-outline" size={24} color={theme.colors.female} />
+                <ThemedText style={styles.relationshipOptionText}>Add Mother</ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={styles.relationshipOption}
+                onPress={() => {
+                  setSelectedRelationType(2); // Father relationship_id
+                  setShowAddRelationModal(false);
+                  setShowResidentSearch(true);
+                }}
+              >
+                <Ionicons name="man-outline" size={24} color={theme.colors.primary} />
+                <ThemedText style={styles.relationshipOptionText}>Add Father</ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={styles.relationshipOption}
+                onPress={() => {
+                  setSelectedRelationType(3); // Child relationship_id
+                  setShowAddRelationModal(false);
+                  setShowResidentSearch(true);
+                }}
+              >
+                <Ionicons name="person-outline" size={24} color={theme.colors.success} />
+                <ThemedText style={styles.relationshipOptionText}>Add Child</ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={styles.relationshipOption}
+                onPress={() => {
+                  setSelectedRelationType(4); // Guardian relationship_id
+                  setShowAddRelationModal(false);
+                  setShowResidentSearch(true);
+                }}
+              >
+                <Ionicons name="shield-outline" size={24} color={theme.colors.warning} />
+                <ThemedText style={styles.relationshipOptionText}>Add Guardian</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Resident Search Modal */}
+      <Modal
+        visible={showResidentSearch}
+        animationType="slide"
+        transparent
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.searchModalContent}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={styles.modalTitle}>Search Resident</ThemedText>
+              <Pressable onPress={() => {
+                setShowResidentSearch(false);
+                setSelectedRelationType(null);
+                setSearchQuery('');
+                setSearchResults([]);
+              }}>
+                <Ionicons name="close" size={24} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Ionicons name="search-outline" size={20} color={theme.colors.textMuted} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search by name..."
+                  value={searchQuery}
+                  onChangeText={(text) => {
+                    setSearchQuery(text);
+                    searchResidents(text);
+                  }}
+                />
+              </View>
+            </View>
+
+            <ScrollView style={styles.searchResults}>
+              {searchLoading ? (
+                <View style={styles.searchLoading}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <ThemedText style={styles.loadingText}>Searching...</ThemedText>
+                </View>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((resident) => (
+                  <Pressable
+                    key={resident.resident_id}
+                    style={styles.searchResultItem}
+                    onPress={() => {
+                      if (selectedRelationType) {
+                        handleLinkRelation(resident.resident_id, selectedRelationType);
+                      }
+                      setShowResidentSearch(false);
+                      setSelectedRelationType(null);
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                  >
+                    <View style={styles.residentInfo}>
+                      <ThemedText style={styles.residentName}>{resident.full_name}</ThemedText>
+                      <ThemedText style={styles.residentDetails}>
+                        {resident.sex} • Code: {resident.resident_code}
+                      </ThemedText>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
+                  </Pressable>
+                ))
+              ) : searchQuery.length > 0 ? (
+                <View style={styles.noResults}>
+                  <ThemedText style={styles.noResultsText}>No residents found</ThemedText>
+                </View>
+              ) : (
+                <View style={styles.searchPrompt}>
+                  <ThemedText style={styles.searchPromptText}>Start typing to search for residents</ThemedText>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -704,6 +1166,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
   },
+  addButton: {
+    padding: theme.spacing.xs,
+  },
 
   // Info Rows
   infoRow: {
@@ -730,6 +1195,76 @@ const styles = StyleSheet.create({
   notProvided: {
     color: theme.colors.textMuted,
     fontStyle: 'italic',
+  },
+
+  // Relationships
+  loadingRelationships: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.lg,
+  },
+  relationshipsContent: {
+    gap: theme.spacing.sm,
+  },
+  relationshipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  relationshipIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: theme.radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  relationshipInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  relationshipType: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  relationshipName: {
+    fontSize: 15,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+  },
+  unlinkButton: {
+    padding: theme.spacing.sm,
+  },
+  childrenTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+  },
+  noRelationships: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl,
+  },
+  noRelationshipsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+    marginBottom: theme.spacing.xs,
+  },
+  noRelationshipsSubtext: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
   },
 
   // Status Badges
@@ -985,5 +1520,132 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'right',
     flex: 1,
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  searchModalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    flex: 1,
+  },
+  relationshipOptions: {
+    gap: theme.spacing.md,
+  },
+  relationshipOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  relationshipOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+  },
+
+  // Search styles
+  searchContainer: {
+    marginBottom: theme.spacing.lg,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: theme.colors.textPrimary,
+  },
+  searchResults: {
+    maxHeight: 300,
+  },
+  searchLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.xl,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+    gap: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  residentInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  residentName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+  },
+  residentDetails: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+  },
+  noResults: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+  },
+  searchPrompt: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl,
+  },
+  searchPromptText: {
+    fontSize: 14,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
   },
 });

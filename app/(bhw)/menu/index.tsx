@@ -44,7 +44,10 @@ export default function BHWMenu() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]}
+              onPress={() => router.push('/(bhw)/child-health')}
+            >
               <View style={styles.buttonContent}>
                 <Ionicons name="medical-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Child Health Record</ThemedText>
