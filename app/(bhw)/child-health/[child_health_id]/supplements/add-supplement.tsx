@@ -272,7 +272,7 @@ export default function AddSupplementScreen() {
               <View style={styles.instructionItem}>
                 <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
                 <ThemedText style={styles.instructionText}>
-                  Age is automatically calculated from the child's date of birth
+                  Age is automatically calculated from the child&apos;s date of birth
                 </ThemedText>
               </View>
               <View style={styles.instructionItem}>
@@ -320,7 +320,7 @@ export default function AddSupplementScreen() {
                 </ThemedText>
               </View>
               <ThemedText style={styles.helperText}>
-                Age is calculated automatically based on child's date of birth
+                Age is calculated automatically based on child&apos;s date of birth
               </ThemedText>
             </View>
           </View>
