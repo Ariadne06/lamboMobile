@@ -1,19 +1,19 @@
-import React from 'react';
-import { ScrollView, View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React from 'react';
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const maternalOptions = [
-  { label: 'Medical/Surgical', icon: 'medkit', route: '/menu/healthrecords/Maternal/medicalsurgical' },
-  { label: 'Immunization', icon: 'shield-checkmark', route: '/menu/healthrecords/Maternal/immunization' },
-  { label: 'Obstetrical History', icon: 'woman', route: '/menu/healthrecords/Maternal/obstetricalhistory' },
-  { label: 'Check Ups', icon: 'calendar', route: '/menu/healthrecords/Maternal/checkups' },
-  { label: 'Screenings', icon: 'search', route: '/menu/healthrecords/Maternal/screenings' },
-  { label: 'Lab Screening + Iron', icon: 'flask', route: '/menu/healthrecords/Maternal/labscreeningiron' },
-  { label: 'Supplements', icon: 'pill', iconFamily: 'MaterialCommunityIcons', route: '/menu/healthrecords/Maternal/supplements' },
-  { label: 'Delivery Outcome', icon: 'baby-face-outline', iconFamily: 'MaterialCommunityIcons', route: '/menu/healthrecords/Maternal/deliveryoutcome' },
-  { label: 'Postpartum Visit', icon: 'heart', route: '/menu/healthrecords/Maternal/postpartumvisit' },
+  { label: 'Medical/Surgical', icon: 'medkit', route: '/(tabs)/health/maternal/medicalsurgical' },
+  { label: 'Immunization', icon: 'shield-checkmark', route: '/(tabs)/health/maternal/immunization' },
+  { label: 'Obstetrical History', icon: 'woman', route: '/(tabs)/health/maternal/obstetricalhistory' },
+  { label: 'Check Ups', icon: 'calendar', route: '/(tabs)/health/maternal/checkups' },
+  { label: 'Screenings', icon: 'search', route: '/(tabs)/health/maternal/screenings' },
+  { label: 'Lab Screening + Iron', icon: 'flask', route: '/(tabs)/health/maternal/labscreeningiron' },
+  { label: 'Supplements', icon: 'pill', iconFamily: 'MaterialCommunityIcons', route: '/(tabs)/health/maternal/supplements' },
+  { label: 'Delivery Outcome', icon: 'baby-face-outline', iconFamily: 'MaterialCommunityIcons', route: '/(tabs)/health/maternal/deliveryoutcome' },
+  { label: 'Postpartum Visit', icon: 'heart', route: '/(tabs)/health/maternal/postpartumvisit' },
 ];
 
 const dummyChildren = [
@@ -81,7 +81,7 @@ export default function HealthRecordsScreen() {
                 <TouchableOpacity
                   key={opt.label}
                   style={styles.optionButton}
-                  onPress={() => router.push(`/menu/healthrecords/Child/${opt.route}?childId=${child.id}` as any)}
+                  onPress={() => router.push(`/(tabs)/health/child/${opt.route}?childId=${child.id}` as any)}
                   activeOpacity={0.85}
                 >
                   <View style={[styles.iconCircle, { backgroundColor: '#e0f2fe' }]}>
@@ -105,8 +105,6 @@ export default function HealthRecordsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
-
-  // Section Title
   sectionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -126,7 +124,6 @@ const styles = StyleSheet.create({
     color: '#0ea5e9',
     letterSpacing: 0.5,
   },
-
   sectionCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
