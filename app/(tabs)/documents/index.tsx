@@ -15,15 +15,6 @@ import CustomHeader from '../../../components/ui/CustomHeader';
 import { Application, fetchResidentApplications } from '../../../utils/documentService';
 import { getUserSession } from '../../../utils/session';
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  Approved: { bg: '#D1FAE5', text: '#065F46' },
-  Processing: { bg: '#DBEAFE', text: '#1E40AF' },
-  Pending: { bg: '#FEF3C7', text: '#92400E' },
-  Rejected: { bg: '#FEE2E2', text: '#991B1B' },
-  Claimed: { bg: '#F3F4F6', text: '#374151' },
-  'For Payment': { bg: '#E0E7FF', text: '#3730A3' },
-};
-
 export default function DocumentsScreen() {
   const [recentRequests, setRecentRequests] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
@@ -216,7 +207,7 @@ export default function DocumentsScreen() {
                 Processing Time
               </Text>
               <Text style={styles.infoText}>
-                Most certificates are processed within 1-3 business days. You'll
+                Most certificates are processed within 1-3 business days. You&apos;ll
                 receive a notification when your request is approved.
               </Text>
             </View>
