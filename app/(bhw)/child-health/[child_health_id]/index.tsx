@@ -86,9 +86,12 @@ export default function ChildHealthDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [childData, setChildData] = useState<ChildHealthData | null>(null);
 
-  useEffect(() => {
+  
+useFocusEffect(
+  React.useCallback(() => {
     fetchChildHealthDetail();
-  }, [child_health_id]);
+  }, [child_health_id])
+);
 
   const handleBackPress = () => {
     router.push('/(bhw)/child-health');
@@ -615,85 +618,80 @@ export default function ChildHealthDetailScreen() {
           )}
         </View>
 
-        {/* Action Buttons Section */}
-        <View style={styles.actionSection}>
-          <ThemedText style={styles.sectionTitle}>Health Records & Monitoring</ThemedText>
-          
-          {/* Row 1: Immunization & Supplements */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.primary }]}
-               onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/immunization` as any)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="vaccines" size={28} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonSmallText}>Immunization</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.pink }]}
-              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/supplements` as any)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="medication" size={28} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonSmallText}>Supplements</ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          {/* Row 2: Growth Monitoring & Medical/Surgical History */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.success }]}
-              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/growth-monitoring` as any)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="trending-up" size={28} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonSmallText}>Growth Monitoring</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.orange }]}
-              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/medical-conditions` as any)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="local-hospital" size={28} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonSmallText}>Medical/Surgical</ThemedText>
-            </TouchableOpacity>
-            
-          </View>
-
-          {/* Row 3: Medical & Surgical History
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.orange }]}
-              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/medical-conditions` as any)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="local-hospital" size={28} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonSmallText}>Medical</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.danger }]}
-              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/surgical-history` as any)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="healing" size={28} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonSmallText}>Surgical</ThemedText>
-            </TouchableOpacity>
-          </View> */}
-
-          {/* Full width Update Button */}
+        <View style={styles.updateButtonContainer}>
           <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: theme.colors.warning }]}
+            style={styles.updateButton}
             onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/update-child-health-record` as any)}
             activeOpacity={0.7}
           >
-            <Ionicons name="create-outline" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Update Basic Information</ThemedText>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            <MaterialIcons name="edit" size={20} color={theme.colors.warning} />
+            <ThemedText style={styles.updateButtonText}>Update Basic Information</ThemedText>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.warning} />
           </TouchableOpacity>
         </View>
+
+
+        {/* Action Section - Health Records & Monitoring */}
+          <View style={styles.actionSection}>
+            <ThemedText style={styles.sectionTitle}>Health Records & Monitoring</ThemedText>
+
+            {/* Growth Monitoring - Full Width */}
+            <TouchableOpacity
+              style={[styles.actionButtonFull, { backgroundColor: theme.colors.success }]}
+              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/growth-monitoring` as any)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="show-chart" size={24} color="#FFFFFF" />
+              <ThemedText style={styles.actionButtonFullText}>Growth Monitoring</ThemedText>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/* Immunization Records - Full Width */}
+            <TouchableOpacity
+              style={[styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
+              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/immunization` as any)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="vaccines" size={24} color="#FFFFFF" />
+              <ThemedText style={styles.actionButtonFullText}>View Immunization Records</ThemedText>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/* Medical & Surgical History - Full Width */}
+            <TouchableOpacity
+              style={[styles.actionButtonFull, { backgroundColor: theme.colors.danger }]}
+              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/medical-surgical-history` as any)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="local-hospital" size={24} color="#FFFFFF" />
+              <ThemedText style={styles.actionButtonFullText}>Medical & Surgical History</ThemedText>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/* Supplements - Full Width */}
+            <TouchableOpacity
+              style={[styles.actionButtonFull, { backgroundColor: theme.colors.orange }]}
+              onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/supplements` as any)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="vaccines" size={24} color="#FFFFFF" />
+              <ThemedText style={styles.actionButtonFullText}>Supplements</ThemedText>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/*  CONDITIONAL: Only show if feeding method is "Breastfeeding" */}
+            {childData.feeding_method_name?.toLowerCase() === 'breastfeeding' && (
+              <TouchableOpacity
+                style={[styles.actionButtonFull, { backgroundColor: '#EC4899' }]}
+                onPress={() => router.push(`/(bhw)/child-health/${child_health_id}/exclusive-breastfeed` as any)}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="child-care" size={24} color="#FFFFFF" />
+                <ThemedText style={styles.actionButtonFullText}>Exclusive Breastfeeding</ThemedText>
+                <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+          </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -944,49 +942,50 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.sm,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  actionButtonSmall: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: theme.spacing.xl,
-    borderRadius: theme.radius.xl,
-    gap: theme.spacing.sm,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  actionButtonSmallText: {
-    fontSize: 13,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    textAlign: 'center',
+    marginTop: theme.spacing.md,
   },
   actionButtonFull: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.lg,
+    paddingVertical: theme.spacing.xl,
     borderRadius: theme.radius.xl,
     gap: theme.spacing.md,
     marginTop: theme.spacing.md,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
   },
   actionButtonFullText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: theme.spacing.sm,
+  },
+  updateButtonContainer: {
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+  },
+  updateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.radius.xl,
+    borderWidth: 2,
+    borderColor: theme.colors.warning,
+    gap: theme.spacing.md,
+  },
+  updateButtonText: {
+    flex: 1,
+    fontSize: 15,
+    color: theme.colors.warning,
     fontWeight: '600',
   },
 });

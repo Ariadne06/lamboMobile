@@ -5,54 +5,46 @@ import {
   ActivityIndicator,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
-  Alert,
   RefreshControl,
   BackHandler,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
-import { useFocusEffect } from '@react-navigation/native';
 
 const theme = {
   colors: {
-    background: '#F8F9FA',
+    background: '#F8FAFC',
     surface: '#FFFFFF',
-    border: '#E1E4E8',
-    borderLight: '#F0F2F5',
-    primary: '#0066CC',
-    primaryLight: '#E6F2FF',
-    success: '#28A745',
-    successLight: '#D4EDDA',
-    warning: '#FFC107',
-    danger: '#DC3545',
-    info: '#17A2B8',
-    textPrimary: '#1F2937',
+    border: '#E5E7EB',
+    primary: '#2563EB',
+    primaryLight: '#EFF6FF',
+    success: '#10B981',
+    successLight: '#ECFDF5',
+    warning: '#F59E0B',
+    warningLight: '#FFF3CD',
+    danger: '#EF4444',
+    dangerLight: '#FEE2E2',
+    textPrimary: '#111827',
     textSecondary: '#6B7280',
     textMuted: '#9CA3AF',
   },
-  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20 },
-  radius: { sm: 6, md: 10, lg: 14 },
-  shadow: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  }
+  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
+  radius: { sm: 6, md: 8, lg: 12, xl: 16 },
 };
 
 interface ImmunizationRecord {
-  immunization_id: number;
+  vaccine_type_id: number;
   vaccine_name: string;
-  dose_name: string;
-  date_given: string;
-  batch_number?: string;
-  remarks?: string;
-  given_by_name?: string;
+  at_birth_given: boolean;
+  first_dose_given: boolean;
+  second_dose_given: boolean;
+  third_dose_given: boolean;
+  last_administered: string | null;
+  next_recommended_date: string | null;
+  is_delayed: boolean;
 }
 
 export default function ImmunizationListScreen() {
@@ -65,7 +57,7 @@ export default function ImmunizationListScreen() {
   const [childName, setChildName] = useState('');
 
   useEffect(() => {
-    fetchImmunizationRecords();
+    fetchImmunizations();
   }, [child_health_id]);
 
   const handleBackPress = () => {
@@ -74,6 +66,8 @@ export default function ImmunizationListScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
+      fetchImmunizations(); // Refresh data when screen comes into focus
+      
       const onBackPress = () => {
         handleBackPress();
         return true;
@@ -83,25 +77,25 @@ export default function ImmunizationListScreen() {
     }, [child_health_id])
   );
 
-  const fetchImmunizationRecords = async () => {
+  const fetchImmunizations = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_LIST}${child_health_id}/immunizations/`
-      );
+      const url = `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_LIST(parseInt(child_health_id))}`;
+      console.log('📡 Fetching immunizations from:', url);
+      
+      const response = await fetch(url);
       const data = await response.json();
 
-      console.log('💉 Immunization records response:', data);
+      console.log('✅ Immunization data:', data);
 
       if (data.success) {
         setRecords(data.data || []);
-        setChildName(data.child_name || 'Child');
+        setChildName(data.child_name || '');
       } else {
-        Alert.alert('Error', data.error || 'Failed to load immunization records');
+        console.error('❌ API returned error:', data.error);
       }
     } catch (error) {
-      console.error('Failed to load immunization records:', error);
-      Alert.alert('Error', 'Network error occurred');
+      console.error('❌ Failed to load immunizations:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -110,29 +104,75 @@ export default function ImmunizationListScreen() {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchImmunizationRecords();
+    fetchImmunizations();
   };
 
-  const handleAddRecord = () => {
-    router.push(`/(bhw)/child-health/${child_health_id}/immunizations/add-immunization` as any);
-  };
-
-  const formatDate = (dateString: string): string => {
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      month: 'long',
+      month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
   };
 
+  const getCompletionStatus = (record: ImmunizationRecord): { 
+    text: string; 
+    color: string; 
+    backgroundColor: string;
+    icon: string;
+  } => {
+    // Count how many doses have been given
+    const dosesGiven = [
+      record.at_birth_given,
+      record.first_dose_given,
+      record.second_dose_given,
+      record.third_dose_given,
+    ].filter(Boolean).length;
+
+    if (dosesGiven === 0) {
+      return { 
+        text: 'Not Started', 
+        color: theme.colors.textMuted, 
+        backgroundColor: '#F3F4F6',
+        icon: 'ellipse-outline'
+      };
+    }
+    
+    if (record.is_delayed) {
+      return { 
+        text: 'Delayed', 
+        color: theme.colors.danger, 
+        backgroundColor: theme.colors.dangerLight,
+        icon: 'warning'
+      };
+    }
+    
+    if (record.next_recommended_date) {
+      return { 
+        text: 'In Progress', 
+        color: theme.colors.warning, 
+        backgroundColor: theme.colors.warningLight,
+        icon: 'time'
+      };
+    }
+    
+    return { 
+      text: 'Complete', 
+      color: theme.colors.success, 
+      backgroundColor: theme.colors.successLight,
+      icon: 'checkmark-circle'
+    };
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <CustomHeader title="Immunization Records" onBackPress={handleBackPress} />
+        <CustomHeader title="Immunization Schedule" onBackPress={handleBackPress} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <ThemedText style={styles.loadingText}>Loading records...</ThemedText>
+          <ThemedText style={styles.loadingText}>Loading immunizations...</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -140,32 +180,34 @@ export default function ImmunizationListScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Immunization Records" onBackPress={handleBackPress} />
+      <CustomHeader title="Immunization Schedule" onBackPress={handleBackPress} />
 
-      {/* Header Card */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <MaterialIcons name="vaccines" size={22} color={theme.colors.primary} />
-            <View>
-              <ThemedText style={styles.childName}>{childName}</ThemedText>
-              <ThemedText style={styles.recordCount}>
-                {records.length} {records.length === 1 ? 'vaccine' : 'vaccines'}
-              </ThemedText>
-            </View>
+      {/* Child Info Banner */}
+      {childName && (
+        <View style={styles.childBanner}>
+          <MaterialIcons name="child-care" size={24} color={theme.colors.primary} />
+          <View style={styles.childInfo}>
+            <ThemedText style={styles.childName}>{childName}</ThemedText>
+            <ThemedText style={styles.childSubtext}>
+              {records.length} vaccine{records.length !== 1 ? 's' : ''} tracked
+            </ThemedText>
           </View>
-          <TouchableOpacity style={styles.addIconButton} onPress={handleAddRecord}>
-            <Ionicons name="add" size={24} color={theme.colors.primary} />
-          </TouchableOpacity>
         </View>
+      )}
+
+      {/* Info Notice for BHW */}
+      <View style={styles.infoNotice}>
+        <Ionicons name="information-circle" size={20} color={theme.colors.primary} />
+        <ThemedText style={styles.infoText}>
+          You are viewing immunization records. Only Midwife can add new immunizations.
+        </ThemedText>
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
+          <RefreshControl 
+            refreshing={refreshing} 
             onRefresh={handleRefresh}
             colors={[theme.colors.primary]}
           />
@@ -173,82 +215,117 @@ export default function ImmunizationListScreen() {
       >
         {records.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <MaterialIcons name="vaccines" size={56} color={theme.colors.textMuted} />
-            <ThemedText style={styles.emptyTitle}>No Immunization Records</ThemedText>
+            <MaterialIcons name="vaccines" size={64} color={theme.colors.textMuted} />
+            <ThemedText style={styles.emptyText}>No immunizations recorded yet</ThemedText>
             <ThemedText style={styles.emptySubtext}>
-              Track your child's vaccinations
+              Immunization records will appear here once the Midwife adds them
             </ThemedText>
-            <TouchableOpacity style={styles.emptyButton} onPress={handleAddRecord}>
-              <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-              <ThemedText style={styles.emptyButtonText}>Add First Record</ThemedText>
-            </TouchableOpacity>
           </View>
         ) : (
-          records.map((record, index) => (
-            <View
-              key={record.immunization_id}
-              style={[styles.recordCard, index === records.length - 1 && styles.lastCard]}
-            >
-              {/* Vaccine Header */}
-              <View style={styles.cardHeader}>
-                <View style={styles.vaccineBadge}>
-                  <MaterialIcons name="vaccines" size={16} color={theme.colors.primary} />
-                  <ThemedText style={styles.vaccineText}>{record.vaccine_name}</ThemedText>
-                </View>
-                <View style={styles.doseBadge}>
-                  <ThemedText style={styles.doseText}>{record.dose_name}</ThemedText>
-                </View>
-              </View>
-
-              {/* Date Given */}
-              <View style={styles.infoRow}>
-                <ThemedText style={styles.label}>Date Given</ThemedText>
-                <View style={styles.valueContainer}>
-                  <ThemedText style={styles.value}>{formatDate(record.date_given)}</ThemedText>
-                </View>
-              </View>
-
-              {/* Batch Number */}
-              {record.batch_number && (
-                <View style={styles.infoRow}>
-                  <ThemedText style={styles.label}>Batch Number</ThemedText>
-                  <View style={styles.valueContainer}>
-                    <ThemedText style={styles.value}>{record.batch_number}</ThemedText>
+          <View style={styles.listContainer}>
+            {records.map((record, index) => {
+              const status = getCompletionStatus(record);
+              
+              return (
+                <View
+                  key={record.vaccine_type_id}
+                  style={[styles.card, index === records.length - 1 && styles.lastCard]}
+                >
+                  {/* Card Header */}
+                  <View style={styles.cardHeader}>
+                    <View style={styles.vaccineHeader}>
+                      <MaterialIcons name="vaccines" size={20} color={theme.colors.primary} />
+                      <ThemedText style={styles.vaccineText}>{record.vaccine_name}</ThemedText>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: status.backgroundColor }]}>
+                      <Ionicons name={status.icon as any} size={14} color={status.color} />
+                      <ThemedText style={[styles.statusText, { color: status.color }]}>
+                        {status.text}
+                      </ThemedText>
+                    </View>
                   </View>
-                </View>
-              )}
 
-              {/* Given By */}
-              {record.given_by_name && (
-                <View style={styles.infoRow}>
-                  <ThemedText style={styles.label}>Given By</ThemedText>
-                  <View style={styles.valueContainer}>
-                    <ThemedText style={styles.value}>{record.given_by_name}</ThemedText>
+                  {/* Dose Checklist */}
+                  <View style={styles.doseList}>
+                    {record.at_birth_given !== undefined && record.at_birth_given !== null && (
+                      <View style={styles.doseRow}>
+                        <Ionicons 
+                          name={record.at_birth_given ? "checkmark-circle" : "ellipse-outline"}
+                          size={20} 
+                          color={record.at_birth_given ? theme.colors.success : theme.colors.textMuted}
+                        />
+                        <ThemedText style={styles.doseLabel}>At Birth</ThemedText>
+                      </View>
+                    )}
+                    {record.first_dose_given !== undefined && record.first_dose_given !== null && (
+                      <View style={styles.doseRow}>
+                        <Ionicons 
+                          name={record.first_dose_given ? "checkmark-circle" : "ellipse-outline"}
+                          size={20} 
+                          color={record.first_dose_given ? theme.colors.success : theme.colors.textMuted}
+                        />
+                        <ThemedText style={styles.doseLabel}>1st Dose</ThemedText>
+                      </View>
+                    )}
+                    {record.second_dose_given !== undefined && record.second_dose_given !== null && (
+                      <View style={styles.doseRow}>
+                        <Ionicons 
+                          name={record.second_dose_given ? "checkmark-circle" : "ellipse-outline"}
+                          size={20} 
+                          color={record.second_dose_given ? theme.colors.success : theme.colors.textMuted}
+                        />
+                        <ThemedText style={styles.doseLabel}>2nd Dose</ThemedText>
+                      </View>
+                    )}
+                    {record.third_dose_given !== undefined && record.third_dose_given !== null && (
+                      <View style={styles.doseRow}>
+                        <Ionicons 
+                          name={record.third_dose_given ? "checkmark-circle" : "ellipse-outline"}
+                          size={20} 
+                          color={record.third_dose_given ? theme.colors.success : theme.colors.textMuted}
+                        />
+                        <ThemedText style={styles.doseLabel}>3rd Dose</ThemedText>
+                      </View>
+                    )}
                   </View>
-                </View>
-              )}
 
-              {/* Remarks */}
-              {record.remarks && (
-                <>
-                  <View style={styles.sectionDivider} />
-                  <View style={styles.notesContainer}>
-                    <ThemedText style={styles.label}>Remarks</ThemedText>
-                    <ThemedText style={styles.notesText}>{record.remarks}</ThemedText>
-                  </View>
-                </>
-              )}
-            </View>
-          ))
+                  {/* Date Information */}
+                  {(record.last_administered || record.next_recommended_date) && (
+                    <View style={styles.dateSection}>
+                      {record.last_administered && (
+                        <View style={styles.dateRow}>
+                          <Ionicons name="calendar" size={14} color={theme.colors.textSecondary} />
+                          <ThemedText style={styles.dateLabel}>Last Given:</ThemedText>
+                          <ThemedText style={styles.dateValue}>
+                            {formatDate(record.last_administered)}
+                          </ThemedText>
+                        </View>
+                      )}
+                      {record.next_recommended_date && (
+                        <View style={styles.dateRow}>
+                          <Ionicons 
+                            name={record.is_delayed ? "warning" : "time"} 
+                            size={14} 
+                            color={record.is_delayed ? theme.colors.danger : theme.colors.textSecondary} 
+                          />
+                          <ThemedText style={styles.dateLabel}>Next Due:</ThemedText>
+                          <ThemedText style={[
+                            styles.dateValue,
+                            record.is_delayed && { color: theme.colors.danger, fontWeight: '700' }
+                          ]}>
+                            {formatDate(record.next_recommended_date)}
+                            {record.is_delayed && ' ⚠️'}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
         )}
       </ScrollView>
-
-      {/* FAB */}
-      {records.length > 0 && (
-        <TouchableOpacity style={styles.fab} onPress={handleAddRecord} activeOpacity={0.85}>
-          <Ionicons name="add" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
     </SafeAreaView>
   );
 }
@@ -268,184 +345,153 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
   },
-  headerCard: {
-    backgroundColor: theme.colors.surface,
+  childBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primaryLight,
+    padding: theme.spacing.lg,
     marginHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
     borderRadius: theme.radius.lg,
-    ...theme.shadow,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: theme.spacing.lg,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: theme.spacing.md,
+  },
+  childInfo: {
     flex: 1,
   },
   childName: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: theme.colors.textPrimary,
     marginBottom: 2,
   },
-  recordCount: {
+  childSubtext: {
     fontSize: 13,
     color: theme.colors.textSecondary,
   },
-  addIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.primaryLight,
-    justifyContent: 'center',
+  infoNotice: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: theme.colors.primaryLight,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.primary,
+    padding: theme.spacing.md,
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    gap: theme.spacing.sm,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12,
+    color: theme.colors.textPrimary,
+    lineHeight: 16,
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: 100,
+  listContainer: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: theme.spacing.xl,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-    marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.xs,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  emptyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    gap: theme.spacing.sm,
-  },
-  emptyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  recordCard: {
+  card: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.xl,
     padding: theme.spacing.lg,
     marginBottom: theme.spacing.md,
-    ...theme.shadow,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   lastCard: {
     marginBottom: 0,
   },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
+    borderBottomColor: theme.colors.border,
   },
-  vaccineBadge: {
+  vaccineHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.primaryLight,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-    gap: 6,
+    gap: theme.spacing.sm,
     flex: 1,
-    marginRight: theme.spacing.md,
   },
   vaccineText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.primary,
-    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    flexShrink: 1,
   },
-  doseBadge: {
-    backgroundColor: theme.colors.successLight,
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
     borderRadius: theme.radius.md,
+    gap: 4,
   },
-  doseText: {
-    fontSize: 12,
+  statusText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: theme.colors.success,
   },
-  infoRow: {
+  doseList: {
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+  },
+  doseRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
   },
-  label: {
+  doseLabel: {
     fontSize: 14,
+    color: theme.colors.textPrimary,
     fontWeight: '500',
-    color: theme.colors.textSecondary,
-    flex: 1,
   },
-  valueContainer: {
+  dateSection: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
-  value: {
-    fontSize: 15,
+  dateLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+    marginLeft: theme.spacing.xs,
+  },
+  dateValue: {
+    fontSize: 12,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: theme.spacing.xl,
+  },
+  emptyText: {
+    fontSize: 16,
     fontWeight: '600',
     color: theme.colors.textPrimary,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.xs,
+    textAlign: 'center',
   },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: theme.colors.borderLight,
-    marginVertical: theme.spacing.md,
-  },
-  notesContainer: {
-    gap: theme.spacing.sm,
-  },
-  notesText: {
+  emptySubtext: {
     fontSize: 14,
-    color: theme.colors.textPrimary,
-    lineHeight: 20,
-    backgroundColor: theme.colors.borderLight,
-    padding: theme.spacing.md,
-    borderRadius: theme.radius.md,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...theme.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
   },
 });

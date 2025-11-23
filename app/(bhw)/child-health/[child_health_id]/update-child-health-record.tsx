@@ -342,7 +342,7 @@ export default function UpdateChildHealthRecordScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <MaterialIcons name="vaccines" size={20} color={theme.colors.primary} />
-            <ThemedText style={styles.cardTitle}>Mother's TT Status</ThemedText>
+            <ThemedText style={styles.cardTitle}>Mother&apos;s TT Status</ThemedText>
           </View>
 
           <View style={styles.inputGroup}>

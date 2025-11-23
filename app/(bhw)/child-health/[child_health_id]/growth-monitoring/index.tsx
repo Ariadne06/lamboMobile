@@ -213,7 +213,7 @@ export default function GrowthMonitoringListScreen() {
             <MaterialIcons name="show-chart" size={56} color={theme.colors.textMuted} />
             <ThemedText style={styles.emptyTitle}>No Growth Records</ThemedText>
             <ThemedText style={styles.emptySubtext}>
-              Track your child's growth by adding measurements
+              Track your child&apos;s growth by adding measurements
             </ThemedText>
             <TouchableOpacity style={styles.emptyButton} onPress={handleAddRecord}>
               <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />

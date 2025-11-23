@@ -154,6 +154,41 @@ export default function BHWTabLayout() {
         options={{ href: null }}
       />
 
+      <Tabs.Screen
+        name="child-health/[child_health_id]/medical-surgical-history/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/medical-surgical-history/add-medical-history"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/medical-surgical-history/add-surgical-history"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/supplements/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/supplements/add-supplement"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/exclusive-breastfeed/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/exclusive-breastfeed/add-assessment"
+        options={{ href: null }}
+      />
+
     </Tabs>
     
   );
