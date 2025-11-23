@@ -107,6 +107,88 @@ export default function BHWTabLayout() {
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="child-health/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="child-health/create-child-health-record"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/ChildSearchModal"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/update-child-health-record"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/growth-monitoring/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/growth-monitoring/add-growth-record"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/immunization/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/medical-surgical-history/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/medical-surgical-history/add-medical-history"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/medical-surgical-history/add-surgical-history"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/supplements/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/supplements/add-supplement"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/exclusive-breastfeed/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/exclusive-breastfeed/add-assessment"
+        options={{ href: null }}
+      />
+
     </Tabs>
     
   );

@@ -288,6 +288,7 @@ export default function ViewHouseholds() {
     sitio_name: null as string | null,
     visit_status: 'all' as 'all' | 'visited' | 'not_visited',
   });
+  
 
   // Memoized filtered households with search
   const filteredHouseholds = useMemo(() => {
@@ -421,7 +422,7 @@ export default function ViewHouseholds() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <CustomHeader title="Households" showBackButton={false} />
+        <CustomHeader title="Households" showBackButton={true} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0ea5e9" />
           <Text style={styles.loadingText}>Loading households...</Text>
@@ -432,7 +433,7 @@ export default function ViewHouseholds() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Households" showBackButton={false} />
+      <CustomHeader title="Households" showBackButton={true} />
       
       {/* Minimal Search and Actions */}
       <View style={styles.headerSection}>
