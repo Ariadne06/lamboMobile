@@ -1,10 +1,9 @@
+import { HapticTab } from '@/components/HapticTab';
+import TabBarBackground from '@/components/ui/TabBarBackground';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform} from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
+import { Platform } from 'react-native';
 
 export default function TabLayout() {
   return (
@@ -30,7 +29,14 @@ export default function TabLayout() {
         }),
       }}>
 
-      
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Menu',
+          tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
+        }}
+      />
+
       <Tabs.Screen
         name="announcement"
         options={{
@@ -39,11 +45,52 @@ export default function TabLayout() {
         }}
       />
 
+      {/* Hidden routes - accessible via navigation but not shown in tab bar */}
       <Tabs.Screen
-        name="menu"
+        name="health"
         options={{
-          title: 'Menu',
-          tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
+          href: null,
+          title: 'Health Records',
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
+          title: 'Profile',
+        }}
+      />
+
+      <Tabs.Screen
+        name="household"
+        options={{
+          href: null,
+          title: 'Household',
+        }}
+      />
+
+      <Tabs.Screen
+        name="business"
+        options={{
+          href: null,
+          title: 'Business',
+        }}
+      />
+
+      <Tabs.Screen
+        name="documents"
+        options={{
+          href: null,
+          title: 'Documents',
+        }}
+      />
+
+      <Tabs.Screen
+        name="transactions"
+        options={{
+          href: null,
+          title: 'Transactions',
         }}
       />
 
@@ -51,7 +98,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="devtest"
         options={{
-          href: null, // This completely hides the tab
+          href: null,
           title: 'Dev Test',
         }}
       />

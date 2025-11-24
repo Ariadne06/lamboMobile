@@ -1,11 +1,11 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
 import { showLogoutConfirmation } from '@/utils/auth';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Dimensions, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-export default function MenuScreen() {
+export default function HomeScreen() {
   const router = useRouter();
   const { width } = Dimensions.get('window');
   const BUTTON_WIDTH = Math.min(width * 0.92, 400);
@@ -17,40 +17,45 @@ export default function MenuScreen() {
         <View style={styles.container}>        
           <ThemedText style={styles.sectionTitle}>Services</ThemedText>
           <View style={styles.section}>
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/householdinformation')}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(tabs)/household/household')}>
               <View style={styles.buttonContent}>
                 <Ionicons name="home-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Household Information</ThemedText>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/transactionhistory')}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(tabs)/transactions' as any)}>
               <View style={styles.buttonContent}>
                 <Ionicons name="receipt-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Transaction History</ThemedText>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/healthrecords')}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(tabs)/health/health')}>
               <View style={styles.buttonContent}>
                 <Ionicons name="medkit-outline" size={22} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Health Records</ThemedText>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/businessinfo')}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(tabs)/business/business')}>
               <View style={styles.buttonContent}>
                 <Ionicons name="storefront-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Business Info</ThemedText>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/cncrequest')}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(tabs)/documents')}>
               <View style={styles.buttonContent}>
                 <Ionicons name="documents-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Certificate & Clearance Request</ThemedText>
@@ -58,11 +63,11 @@ export default function MenuScreen() {
             </TouchableOpacity>
           </View>
 
-          
           <ThemedText style={styles.sectionTitle}>Account</ThemedText>
           <View style={styles.section}>
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/menu/profile')}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(tabs)/profile/profile')}>
               <View style={styles.buttonContent}>
                 <Ionicons name="person-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Profile</ThemedText>
@@ -70,7 +75,6 @@ export default function MenuScreen() {
             </TouchableOpacity>
           </View>
 
-          
           <TouchableOpacity 
             style={[styles.button, styles.logoutButton, { width: BUTTON_WIDTH * 0.5 }]} 
             onPress={showLogoutConfirmation}>
@@ -95,14 +99,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#1e293b',
-    alignSelf: 'flex-start',
-    marginLeft: 12,
   },
   sectionTitle: {
     fontSize: 16,
@@ -132,7 +128,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    
   },
   buttonContent: {
     flexDirection: 'row',
@@ -146,17 +141,9 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     flexShrink: 1,
   },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginLeft: 16,
-    flexShrink: 1,
-  },
   logoutButton: {
     marginTop: 12,
     borderColor: '#FF3D33',
     borderRadius: 20,
-    
   },
 });

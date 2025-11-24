@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Linking,
+  ActivityIndicator, Alert, Linking,
+  Text, TextInput, TouchableOpacity,
+  View,
 } from "react-native";
 
 const RESIDENT_FORGOT_API =
