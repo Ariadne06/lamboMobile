@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/constants/apiConfig';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type ReligionOption = {religion_cat_id: number; religion_name: string};
 export type CivilStatusOption = { civil_stat_id: number; civil_name: string };
