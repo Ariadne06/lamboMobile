@@ -396,7 +396,7 @@ export default function GeneralHealthDetailScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="pregnant-woman" size={16} color={theme.colors.female} />
-              <ThemedText style={styles.cardTitle}>Women's Health</ThemedText>
+              <ThemedText style={styles.cardTitle}>Women&apos;s Health</ThemedText>
             </View>
 
             <View style={styles.infoGrid}>
