@@ -56,7 +56,7 @@ interface GeneralHealthDetail {
   full_name: string;
   sex: string;
   age: number;
-  philhealth_no?: string;
+  philhealthid_number?: string;
   family_code: string;
   class_id: number;
   class_description: string;
@@ -111,7 +111,7 @@ export default function GeneralHealthDetailScreen() {
       const data = await response.json();
 
       console.log('🔍 API Response:', data); // Debug log
-      console.log('📋 PhilHealth No:', data.data?.philhealth_no); // Check PhilHealth
+      console.log('📋 PhilHealth No:', data.data?.philhealthid_number); // Check PhilHealth
 
       if (data.success) {
         setHasRecord(data.has_record);
@@ -293,11 +293,11 @@ export default function GeneralHealthDetailScreen() {
             {/* ✅ PhilHealth Number */}
             <View style={styles.infoRow}>
               <ThemedText style={styles.infoLabel}>PhilHealth No.</ThemedText>
-              {healthData.philhealth_no ? (
+              {healthData.philhealthid_number ? (
                 <View style={styles.philhealthBadge}>
                   <MaterialIcons name="card-membership" size={12} color={theme.colors.info} />
                   <ThemedText style={styles.philhealthText}>
-                    {healthData.philhealth_no}
+                    {healthData.philhealthid_number}
                   </ThemedText>
                 </View>
               ) : (
