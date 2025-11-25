@@ -189,6 +189,20 @@ export default function BHWTabLayout() {
         options={{ href: null }}
       />
 
+      <Tabs.Screen
+        name="general-health/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="general-health/[family_member_id]"
+        options={{
+          href: null,
+        }}
+      />
+
     </Tabs>
     
   );

@@ -54,19 +54,16 @@ export default function BHWMenu() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]}
+              onPress={() => router.push('/(bhw)/general-health')}
+            >
               <View style={styles.buttonContent}>
                 <Ionicons name="clipboard-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>General Health Information</ThemedText>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="shield-checkmark-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Immunization Status</ThemedText>
-              </View>
-            </TouchableOpacity>
           </View>
 
            <TouchableOpacity 
