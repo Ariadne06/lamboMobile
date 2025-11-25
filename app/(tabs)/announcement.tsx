@@ -5,12 +5,24 @@ import {
   SectionList,
   Pressable,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
+import { API_BASE_URL } from '@/constants/apiConfig'; // ✅ use your existing config
 
-type Announcement = { id: number | string; date: string; text: string };
+type Announcement = {
+  id: number | string;
+  title: string;
+  text: string;
+  date: string | null;
+  image_path?: string | null;
+};
+
+// Relative endpoints – same style as MOBILE_LOGIN: '/api/mobile-login/'
+const ANNOUNCEMENTS_LATEST = '/api/mobile/announcements/latest/';
+const ANNOUNCEMENTS_ALL = '/api/mobile/announcements/';
 
 const COLORS = {
   primary: '#FF3D33',
@@ -22,18 +34,28 @@ const COLORS = {
   subtle: '#F1F5F9',
 };
 
-// ---- Robust date utils ----
+// ---- Date utils ----
 const MONTHS = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December'
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
-const MONTH_MAP = Object.fromEntries(MONTHS.map((m,i)=>[m.toLowerCase(), i]));
+const MONTH_MAP: Record<string, number> = Object.fromEntries(
+  MONTHS.map((m, i) => [m.toLowerCase(), i])
+);
 
-// Accepts: YYYY-MM-DD, YYYY/MM/DD, or "Month DD, YYYY"
-function parseDateSafe(input: string): number | null {
+function parseDateSafe(input: string | null | undefined): number | null {
   if (!input) return null;
 
-  // ISO 8601 or Date.parse-friendly first
   const parsed = Date.parse(input);
   if (!Number.isNaN(parsed)) return parsed;
 
@@ -64,7 +86,7 @@ function parseDateSafe(input: string): number | null {
     }
   }
 
-  return null; // could not parse
+  return null;
 }
 
 function monthKey(ts: number | null): string {
@@ -81,57 +103,87 @@ function formatShort(ts: number | null): string {
   return `${m} ${day}, ${d.getFullYear()}`;
 }
 
-export default function AnnounecmentScreen() {
-  // You can keep your original strings; parser will normalize them.
-  const announcements: Announcement[] = [
-    { id: 1, date: 'July 25, 2025', text: 'Barangay Cansaga will hold a community clean-up drive this Saturday at 7:00 AM. All residents are encouraged to participate.' },
-    { id: 2, date: '2025-06-13', text: 'Ayuda' },
-    { id: 3, date: 'May 30, 2025', text: 'Vaccine' },
-    { id: 4, date: '2025/05/15', text: 'Pulong-pulong' },
-    { id: 5, date: 'April 20, 2025', text: 'Scatter' },
-    { id: 6, date: 'March 10, 2025', text: 'Bingo Plus my location' },
-  ];
+type Mode = 'latest' | 'all';
 
-  // Normalize once
-  const normalized = React.useMemo(() => {
-    return announcements.map(a => {
-      const ts = parseDateSafe(a.date);
-      return { ...a, ts, monthKey: monthKey(ts) };
+export default function AnnouncementScreen() {
+  const [mode, setMode] = React.useState<Mode>('latest');
+  const [announcements, setAnnouncements] = React.useState<Announcement[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const relativeEndpoint =
+        mode === 'latest' ? ANNOUNCEMENTS_LATEST : ANNOUNCEMENTS_ALL;
+
+      // For "Latest", always fetch only the top 3.
+      // For "All", use a high limit so effectively all are returned.
+      const query =
+        mode === 'latest'
+          ? '?limit=3'
+          : '?limit=200';
+
+      const endpoint = `${API_BASE_URL}${relativeEndpoint}${query}`;
+
+
+        console.log('Fetching announcements from:', endpoint);
+
+        const res = await fetch(endpoint);
+        const rawText = await res.text();
+
+        if (!res.ok) {
+          console.log('Error response body:', rawText);
+          throw new Error(`HTTP ${res.status} - ${rawText}`);
+        }
+
+        let data: any;
+        try {
+          data = JSON.parse(rawText);
+        } catch (parseErr) {
+          console.log('Failed to parse JSON:', parseErr);
+          throw new Error('Invalid JSON from server');
+        }
+
+        const normalized: Announcement[] = (data || []).map((item: any) => ({
+          id: item.id ?? item.announcement_id,
+          title: item.title ?? item.header_title ?? '',
+          text: item.text ?? item.details ?? '',
+          date: item.date ?? item.created_date ?? null,
+          image_path: item.image_path ?? item.announcement_image_path ?? null,
+        }));
+
+        setAnnouncements(normalized);
+      } catch (err: any) {
+        console.error('Failed to load announcements', err);
+        setError(err?.message || 'Failed to load announcements.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnnouncements();
+  }, [mode]);
+
+  const normalizedWithDates = React.useMemo(() => {
+    return announcements.map((a) => {
+      const ts = parseDateSafe(a.date ?? undefined);
+      return {
+        ...a,
+        ts,
+        monthKey: monthKey(ts),
+      };
     });
   }, [announcements]);
 
-  // --- Chips only (removed search) ---
-  const [scope, setScope] = React.useState<'all' | 'month' | 'year'>('all');
-
-  const now = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear = now.getFullYear();
-
-  const filtered = React.useMemo(() => {
-    let list = normalized;
-
-    if (scope !== 'all') {
-      list = list.filter(a => {
-        if (a.ts == null) return false;
-        const d = new Date(a.ts);
-        if (scope === 'month') {
-          return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-        }
-        if (scope === 'year') {
-          return d.getFullYear() === thisYear;
-        }
-        return true;
-      });
-    }
-
-    return list;
-  }, [normalized, scope, thisMonth, thisYear]);
-
-  // Group by monthKey, sort sections & items by ts desc (unknowns last)
+  // Group by monthKey, sort sections & items by ts desc
   const sections = React.useMemo(() => {
-    const groups = new Map<string, typeof filtered>();
+    const groups = new Map<string, typeof normalizedWithDates>();
 
-    for (const a of filtered) {
+    for (const a of normalizedWithDates) {
       const key = a.monthKey;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(a);
@@ -140,29 +192,58 @@ export default function AnnounecmentScreen() {
     const out = Array.from(groups.entries()).map(([title, data]) => ({
       title,
       data: data.sort((x, y) => (y.ts ?? 0) - (x.ts ?? 0)),
-      // helper to sort sections by newest in that section
-      maxTs: Math.max(...data.map(d => d.ts ?? 0)),
+      maxTs: Math.max(...data.map((d) => d.ts ?? 0)),
     }));
 
     return out.sort((A, B) => (B.maxTs ?? 0) - (A.maxTs ?? 0));
-  }, [filtered]);
+  }, [normalizedWithDates]);
 
   const ListHeader = () => (
     <View style={styles.topBar}>
       <View style={styles.chips}>
-        <Chip label="All" active={scope === 'all'} onPress={() => setScope('all')} />
-        <Chip label="This month" active={scope === 'month'} onPress={() => setScope('month')} />
-        <Chip label="This year" active={scope === 'year'} onPress={() => setScope('year')} />
+        <Chip
+          label="Latest"
+          active={mode === 'latest'}
+          onPress={() => setMode('latest')}
+        />
+        <Chip label="All" active={mode === 'all'} onPress={() => setMode('all')} />
       </View>
 
       <View style={styles.countPill}>
         <Ionicons name="notifications" size={14} color={COLORS.primary} />
         <ThemedText style={styles.countText}>
-          {filtered.length} announcement{filtered.length === 1 ? '' : 's'}
+          {announcements.length} announcement{announcements.length === 1 ? '' : 's'}
         </ThemedText>
       </View>
     </View>
   );
+
+  const renderEmpty = () => {
+    if (loading) {
+      return (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" />
+          <ThemedText style={styles.emptyText}>Loading announcements...</ThemedText>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="alert-circle" size={60} color="#f43f5e" />
+          <ThemedText style={styles.emptyText}>{error}</ThemedText>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <Ionicons name="notifications-off" size={60} color="#d1d5db" />
+        <ThemedText style={styles.emptyText}>No announcements yet!</ThemedText>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }}>
@@ -173,12 +254,7 @@ export default function AnnounecmentScreen() {
         stickySectionHeadersEnabled
         ListHeaderComponent={<ListHeader />}
         contentContainerStyle={{ paddingBottom: 16 }}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="notifications-off" size={60} color="#d1d5db" />
-            <ThemedText style={styles.emptyText}>No announcements yet!</ThemedText>
-          </View>
-        }
+        ListEmptyComponent={renderEmpty()}
         renderSectionHeader={({ section: { title } }) => (
           <View style={styles.sectionHeader}>
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
@@ -206,9 +282,22 @@ export default function AnnounecmentScreen() {
                     </ThemedText>
                   </View>
                 </View>
-                <ThemedText style={styles.text}>
-                  {item.text}
+
+                {/* Title */}
+                <ThemedText
+                  style={{
+                    color: COLORS.ink,
+                    fontSize: 16,
+                    fontWeight: '700',
+                    marginBottom: 4,
+                  }}
+                  numberOfLines={2}
+                >
+                  {item.title}
                 </ThemedText>
+
+                {/* Body / details */}
+                <ThemedText style={styles.text}>{item.text}</ThemedText>
               </View>
             </View>
           );
@@ -232,11 +321,16 @@ function Chip({
       onPress={onPress}
       style={[
         styles.chip,
-        active ? { backgroundColor: COLORS.primary } : { backgroundColor: COLORS.subtle },
+        active
+          ? { backgroundColor: COLORS.primary }
+          : { backgroundColor: COLORS.subtle },
       ]}
     >
       <ThemedText
-        style={[styles.chipText, active ? { color: '#fff' } : { color: COLORS.sub }]}
+        style={[
+          styles.chipText,
+          active ? { color: '#fff' } : { color: COLORS.sub },
+        ]}
       >
         {label}
       </ThemedText>
@@ -244,7 +338,6 @@ function Chip({
   );
 }
 
-// ---- Styles ----
 const styles = StyleSheet.create({
   topBar: {
     paddingHorizontal: 16,
@@ -252,9 +345,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     gap: 10,
   },
-
   chips: { flexDirection: 'row', gap: 8 },
-
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
