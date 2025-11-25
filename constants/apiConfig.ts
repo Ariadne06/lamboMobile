@@ -111,6 +111,19 @@ export const API_ENDPOINTS = {
   RELIGIONS: '/api/religions/',
 
   QUARTERS: '/household_api/quarters/',
+
+      // Certificate Requests
+  DOCUMENT_TYPES: '/certificate_api/document-types/',
+  CLEARANCE_PURPOSES: '/certificate_api/clearance-purposes/',
+  CREATE_CLEARANCE_APPLICATION: '/certificate_api/create-clearance-application/',
+  
+  // Resident Applications & Transactions
+  RESIDENT_APPLICATIONS: '/certificate_api/residents/<int:resident_id>/applications/',
+  RESIDENT_APPLICATION_DETAIL: '/certificate_api/residents/<int:resident_id>/applications/<int:application_id>/',
+  RESIDENT_TRANSACTIONS: '/certificate_api/residents/<int:resident_id>/transactions/',
+  RESIDENT_TRANSACTION_DETAIL: '/certificate_api/residents/<int:resident_id>/transactions/<int:transaction_id>/',
+  CANCEL_CLEARANCE: '/certificate_api/residents/<int:resident_id>/applications/<int:application_id>/cancel/',
+  
 };
 
 // API settings
