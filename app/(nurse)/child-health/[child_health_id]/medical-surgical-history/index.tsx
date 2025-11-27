@@ -174,7 +174,7 @@ export default function NurseMedicalSurgicalScreen() {
       <View style={styles.infoNotice}>
         <Ionicons name="information-circle" size={16} color={theme.colors.primary} />
         <ThemedText style={styles.infoText}>
-          You can view the child's medical and surgical history recorded by the BHW.
+          You can view the child&apos;s medical and surgical history recorded by the BHW.
         </ThemedText>
       </View>
 

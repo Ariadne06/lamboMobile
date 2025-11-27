@@ -258,7 +258,7 @@ export default function CreateMaternalRecordScreen() {
                 textAlignVertical="top"
               />
               <ThemedText style={styles.helperText}>
-                Add a landmark to help locate the mother's residence during home visits.
+                Add a landmark to help locate the mother&apos;s residence during home visits.
               </ThemedText>
             </View>
           )}
