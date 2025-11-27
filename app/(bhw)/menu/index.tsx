@@ -37,7 +37,8 @@ export default function BHWMenu() {
 
           <ThemedText style={styles.sectionTitle}>Health Records</ThemedText>
           <View style={styles.section}>
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}>
+            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]}
+             onPress={() => router.push('/(bhw)/maternal-health')}>
               <View style={styles.buttonContent}>
                 <Ionicons name="heart-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Maternal Health Record</ThemedText>
