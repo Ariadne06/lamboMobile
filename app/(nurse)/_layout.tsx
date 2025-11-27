@@ -44,6 +44,46 @@ export default function NurseTabLayout() {
           tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
         }}
       />
+
+      <Tabs.Screen
+        name="child-health/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/exclusive-breastfeed/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/growth-monitoring/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/immunization/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/immunization/add-immunization"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/medical-surgical-history/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="child-health/[child_health_id]/supplements/index"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

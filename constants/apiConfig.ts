@@ -53,8 +53,10 @@ export const API_ENDPOINTS = {
   CHILD_HEALTH_FEEDING_METHODS: '/household_api/feeding-methods/',
   CHILD_HEALTH_MONTHS: '/household_api/months/',
   CHILD_HEALTH_TT_STATUSES: '/household_api/tt-statuses/',
-  CHILD_HEALTH_VACCINE_TYPES: '/household_api/vaccine-types/',
-  CHILD_HEALTH_DOSE_TYPES: '/household_api/dose-types/',
+  // CHILD_HEALTH_VACCINE_TYPES: '/household_api/vaccine-types/',
+  // CHILD_HEALTH_DOSE_TYPES: '/household_api/dose-types/',
+  VACCINE_TYPES: '/household_api/vaccine-types/',
+  DOSE_TYPES: '/household_api/dose-types/',
   CHILD_HEALTH_SUPPLEMENTS: '/household_api/supplements/',
   CHILD_HEALTH_SEARCH: '/household_api/search-child/',
   CHILD_HEALTH_CREATE: '/household_api/child-health-records/create/',
@@ -123,6 +125,121 @@ export const API_ENDPOINTS = {
   RESIDENT_TRANSACTIONS: '/certificate_api/residents/<int:resident_id>/transactions/',
   RESIDENT_TRANSACTION_DETAIL: '/certificate_api/residents/<int:resident_id>/transactions/<int:transaction_id>/',
   CANCEL_CLEARANCE: '/certificate_api/residents/<int:resident_id>/applications/<int:application_id>/cancel/',
+
+    // ========================================
+  // MATERNAL HEALTH - LOOKUP DATA
+  // ========================================
+  MATERNAL_DISEASE_TYPES: '/household_api/disease-types/',
+  MATERNAL_TRIMESTERS: '/household_api/trimesters/',
+  MATERNAL_TEST_TYPES: '/household_api/test-types/',
+  MATERNAL_SUPPLEMENT_TYPES: '/household_api/supplement-types/',
+  MATERNAL_DEWORMING_TYPES: '/household_api/deworming-types/',
+  MATERNAL_OUTCOME_TYPES: '/household_api/outcome-types/',
+  MATERNAL_DELIVERY_TYPES: '/household_api/delivery-types/',
+  MATERNAL_PLACE_DELIVERY_TYPES: '/household_api/place-delivery-types/',
+  MATERNAL_OWNERSHIP_TYPES: '/household_api/ownership-types/',
+  MATERNAL_BIRTH_ATTENDANTS: '/household_api/birth-attendants/',
+  MATERNAL_RECORD_STATUSES: '/household_api/record-statuses/',
+
+  // ========================================
+  // MATERNAL HEALTH - SEARCH & LIST
+  // ========================================
+  MATERNAL_SEARCH_MOTHER: '/household_api/search-mother/',
+  MATERNAL_RECORDS_LIST: '/household_api/maternal-health-records/',
+  
+  // ========================================
+  // MATERNAL HEALTH - RECORD CRUD
+  // ========================================
+  MATERNAL_RECORD_CREATE: '/household_api/maternal-health-records/create/',
+  MATERNAL_RECORD_DETAIL: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/`,
+  MATERNAL_RECORD_UPDATE: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/update/`,
+
+  // MATERNAL HEALTH - OBSTETRICAL HISTORY
+  MATERNAL_OBSTETRICAL_HISTORY_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/obstetrical-history/`,
+  MATERNAL_OBSTETRICAL_HISTORY_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/obstetrical-history/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - MEDICAL/SURGICAL HISTORY
+  // ========================================
+  MATERNAL_MEDICAL_CONDITIONS_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/medical-conditions/`,
+  MATERNAL_MEDICAL_CONDITIONS_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/medical-conditions/add/`,
+  
+  MATERNAL_SURGICAL_HISTORY_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/surgical-history/`,
+  MATERNAL_SURGICAL_HISTORY_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/surgical-history/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - IMMUNIZATION (TT)
+  // ========================================
+  MATERNAL_IMMUNIZATION_TRACK: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/immunization/track/`,
+  MATERNAL_IMMUNIZATION_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/immunization/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - DISEASE SURVEILLANCE
+  // ========================================
+  MATERNAL_DISEASE_SURVEILLANCE_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/disease-surveillance/`,
+  MATERNAL_DISEASE_SURVEILLANCE_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/disease-surveillance/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - LABORATORY SCREENING
+  // ========================================
+  MATERNAL_LAB_SCREENING_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/lab-screening/`,
+  MATERNAL_LAB_SCREENING_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/lab-screening/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - CHECKUP RECORDS
+  // ========================================
+  MATERNAL_CHECKUPS_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/checkups/`,
+  MATERNAL_CHECKUPS_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/checkups/add/`,
+  MATERNAL_CHECKUPS_TRACK: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/checkups/track/`,
+
+  // ========================================
+  // MATERNAL HEALTH - SUPPLEMENTS
+  // ========================================
+  MATERNAL_SUPPLEMENTS_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/supplements/`,
+  MATERNAL_SUPPLEMENTS_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/supplements/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - DEWORMING
+  // ========================================
+  MATERNAL_DEWORMING_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/deworming/`,
+  MATERNAL_DEWORMING_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/deworming/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - PREGNANCY OUTCOME
+  // ========================================
+  MATERNAL_DELIVERY_OUTCOME_VIEW: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/delivery-outcome/`,
+  MATERNAL_DELIVERY_OUTCOME_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/delivery-outcome/add/`,
+
+  // ========================================
+  // MATERNAL HEALTH - POSTPARTUM
+  // ========================================
+  MATERNAL_POSTPARTUM_LIST: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/postpartum/`,
+  MATERNAL_POSTPARTUM_ADD: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/postpartum/add/`,
   
 };
 

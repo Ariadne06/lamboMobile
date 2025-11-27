@@ -203,6 +203,48 @@ export default function BHWTabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="maternal-health/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/MotherSearchModal"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/create-maternal-record"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      {/* <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/update-maternal-record"
+        options={{
+          href: null,
+        }}
+      /> */}
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/obstetrical-history/index"
+        options={{
+          href: null,
+        }}
+      />
+
     </Tabs>
     
   );
