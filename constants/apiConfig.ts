@@ -64,9 +64,12 @@ export const API_ENDPOINTS = {
   CHILD_HEALTH_UPDATE: '/household_api/child-health-records/',
 
    // CHILD HEALTH - IMMUNIZATION
-  CHILD_IMMUNIZATIONS_LIST: (childHealthId: number) => 
+CHILD_IMMUNIZATIONS_LIST: (childHealthId: number) =>
     `/household_api/child-health-records/${childHealthId}/immunizations/`,
-  CHILD_IMMUNIZATIONS_ADD: '/household_api/child-health-records/',
+
+  CHILD_IMMUNIZATIONS_ADD: (childHealthId: number) =>
+    `/household_api/child-health-records/${childHealthId}/immunizations/add/`,
+
 
   // CHILD HEALTH - SUPPLEMENTS
   CHILD_SUPPLEMENTS_LIST: (childHealthId: number) => 
