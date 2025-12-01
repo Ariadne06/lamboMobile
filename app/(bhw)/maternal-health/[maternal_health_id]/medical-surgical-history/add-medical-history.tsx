@@ -22,35 +22,34 @@ const theme = {
     background: '#F8FAFC',
     surface: '#FFFFFF',
     border: '#E5E7EB',
-    primary: '#EC4899',
-    primaryLight: '#FDF2F8',
-    success: '#10B981',
-    successLight: '#ECFDF5',
+    primary: '#DC3545',
+    primaryLight: '#FCE8EC',
     textPrimary: '#111827',
     textSecondary: '#6B7280',
     textMuted: '#9CA3AF',
-    disabled: '#D1D5DB',
+    error: '#EF4444',
   },
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
   radius: { sm: 6, md: 8, lg: 12, xl: 16 },
 };
 
-export default function UpdateMaternalRecordScreen() {
+export default function AddMedicalHistoryScreen() {
   const { maternal_health_id } = useLocalSearchParams<{ maternal_health_id: string }>();
   const router = useRouter();
 
   const [userSession, setUserSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [maternalData, setMaternalData] = useState<any>(null);
-  const [addressLandmark, setAddressLandmark] = useState('');
+  const [maternalName, setMaternalName] = useState('');
+  const [medicalCondition, setMedicalCondition] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadData();
   }, [maternal_health_id]);
 
   const handleBackPress = () => {
-    router.push(`/(bhw)/maternal-health/${maternal_health_id}` as any);
+    router.push(`/(bhw)/maternal-health/${maternal_health_id}/medical-surgical-history` as any);
   };
 
   useFocusEffect(
@@ -76,54 +75,68 @@ export default function UpdateMaternalRecordScreen() {
       const data = await response.json();
 
       if (data.success) {
-        setMaternalData(data.data);
-        setAddressLandmark(data.data.address_landmark || '');
+        setMaternalName(data.data.full_name || '');
       }
     } catch (error) {
       console.error('Failed to load data:', error);
-      Alert.alert('Error', 'Failed to load maternal record');
+      Alert.alert('Error', 'Failed to load maternal information');
     } finally {
       setLoading(false);
     }
   };
 
   const validateForm = (): boolean => {
-    if (addressLandmark.length > 500) {
-      Alert.alert('Too Long', 'Address landmark must be less than 500 characters');
+    if (!medicalCondition.trim()) {
+      setError('Medical condition is required');
       return false;
     }
+
+    if (medicalCondition.trim().length < 3) {
+      setError('Medical condition must be at least 3 characters');
+      return false;
+    }
+
+    if (medicalCondition.trim().length > 500) {
+      setError('Medical condition must be less than 500 characters');
+      return false;
+    }
+
+    setError('');
     return true;
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      Alert.alert('Validation Error', error);
+      return;
+    }
 
     Alert.alert(
-      'Confirm Update',
-      'Update maternal health record?',
+      'Confirm',
+      `Add medical condition?\n\n"${medicalCondition.trim()}"`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Update', onPress: submitUpdate }
+        { text: 'Add', onPress: submitRecord }
       ]
     );
   };
 
-  const submitUpdate = async () => {
+  const submitRecord = async () => {
     try {
       setSubmitting(true);
       const personnelId = userSession?.user_id || 1;
 
       const payload = {
         personnel_id: personnelId,
-        address_landmark: addressLandmark.trim() || null,
+        medical_condition: medicalCondition.trim(),
       };
 
-      console.log('📤 Updating maternal record:', payload);
+      console.log('📤 Submitting medical condition:', payload);
 
       const response = await fetch(
-        `${API_BASE_URL}/household_api/maternal-health-records/${maternal_health_id}/update/`,
+        `${API_BASE_URL}/household_api/maternal-health-records/${maternal_health_id}/medical-conditions/add/`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         }
@@ -134,16 +147,25 @@ export default function UpdateMaternalRecordScreen() {
       if (response.ok && data.success) {
         Alert.alert(
           'Success',
-          'Maternal health record updated successfully',
+          'Medical condition added successfully',
           [
             {
-              text: 'OK',
-              onPress: () => handleBackPress()
+              text: 'Add Another',
+              onPress: () => {
+                setMedicalCondition('');
+                setError('');
+              }
+            },
+            {
+              text: 'View Records',
+              onPress: () => handleBackPress(),
+              style: 'default'
             }
-          ]
+          ],
+          { cancelable: false }
         );
       } else {
-        Alert.alert('Error', data.error || 'Failed to update record');
+        Alert.alert('Error', data.error || 'Failed to add medical condition');
       }
     } catch (error) {
       console.error('❌ Submit error:', error);
@@ -156,7 +178,7 @@ export default function UpdateMaternalRecordScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <CustomHeader title="Update Record" onBackPress={handleBackPress} />
+        <CustomHeader title="Add Medical Condition" onBackPress={handleBackPress} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <ThemedText style={styles.loadingText}>Loading...</ThemedText>
@@ -165,104 +187,83 @@ export default function UpdateMaternalRecordScreen() {
     );
   }
 
-  if (!maternalData) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <CustomHeader title="Update Record" onBackPress={handleBackPress} />
-        <View style={styles.emptyContainer}>
-          <ThemedText>Record not found</ThemedText>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const recordStatus = maternalData.record_status?.toLowerCase() || '';
-  const isCompleted = recordStatus === 'completed';
-
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Update Record" onBackPress={handleBackPress} />
+      <CustomHeader title="Add Medical Condition" onBackPress={handleBackPress} />
 
       {/* Maternal Name Banner */}
-      <View style={styles.bannerCard}>
-        <Ionicons name="woman" size={24} color={theme.colors.primary} />
-        <View style={styles.bannerInfo}>
-          <ThemedText style={styles.maternalName}>{maternalData.full_name}</ThemedText>
-          <ThemedText style={styles.bannerSubtext}>Update maternal health record</ThemedText>
+      {maternalName && (
+        <View style={styles.bannerCard}>
+          <Ionicons name="woman" size={24} color={theme.colors.primary} />
+          <View style={styles.bannerInfo}>
+            <ThemedText style={styles.maternalName}>{maternalName}</ThemedText>
+            <ThemedText style={styles.bannerSubtext}>Add Medical Condition</ThemedText>
+          </View>
         </View>
-        <View style={[
-          styles.statusBadge,
-          { backgroundColor: isCompleted ? theme.colors.successLight : theme.colors.primaryLight }
-        ]}>
-          <ThemedText style={[
-            styles.statusText,
-            { color: isCompleted ? theme.colors.success : theme.colors.primary }
-          ]}>
-            {maternalData.record_status}
-          </ThemedText>
-        </View>
-      </View>
+      )}
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Address Information */}
+        {/* Info Card */}
+        <View style={[styles.card, { backgroundColor: theme.colors.primaryLight }]}>
+          <View style={styles.infoHeader}>
+            <Ionicons name="information-circle" size={20} color={theme.colors.primary} />
+            <ThemedText style={styles.infoTitle}>Medical Condition Information</ThemedText>
+          </View>
+          <ThemedText style={styles.infoText}>
+            Record any pre-existing medical conditions, chronic illnesses, or health concerns that may affect the pregnancy.
+          </ThemedText>
+          <ThemedText style={styles.infoExample}>
+            Examples: Diabetes, Hypertension, Asthma, Heart Disease, Thyroid Disorder, etc.
+          </ThemedText>
+        </View>
+
+        {/* Medical Condition Input */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Ionicons name="location" size={20} color={theme.colors.primary} />
-            <ThemedText style={styles.cardTitle}>Address Information</ThemedText>
+            <Ionicons name="medical" size={20} color={theme.colors.primary} />
+            <ThemedText style={styles.cardTitle}>Medical Condition *</ThemedText>
           </View>
 
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Complete Address (Read-only)</ThemedText>
-            <View style={styles.readOnlyInput}>
-              <ThemedText style={styles.readOnlyText}>
-                {maternalData.full_address || 'Not specified'}
-              </ThemedText>
-            </View>
-          </View>
+          <TextInput
+            style={[styles.textArea, error && styles.inputError]}
+            value={medicalCondition}
+            onChangeText={(text) => {
+              setMedicalCondition(text);
+              setError('');
+            }}
+            placeholder="Enter medical condition or illness (e.g., Gestational Diabetes)"
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            placeholderTextColor={theme.colors.textMuted}
+            maxLength={500}
+          />
 
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Address Landmark (Optional)</ThemedText>
-            <TextInput
-              style={styles.textArea}
-              value={addressLandmark}
-              onChangeText={setAddressLandmark}
-              placeholder="e.g., Near church, beside market..."
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              placeholderTextColor={theme.colors.textMuted}
-              editable={!isCompleted}
-            />
+          {error ? (
+            <ThemedText style={styles.errorText}>{error}</ThemedText>
+          ) : (
             <ThemedText style={styles.helperText}>
-              {isCompleted ? 'Record is completed - editing disabled' : 'Landmark helps locate the residence easily'}
+              {medicalCondition.length}/500 characters
             </ThemedText>
-          </View>
+          )}
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Submit Button - Only show if NOT completed */}
-      {!isCompleted && (
-        <View style={styles.submitContainer}>
-          <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons name="save" size={20} color="#FFFFFF" />
-                <ThemedText style={styles.submitButtonText}>
-                  Update Record
-                </ThemedText>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Submit Button */}
+      <View style={styles.submitContainer}>
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+          <ThemedText style={styles.submitButtonText}>
+            {submitting ? 'Adding...' : 'Add Medical Condition'}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -281,11 +282,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   bannerCard: {
     flexDirection: 'row',
@@ -309,15 +305,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.colors.textSecondary,
     marginTop: 2,
-  },
-  statusBadge: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radius.md,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -351,25 +338,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
   },
-  inputGroup: {
-    marginBottom: theme.spacing.lg,
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.primary,
   },
-  readOnlyInput: {
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
-  },
-  readOnlyText: {
+  infoText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: theme.spacing.md,
+  },
+  infoExample: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
   textArea: {
     backgroundColor: theme.colors.background,
@@ -379,12 +369,21 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     fontSize: 15,
     color: theme.colors.textPrimary,
-    minHeight: 80,
+    minHeight: 120,
+  },
+  inputError: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    fontSize: 12,
+    color: theme.colors.error,
+    marginTop: theme.spacing.xs,
   },
   helperText: {
     fontSize: 12,
     color: theme.colors.textMuted,
     marginTop: theme.spacing.xs,
+    textAlign: 'right',
   },
   submitContainer: {
     position: 'absolute',
