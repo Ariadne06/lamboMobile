@@ -231,13 +231,6 @@ export default function BHWTabLayout() {
         }}
       />
 
-      {/* <Tabs.Screen
-        name="maternal-health/[maternal_health_id]/update-maternal-record"
-        options={{
-          href: null,
-        }}
-      /> */}
-
       <Tabs.Screen
         name="maternal-health/[maternal_health_id]/obstetrical-history/index"
         options={{
@@ -245,6 +238,81 @@ export default function BHWTabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/obstetrical-history/add-obstetrical-history"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/immunization/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/immunization/add-dose"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/update-maternal-record"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/medical-surgical-history/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/medical-surgical-history/add-medical-history"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/medical-surgical-history/add-surgical-history"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/checkups/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/checkups/add-checkup"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/laboratory-screening/index"
+        options={{
+          href: null,
+        }}
+      />
+      
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/disease-surveillance/index"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
     
   );
