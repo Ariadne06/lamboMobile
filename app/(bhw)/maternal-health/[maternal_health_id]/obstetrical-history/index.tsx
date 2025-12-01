@@ -181,7 +181,7 @@ export default function ObstetricalHistoryScreen() {
             </View>
             <ThemedText style={styles.emptyTitle}>No Obstetrical History</ThemedText>
             <ThemedText style={styles.emptySubtext}>
-              Add the mother's pregnancy history to track prenatal care and delivery information.
+              Add the mother&apos;s pregnancy history to track prenatal care and delivery information.
             </ThemedText>
             
             <TouchableOpacity 
