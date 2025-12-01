@@ -69,7 +69,7 @@ CHILD_IMMUNIZATIONS_LIST: (childHealthId: number) =>
 
   CHILD_IMMUNIZATIONS_ADD: (childHealthId: number) =>
     `/household_api/child-health-records/${childHealthId}/immunizations/add/`,
-
+bhwDashboard: "/household_api/bhw-dashboard/",
 
   // CHILD HEALTH - SUPPLEMENTS
   CHILD_SUPPLEMENTS_LIST: (childHealthId: number) => 
