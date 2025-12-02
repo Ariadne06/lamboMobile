@@ -106,6 +106,9 @@ export const API_ENDPOINTS = {
   FAMILY_MARK_VISITED: '/household_api/families/',
   FAMILY_GH_READINESS: '/household_api/families/',
 
+  // Dashboard
+  BHW_DASHBOARD: '/household_api/bhw/dashboard/',
+
   // Data endpoints 
   CIVIL_STATUSES: '/api/civil-statuses/',
   EDUCATIONAL_ATTAINMENTS: '/api/educational-attainments/',

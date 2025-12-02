@@ -1,15 +1,19 @@
-import React, { ReactNode } from 'react';
+import { ThemedText } from '@/components/ThemedText';
+import { BHWDashboardData, fetchBHWDashboard } from '@/utils/dashboardService';
+import { getUserSession } from '@/utils/session';
+import { Ionicons } from '@expo/vector-icons';
+import React, { ReactNode, useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
   ScrollView,
-  StyleSheet,
-  Dimensions,
   StyleProp,
+  StyleSheet,
+  View,
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
 
 // ——— Theme ——-
 const COLORS = {
@@ -24,7 +28,7 @@ const COLORS = {
   textPrimary: '#1F2937',
   textSecondary: '#6B7280',
   border: '#E5E7EB',
-  subtle: '#F1F5F9',
+  subtle: '#FFFFFF',
 };
 
 // ——— Types ———
@@ -39,33 +43,7 @@ type StatCardProps = {
 };
 type SectionHeaderProps = { title: string; subtitle?: string };
 
-// ——— Data (BHW specific) ———
-const DATA = {
-  totalHouseholds: 156,
-  totalResidents: 1240,
-  male: 610,
-  female: 630,
-  registeredToday: 8,
-  pendingRecords: 5,
-  pregnantMothers: 24,
-  children: 210,
-  householdDistribution: [
-    { label: 'Purok 1', value: 32 },
-    { label: 'Purok 2', value: 28 },
-    { label: 'Purok 3', value: 35 },
-    { label: 'Purok 4', value: 25 },
-    { label: 'Purok 5', value: 36 },
-  ],
-  healthCategoryDistribution: [
-    { label: 'Maternal', value: 89, color: COLORS.warning },
-    { label: 'Child Health', value: 210, color: COLORS.success },
-    { label: 'General Health', value: 425, color: COLORS.info },
-    { label: 'Immunization', value: 156, color: COLORS.purple },
-    { label: 'Nutrition', value: 89, color: COLORS.primary },
-  ],
-};
-
-// ——— Reusable ——–
+// ——— Reusable Components ——–
 const DashboardCard: React.FC<DashboardCardProps> = ({ children, style }) => (
   <View style={[styles.card, style]}>{children}</View>
 );
@@ -111,36 +89,43 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ title, subtitle }) => (
   </View>
 );
 
-// Simple Bar Chart Component for Households
-const SimpleBarChart: React.FC<{ data: typeof DATA.householdDistribution }> = ({ data }) => {
+// Horizontal Bar Chart Component for Households
+const HouseholdBarChart: React.FC<{ data: Array<{ label: string; value: number }> }> = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <View style={styles.emptyChartContainer}>
+        <Ionicons name="bar-chart-outline" size={48} color={COLORS.textSecondary} />
+        <ThemedText style={styles.emptyChartText}>No purok data available</ThemedText>
+      </View>
+    );
+  }
+
   const maxValue = Math.max(...data.map(item => item.value));
   
   return (
-    <View style={styles.simpleChart}>
-      <View style={styles.chartBars}>
-        {data.map((item, index) => {
-          const height = (item.value / maxValue) * 120;
-          return (
-            <View key={index} style={styles.barContainer}>
-              <View style={styles.barValueContainer}>
-                <ThemedText style={styles.barValue}>{item.value}</ThemedText>
-              </View>
+    <View style={styles.horizontalChart}>
+      {data.map((item, index) => {
+        const barWidth = (item.value / maxValue) * 100;
+        return (
+          <View key={index} style={styles.horizontalBarRow}>
+            <ThemedText style={styles.horizontalBarLabel} numberOfLines={1}>
+              {item.label.replace('Sitio ', '')}
+            </ThemedText>
+            <View style={styles.horizontalBarWrapper}>
               <View 
                 style={[
-                  styles.bar, 
+                  styles.horizontalBar,
                   { 
-                    height, 
+                    width: `${barWidth}%`,
                     backgroundColor: index % 2 === 0 ? COLORS.primary : COLORS.primaryDark 
                   }
                 ]} 
               />
-              <ThemedText style={styles.barLabel}>
-                {item.label.replace('Purok ', 'P')}
-              </ThemedText>
             </View>
-          );
-        })}
-      </View>
+            <ThemedText style={styles.horizontalBarValue}>{item.value}</ThemedText>
+          </View>
+        );
+      })}
     </View>
   );
 };
@@ -170,7 +155,7 @@ const ProgressCircle: React.FC<{ percentage: number; color: string; size?: numbe
 };
 
 // Health Category Distribution Component
-const HealthCategoryDistribution: React.FC<{ data: typeof DATA.healthCategoryDistribution }> = ({ data }) => {
+const HealthCategoryDistribution: React.FC<{ data: Array<{ label: string; value: number; color: string }> }> = ({ data }) => {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
   return (
@@ -204,15 +189,104 @@ const HealthCategoryDistribution: React.FC<{ data: typeof DATA.healthCategoryDis
 
 // ——— Screen ———
 export default function BHWDashboard() {
-  const registrationProgress = Math.round(
-    (DATA.totalHouseholds / 200) * 100 // Assuming target of 200 households
-  );
-  const malePct = Math.round((DATA.male / DATA.totalResidents) * 100);
+  const [dashboardData, setDashboardData] = useState<BHWDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const session = await getUserSession();
+      if (!session || !session.user_id) {
+        Alert.alert('Error', 'No user session found');
+        return;
+      }
+
+      console.log('📥 Fetching BHW dashboard for personnel_id:', session.user_id);
+      const data = await fetchBHWDashboard(session.user_id);
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Error fetching dashboard:', error);
+      Alert.alert('Error', 'Failed to load dashboard data. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ThemedText style={styles.loadingText}>Loading dashboard...</ThemedText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="alert-circle" size={48} color={COLORS.textSecondary} />
+          <ThemedText style={styles.loadingText}>No data available</ThemedText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const totalPopulation = dashboardData.total_male + dashboardData.total_female;
+  const malePct = totalPopulation > 0 ? Math.round((dashboardData.total_male / totalPopulation) * 100) : 0;
   const femalePct = 100 - malePct;
+
+  // Transform API data for charts
+  console.log('🏘️ RAW households_per_purok:', dashboardData.households_per_purok);
+  console.log('📋 Is Array?', Array.isArray(dashboardData.households_per_purok));
+  console.log('📏 Length:', dashboardData.households_per_purok?.length);
+  
+  if (dashboardData.households_per_purok && dashboardData.households_per_purok.length > 0) {
+    console.log('📦 First item:', dashboardData.households_per_purok[0]);
+    console.log('🔑 First item keys:', Object.keys(dashboardData.households_per_purok[0]));
+  }
+
+  const householdDistribution = Array.isArray(dashboardData.households_per_purok) 
+    ? dashboardData.households_per_purok.map(item => {
+        console.log('🔄 Mapping item:', item);
+        return {
+          label: item.sitio_name,
+          value: item.total_households,
+        };
+      })
+    : [];
+
+  console.log('📊 Transformed household distribution:', householdDistribution);
+
+  const healthCategoryDistribution = [
+    { label: 'Age 0-5', value: dashboardData.age_group_0_5, color: COLORS.info },
+    { label: 'Age 6-12', value: dashboardData.age_group_6_12, color: COLORS.success },
+    { label: 'Age 13-17', value: dashboardData.age_group_13_17, color: COLORS.warning },
+    { label: 'Age 18-59', value: dashboardData.age_group_18_59, color: COLORS.purple },
+    { label: 'Age 60+', value: dashboardData.age_group_60_plus, color: COLORS.primary },
+  ];
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -233,13 +307,13 @@ export default function BHWDashboard() {
           <View style={styles.infoPill}>
             <View style={[styles.dot, { backgroundColor: COLORS.warning }]} />
             <ThemedText style={styles.infoText}>
-              {DATA.pendingRecords} records need review
+              {dashboardData.hh_not_visited_count + dashboardData.fam_not_visited_count} visits pending
             </ThemedText>
           </View>
           <View style={styles.infoPill}>
             <View style={[styles.dot, { backgroundColor: COLORS.success }]} />
             <ThemedText style={styles.infoText}>
-              {DATA.registeredToday} registered today
+              {dashboardData.households_visited_today_by_bhw} visited today
             </ThemedText>
           </View>
         </View>
@@ -249,31 +323,31 @@ export default function BHWDashboard() {
         <View style={styles.grid2}>
           <StatCard
             title="Total Households"
-            value={DATA.totalHouseholds.toLocaleString()}
+            value={dashboardData.total_households.toLocaleString()}
             subtitle="Registered families"
             icon="home"
             color={COLORS.primary}
           />
           <StatCard
-            title="Total Residents"
-            value={DATA.totalResidents.toLocaleString()}
-            subtitle="Active residents"
+            title="Total Families"
+            value={dashboardData.total_families.toLocaleString()}
+            subtitle="Active families"
             icon="people"
             color={COLORS.info}
           />
           <StatCard
-            title="Pending Records"
-            value={DATA.pendingRecords}
-            subtitle="Need review"
-            icon="document-text"
-            color={COLORS.warning}
+            title="Visited Today"
+            value={dashboardData.households_visited_today_by_bhw}
+            subtitle="By this BHW"
+            icon="checkmark-circle"
+            color={COLORS.success}
           />
           <StatCard
-            title="Today's Entries"
-            value={DATA.registeredToday}
-            subtitle="New records"
-            icon="add-circle"
-            color={COLORS.success}
+            title="Upcoming Immunization"
+            value={dashboardData.total_children_upcoming_immun_5d}
+            subtitle="Next 5 days"
+            icon="medical"
+            color={COLORS.warning}
           />
         </View>
 
@@ -285,28 +359,28 @@ export default function BHWDashboard() {
         <View style={styles.grid2}>
           <StatCard
             title="Male"
-            value={DATA.male}
+            value={dashboardData.total_male}
             subtitle={`${malePct}% of population`}
             icon="man"
             color={COLORS.info}
           />
           <StatCard
             title="Female"
-            value={DATA.female}
+            value={dashboardData.total_female}
             subtitle={`${femalePct}% of population`}
             icon="woman"
             color={COLORS.purple}
           />
           <StatCard
             title="Pregnant Mothers"
-            value={DATA.pregnantMothers}
+            value={dashboardData.total_active_maternal}
             subtitle="Under monitoring"
             icon="heart"
             color={COLORS.primary}
           />
           <StatCard
-            title="Children (0–14)"
-            value={DATA.children}
+            title="Children (0–5)"
+            value={dashboardData.age_group_0_5}
             subtitle="Growth monitoring"
             icon="happy"
             color={COLORS.success}
@@ -319,43 +393,68 @@ export default function BHWDashboard() {
           subtitle="Household distribution and health records"
         />
         
-        {/* Registration Progress */}
-        <DashboardCard style={styles.progressCard}>
-          <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
-            Household Registration Progress
-          </ThemedText>
-          <View style={styles.progressContainer}>
-            <ProgressCircle 
-              percentage={registrationProgress} 
-              color={COLORS.primary} 
-              size={100} 
-            />
-            <View style={styles.progressStats}>
-              <View style={styles.progressStat}>
-                <ThemedText style={styles.progressStatValue}>{DATA.totalHouseholds}</ThemedText>
-                <ThemedText style={styles.progressStatLabel}>Registered</ThemedText>
-              </View>
-              <View style={styles.progressStat}>
-                <ThemedText style={styles.progressStatValue}>{200 - DATA.totalHouseholds}</ThemedText>
-                <ThemedText style={styles.progressStatLabel}>Target Remaining</ThemedText>
+        {/* Visitation Progress Cards */}
+        <View style={styles.progressCardsWrap}>
+          <DashboardCard style={styles.progressCardHalf}>
+            <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
+              Household Visitation
+            </ThemedText>
+            <View style={styles.progressContainer}>
+              <ProgressCircle 
+                percentage={Math.round(dashboardData.hh_visited_percent)} 
+                color={COLORS.primary} 
+                size={100} 
+              />
+              <View style={styles.progressStats}>
+                <View style={styles.progressStat}>
+                  <ThemedText style={styles.progressStatValue}>{dashboardData.hh_visited_count}</ThemedText>
+                  <ThemedText style={styles.progressStatLabel}>Visited</ThemedText>
+                </View>
+                <View style={styles.progressStat}>
+                  <ThemedText style={styles.progressStatValue}>{dashboardData.hh_not_visited_count}</ThemedText>
+                  <ThemedText style={styles.progressStatLabel}>Not Visited</ThemedText>
+                </View>
               </View>
             </View>
-          </View>
-        </DashboardCard>
+          </DashboardCard>
+
+          <DashboardCard style={styles.progressCardHalf}>
+            <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
+              Family Visitation
+            </ThemedText>
+            <View style={styles.progressContainer}>
+              <ProgressCircle 
+                percentage={Math.round(dashboardData.fam_visited_percent)} 
+                color={COLORS.success} 
+                size={100} 
+              />
+              <View style={styles.progressStats}>
+                <View style={styles.progressStat}>
+                  <ThemedText style={styles.progressStatValue}>{dashboardData.fam_visited_count}</ThemedText>
+                  <ThemedText style={styles.progressStatLabel}>Visited</ThemedText>
+                </View>
+                <View style={styles.progressStat}>
+                  <ThemedText style={styles.progressStatValue}>{dashboardData.fam_not_visited_count}</ThemedText>
+                  <ThemedText style={styles.progressStatLabel}>Not Visited</ThemedText>
+                </View>
+              </View>
+            </View>
+          </DashboardCard>
+        </View>
 
         <View style={styles.chartsWrap}>
           <DashboardCard style={styles.chartCard}>
             <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
               Households per Purok
             </ThemedText>
-            <SimpleBarChart data={DATA.householdDistribution} />
+            <HouseholdBarChart data={householdDistribution} />
           </DashboardCard>
 
           <DashboardCard style={[styles.chartCard, styles.chartRight]}>
             <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
-              Health Records by Category
+              Age Group Distribution
             </ThemedText>
-            <HealthCategoryDistribution data={DATA.healthCategoryDistribution} />
+            <HealthCategoryDistribution data={healthCategoryDistribution} />
           </DashboardCard>
         </View>
 
@@ -369,6 +468,16 @@ export default function BHWDashboard() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 16 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
 
   header: {
     paddingHorizontal: 16,
@@ -458,6 +567,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
   },
+  progressCardsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingHorizontal: 16,
+    marginBottom: 6,
+  },
+  progressCardHalf: {
+    flexGrow: 1,
+    flexBasis: 340,
+  },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -518,39 +638,49 @@ const styles = StyleSheet.create({
   chartRight: { },
   chartTitle: { fontSize: 14, color: COLORS.textPrimary, marginBottom: 10 },
 
-  // Simple Bar Chart Styles
-  simpleChart: {
-    paddingVertical: 10,
+  // Horizontal Bar Chart Styles
+  horizontalChart: {
+    paddingVertical: 8,
+    gap: 12,
   },
-  chartBars: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    height: 160,
-  },
-  barContainer: {
+  emptyChartContainer: {
+    paddingVertical: 40,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  emptyChartText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  horizontalBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  horizontalBarLabel: {
+    fontSize: 11,
+    color: COLORS.textPrimary,
+    width: 70,
+    fontWeight: '500',
+  },
+  horizontalBarWrapper: {
     flex: 1,
+    height: 24,
+    backgroundColor: COLORS.subtle,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
-  barValueContainer: {
-    marginBottom: 4,
+  horizontalBar: {
+    height: 24,
+    borderRadius: 4,
   },
-  barValue: {
-    fontSize: 10,
+  horizontalBarValue: {
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    textAlign: 'center',
-  },
-  bar: {
-    width: 20,
-    backgroundColor: COLORS.primary,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  barLabel: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
+    width: 25,
+    textAlign: 'right',
   },
 
   // Health Category Distribution Styles (reused from age distribution)
