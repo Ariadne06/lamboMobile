@@ -64,9 +64,12 @@ export const API_ENDPOINTS = {
   CHILD_HEALTH_UPDATE: '/household_api/child-health-records/',
 
    // CHILD HEALTH - IMMUNIZATION
-  CHILD_IMMUNIZATIONS_LIST: (childHealthId: number) => 
+CHILD_IMMUNIZATIONS_LIST: (childHealthId: number) =>
     `/household_api/child-health-records/${childHealthId}/immunizations/`,
-  CHILD_IMMUNIZATIONS_ADD: '/household_api/child-health-records/',
+
+  CHILD_IMMUNIZATIONS_ADD: (childHealthId: number) =>
+    `/household_api/child-health-records/${childHealthId}/immunizations/add/`,
+bhwDashboard: "/household_api/bhw-dashboard/",
 
   // CHILD HEALTH - SUPPLEMENTS
   CHILD_SUPPLEMENTS_LIST: (childHealthId: number) => 
@@ -160,10 +163,11 @@ export const API_ENDPOINTS = {
     `/household_api/maternal-health-records/${maternalHealthId}/update/`,
 
   // MATERNAL HEALTH - OBSTETRICAL HISTORY
-  MATERNAL_OBSTETRICAL_HISTORY_LIST: (maternalHealthId: number) =>
+  OBSTETRICAL_HISTORY_CREATE: (maternalHealthId: number) =>
+    `/household_api/maternal-health-records/${maternalHealthId}/obstetrical-history/create/`,
+  
+  OBSTETRICAL_HISTORY_LIST: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/obstetrical-history/`,
-  MATERNAL_OBSTETRICAL_HISTORY_ADD: (maternalHealthId: number) =>
-    `/household_api/maternal-health-records/${maternalHealthId}/obstetrical-history/add/`,
 
   // ========================================
   // MATERNAL HEALTH - MEDICAL/SURGICAL HISTORY
@@ -191,6 +195,7 @@ export const API_ENDPOINTS = {
   // ========================================
   MATERNAL_DISEASE_SURVEILLANCE_LIST: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/disease-surveillance/`,
+
   MATERNAL_DISEASE_SURVEILLANCE_ADD: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/disease-surveillance/add/`,
 
@@ -198,18 +203,18 @@ export const API_ENDPOINTS = {
   // MATERNAL HEALTH - LABORATORY SCREENING
   // ========================================
   MATERNAL_LAB_SCREENING_LIST: (maternalHealthId: number) =>
-    `/household_api/maternal-health-records/${maternalHealthId}/lab-screening/`,
+    `/household_api/maternal-health-records/${maternalHealthId}/laboratory-screening/`,
   MATERNAL_LAB_SCREENING_ADD: (maternalHealthId: number) =>
-    `/household_api/maternal-health-records/${maternalHealthId}/lab-screening/add/`,
+    `/household_api/maternal-health-records/${maternalHealthId}/laboratory-screening/add/`,
 
   // ========================================
   // MATERNAL HEALTH - CHECKUP RECORDS
   // ========================================
-  MATERNAL_CHECKUPS_LIST: (maternalHealthId: number) =>
+  CHECKUP_LIST: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/checkups/`,
-  MATERNAL_CHECKUPS_ADD: (maternalHealthId: number) =>
+  CHECKUP_ADD: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/checkups/add/`,
-  MATERNAL_CHECKUPS_TRACK: (maternalHealthId: number) =>
+  CHECKUP_TRACK: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/checkups/track/`,
 
   // ========================================

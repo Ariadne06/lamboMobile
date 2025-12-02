@@ -53,7 +53,7 @@ interface MaternalHealthData {
   updated_at: string | null;
 }
 
-export default function MaternalHealthDetailScreen() {
+export default function NurseMaternalHealthDetailScreen() {
   const { maternal_health_id } = useLocalSearchParams<{ maternal_health_id: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export default function MaternalHealthDetailScreen() {
   );
 
   const handleBackPress = () => {
-    router.push('/(bhw)/maternal-health');
+    router.push('/(nurse)/maternal-health');
   };
 
   useFocusEffect(
@@ -227,115 +227,108 @@ export default function MaternalHealthDetailScreen() {
           )}
         </View>
 
-        {/* Health Tracking Section */}
+        {/* Health Records Section */}
         <View style={styles.actionSection}>
-          <ThemedText style={styles.sectionTitle}>Health Tracking</ThemedText>
-          
+          <ThemedText style={styles.sectionTitle}>Health Records</ThemedText>
+
           {/* Obstetrical History */}
           <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/obstetrical-history`)}
+            style={[styles.actionButtonFull, { backgroundColor: '#8B5CF6' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/obstetrical-history` as any)}
           >
-            <Ionicons name="medical" size={24} color="#FFFFFF" />
+            <MaterialIcons name="healing" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Obstetrical History</ThemedText>
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Immunization (TT Status) */}
+          {/* Medical & Surgical History */}
           <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#8B5CF6' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/immunization`)}
+            style={[styles.actionButtonFull, { backgroundColor: '#EF4444' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/medical-surgical-history` as any)}
           >
-            <MaterialIcons name="vaccines" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>TT Immunization</ThemedText>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {/* Trimester Checkups */}
-          <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#10B981' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/checkups`)}
-          >
-            <Ionicons name="heart-circle" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Trimester Checkups</ThemedText>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {/* Supplements & Deworming */}
-          <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#F59E0B' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/supplements`)}
-          >
-            <Ionicons name="fitness" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Supplements & Deworming</ThemedText>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Medical History Section */}
-        <View style={styles.actionSection}>
-          <ThemedText style={styles.sectionTitle}>Medical History</ThemedText>
-          
-          <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#DC2626' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/medical-surgical-history`)}
-          >
-            <Ionicons name="document-text" size={24} color="#FFFFFF" />
+            <MaterialIcons name="medical-services" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Medical & Surgical History</ThemedText>
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Disease Surveillance - VIEW ONLY */}
+          {/* Immunization (TT) */}
           <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#6366F1' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/disease-surveillance`)}
+            style={[styles.actionButtonFull, { backgroundColor: '#F59E0B' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/immunization` as any)}
           >
-            <Ionicons name="eye" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Disease Surveillance</ThemedText>
+            <MaterialIcons name="vaccines" size={24} color="#FFFFFF" />
+            <ThemedText style={styles.actionButtonFullText}>Immunization (TT)</ThemedText>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Laboratory Screening - VIEW ONLY */}
-          <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#0891B2' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/laboratory-screening`)}
-          >
-            <Ionicons name="flask" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Laboratory Screening</ThemedText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Pregnancy Outcome Section */}
-        <View style={styles.actionSection}>
-          <ThemedText style={styles.sectionTitle}>Pregnancy Outcome</ThemedText>
-          
+          {/* Disease Surveillance */}
           <TouchableOpacity
             style={[styles.actionButtonFull, { backgroundColor: '#EC4899' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/delivery-outcome`)}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/disease-surveillance` as any)}
           >
-            <Ionicons name="happy" size={24} color="#FFFFFF" />
+            <MaterialIcons name="coronavirus" size={24} color="#FFFFFF" />
+            <ThemedText style={styles.actionButtonFullText}>Disease Surveillance</ThemedText>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Laboratory Screening */}
+          <TouchableOpacity
+            style={[styles.actionButtonFull, { backgroundColor: '#3B82F6' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/lab-screening` as any)}
+          >
+            <MaterialIcons name="science" size={24} color="#FFFFFF" />
+            <ThemedText style={styles.actionButtonFullText}>Laboratory Screening</ThemedText>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Checkup Records */}
+          <TouchableOpacity
+            style={[styles.actionButtonFull, { backgroundColor: '#10B981' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/checkups` as any)}
+          >
+            <MaterialIcons name="assignment" size={24} color="#FFFFFF" />
+            <ThemedText style={styles.actionButtonFullText}>Checkup Records</ThemedText>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Supplements */}
+          <TouchableOpacity
+            style={[styles.actionButtonFull, { backgroundColor: '#14B8A6' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/supplements` as any)}
+          >
+            <MaterialIcons name="medication" size={24} color="#FFFFFF" />
+            <ThemedText style={styles.actionButtonFullText}>Supplements</ThemedText>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Deworming */}
+          <TouchableOpacity
+            style={[styles.actionButtonFull, { backgroundColor: '#8B5CF6' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/deworming` as any)}
+          >
+            <MaterialIcons name="medication" size={24} color="#FFFFFF" />
+            <ThemedText style={styles.actionButtonFullText}>Deworming</ThemedText>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Delivery Outcome */}
+          <TouchableOpacity
+            style={[styles.actionButtonFull, { backgroundColor: '#EC4899' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/delivery-outcome` as any)}
+          >
+            <MaterialIcons name="child-care" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Delivery Outcome</ThemedText>
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
+          {/* Postpartum */}
           <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#14B8A6' }]}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/postpartum`)}
+            style={[styles.actionButtonFull, { backgroundColor: '#F59E0B' }]}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/postpartum` as any)}
           >
-            <Ionicons name="woman" size={24} color="#FFFFFF" />
+            <MaterialIcons name="healing" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Postpartum Visits</ThemedText>
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Update Button */}
-        <View style={styles.updateButtonContainer}>
-          <TouchableOpacity
-            style={styles.updateButton}
-            onPress={() => router.push(`/(bhw)/maternal-health/${maternal_health_id}/update-maternal-record` as any)}
-          >
-            <Ionicons name="create-outline" size={24} color={theme.colors.warning} />
-            <ThemedText style={styles.updateButtonText}>Update Basic Information</ThemedText>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.warning} />
           </TouchableOpacity>
         </View>
       </ScrollView>

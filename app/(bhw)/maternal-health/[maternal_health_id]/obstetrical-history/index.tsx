@@ -5,16 +5,16 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
-  RefreshControl, // ✅ ADD THIS IMPORT
+  RefreshControl, 
   Alert,
   BackHandler,
+  TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
 import { API_BASE_URL } from '@/constants/apiConfig';
-import { getUserSession } from '@/utils/session';
 
 const theme = {
   colors: {
@@ -90,10 +90,13 @@ export default function ObstetricalHistoryScreen() {
       if (data.success) {
         setMaternalName(data.maternal_name || '');
         
-        if (data.data && data.data.length > 0) {
+        // Check if data exists and has records
+        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+          console.log('✅ Has record - showing card');
           setHasRecord(true);
           setHistoryData(data.data[0]);
         } else {
+          console.log('❌ No record - showing empty state');
           setHasRecord(false);
           setHistoryData(null);
         }
@@ -108,6 +111,13 @@ export default function ObstetricalHistoryScreen() {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleAddRecord = () => {
+    console.log('🔄 Navigating to add obstetrical history...');
+    router.push(
+      `/(bhw)/maternal-health/${maternal_health_id}/obstetrical-history/add-obstetrical-history` as any
+    );
   };
 
   const handleRefresh = () => {
@@ -151,7 +161,10 @@ export default function ObstetricalHistoryScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          !hasRecord && styles.scrollContentCentered
+        ]}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -161,18 +174,31 @@ export default function ObstetricalHistoryScreen() {
         }
       >
         {!hasRecord ? (
-          /* Empty State */
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="information-circle" size={20} color={theme.colors.warning} />
-              <ThemedText style={styles.cardTitle}>No Record Found</ThemedText>
+          /* Empty State with Add Button */
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconContainer}>
+              <MaterialIcons name="pregnant-woman" size={80} color={theme.colors.textMuted} />
             </View>
-            <ThemedText style={styles.emptyText}>
-              No obstetrical history has been recorded yet. This information will be added by the Midwife during consultation.
+            <ThemedText style={styles.emptyTitle}>No Obstetrical History</ThemedText>
+            <ThemedText style={styles.emptySubtext}>
+              Add the mother&apos;s pregnancy history to track prenatal care and delivery information.
             </ThemedText>
+            
+            <TouchableOpacity 
+              style={styles.addButton} 
+              onPress={handleAddRecord}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+              <View style={styles.addButtonTextContainer}>
+                <ThemedText style={styles.addButtonText}>
+                  Add Obstetrical History
+                </ThemedText>
+              </View>
+            </TouchableOpacity>
           </View>
         ) : (
-          /* Display Record */
+          /* Display Existing Record */
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="pregnant-woman" size={20} color={theme.colors.primary} />
@@ -224,8 +250,6 @@ export default function ObstetricalHistoryScreen() {
             </View>
           </View>
         )}
-
-        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -251,9 +275,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: theme.spacing.lg,
+    flexGrow: 1,
   },
-  bottomSpacer: {
-    height: theme.spacing.xxl,
+  scrollContentCentered: {
+    justifyContent: 'center',
   },
   infoCard: {
     flexDirection: 'row',
@@ -264,6 +289,8 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.lg,
     borderRadius: theme.radius.lg,
     gap: theme.spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.primary,
   },
   infoText: {
     flex: 1,
@@ -271,6 +298,67 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.textPrimary,
   },
+  
+  // Empty State Styles
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.xxl * 2,
+    paddingHorizontal: theme.spacing.xl,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: theme.spacing.xxl,
+    paddingHorizontal: theme.spacing.lg,
+    maxWidth: 320,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.radius.xl,
+    gap: theme.spacing.sm,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    minWidth: 280,
+    maxWidth: '90%',
+  },
+  addButtonTextContainer: {
+    flexShrink: 1,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  // Card Styles
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xl,
@@ -278,6 +366,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -293,19 +386,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
   },
-  emptyText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
+
+  // GPA Section Styles
   gpaSection: {
     marginBottom: theme.spacing.lg,
   },
   gpaRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
     backgroundColor: theme.colors.primaryLight,
     borderRadius: theme.radius.lg,
   },
@@ -315,17 +404,21 @@ const styles = StyleSheet.create({
   gpaLabel: {
     fontSize: 12,
     color: theme.colors.textSecondary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
+    textTransform: 'uppercase',
+    fontWeight: '600',
   },
   gpaValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: theme.colors.primary,
   },
+
+  // Date Section Styles
   dateSection: {
     gap: theme.spacing.md,
     marginBottom: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
+    paddingTop: theme.spacing.lg,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
@@ -333,24 +426,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
+    backgroundColor: '#F9FAFB',
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
   },
   dateLabel: {
     fontSize: 13,
     color: theme.colors.textSecondary,
     fontWeight: '500',
+    flex: 1,
   },
   dateValue: {
     fontSize: 13,
     color: theme.colors.textPrimary,
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'right',
+    fontWeight: '700',
   },
+
+  // Record Info Styles
   recordInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: theme.spacing.xs,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
@@ -358,5 +455,6 @@ const styles = StyleSheet.create({
   recordInfoText: {
     fontSize: 11,
     color: theme.colors.textMuted,
+    fontStyle: 'italic',
   },
 });
