@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   ScrollView,
@@ -8,387 +8,327 @@ import {
   Alert,
   BackHandler,
   TouchableOpacity,
-} from 'react-native';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import { ThemedText } from '@/components/ThemedText';
-import CustomHeader from '@/components/ui/CustomHeader';
-import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
-import { getUserSession } from '@/utils/session';
+  Modal,
+  Text,
+} from "react-native";
+import {
+  useLocalSearchParams,
+  useRouter,
+  useFocusEffect,
+} from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { ThemedText } from "@/components/ThemedText";
+import CustomHeader from "@/components/ui/CustomHeader";
+import { API_BASE_URL, API_ENDPOINTS } from "@/constants/apiConfig";
+import { getUserSession } from "@/utils/session";
+
+/* ------------------------------------------------------
+   THEME — LAMBO ADMIN STYLE (RED PRIMARY)
+------------------------------------------------------- */
 
 const theme = {
   colors: {
-    background: '#F8FAFC',
-    surface: '#FFFFFF',
-    border: '#E5E7EB',
-    primary: '#2563EB',
-    primarySoft: '#DBEAFE',
-    primaryDeep: '#1D4ED8',
-    danger: '#DC2626',
-    success: '#10B981',
-    successSoft: '#D1FAE5',
-    textPrimary: '#111827',
-    textSecondary: '#6B7280',
-    textMuted: '#9CA3AF',
-    disabled: '#D1D5DB',
+    background: "#F8FAFC",
+    surface: "#FFFFFF",
+    border: "#E5E7EB",
+    primary: "#E11D2F",
+    primarySoft: "#FFE4E6",
+    primaryDeep: "#C81E25",
+    danger: "#DC2626",
+    success: "#16A34A",
+    textPrimary: "#111827",
+    textSecondary: "#6B7280",
+    textMuted: "#9CA3AF",
+    disabled: "#D1D5DB",
   },
-  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
-  radius: { sm: 6, md: 8, lg: 12, xl: 16, pill: 999 },
+  radius: { md: 10, lg: 16, xl: 20 },
+  spacing: { sm: 6, md: 12, lg: 16, xl: 20 },
 };
 
-interface VaccineType {
-  vaccine_type_id: number;
-  vaccine_name: string;
-  at_birth: boolean; // DB flag
-}
+/* ------------------------------------------------------
+   REUSABLE BOTTOM-SHEET DROPDOWN (LAMBO STYLE)
+------------------------------------------------------- */
 
-interface DoseType {
-  dose_type_id: number;
-  dose_name: string; // 'At Birth', 'First Dose', 'Second Dose', 'Third Dose'
-}
+const SelectModal = ({
+  visible,
+  title,
+  items,
+  selectedValue,
+  onSelect,
+  onClose,
+}: any) => (
+  <Modal visible={visible} transparent animationType="slide">
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalSheet}>
 
-interface ImmunizationStatus {
-  vaccine_type_id: number;
-  at_birth_given: boolean;
-  first_dose_given: boolean;
-  second_dose_given: boolean;
-  third_dose_given: boolean;
-}
+        <Text style={styles.modalTitle}>{title}</Text>
 
-type FormData = {
-  vaccine_type_id: number | null;
-  dose_type_id: number | null;
-};
+        <View style={styles.modalDivider} />
 
-export default function NurseAddImmunizationScreen() {
-  const { child_health_id } = useLocalSearchParams<{ child_health_id: string }>();
-  const router = useRouter();
+        <ScrollView style={{ maxHeight: 300 }}>
+          {items.map((item: any, index: number) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.modalItem,
+                selectedValue === item.value && styles.modalItemSelected,
+              ]}
+              onPress={() => {
+                onSelect(item.value);
+                onClose();
+              }}
+            >
+              <Text style={styles.modalItemText}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-  const [userSession, setUserSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [childInfo, setChildInfo] = useState<any>(null);
+        <TouchableOpacity style={styles.modalCancelBtn} onPress={onClose}>
+          <Text style={styles.modalCancelText}>Cancel</Text>
+        </TouchableOpacity>
 
-  const [vaccines, setVaccines] = useState<VaccineType[]>([]);
-  const [doses, setDoses] = useState<DoseType[]>([]);
-  const [immunizationStatus, setImmunizationStatus] = useState<ImmunizationStatus[]>([]);
+      </View>
+    </View>
+  </Modal>
+);
 
-  const [formData, setFormData] = useState<FormData>({
-    vaccine_type_id: null,
-    dose_type_id: null,
-  });
+/* ------------------------------------------------------
+   CUSTOM BOTTOM-SHEET CALENDAR
+------------------------------------------------------- */
 
-  const handleBackPress = () => {
-    router.push(`/(nurse)/child-health/${child_health_id}/immunization` as any);
+const CalendarBottomSheet = ({ visible, onClose, onSelect }: any) => {
+  const today = new Date();
+  const [month, setMonth] = useState(today.getMonth());
+  const [year, setYear] = useState(today.getFullYear());
+
+  const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  const getDays = (m: number, y: number) => {
+    const start = new Date(y, m, 1).getDay();
+    const total = new Date(y, m + 1, 0).getDate();
+
+    const arr: (number | null)[] = [];
+    for (let i = 0; i < start; i++) arr.push(null);
+    for (let d = 1; d <= total; d++) arr.push(d);
+    return arr;
   };
 
-  // 🔁 Reload data when the screen gains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      let isActive = true;
+  const days = getDays(month, year);
 
-      const loadData = async () => {
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalSheet}>
+
+          <Text style={styles.modalTitle}>Select Date</Text>
+          <View style={styles.modalDivider} />
+
+          <View style={styles.calendarHeader}>
+            <TouchableOpacity
+              onPress={() => {
+                if (month === 0) {
+                  setMonth(11);
+                  setYear(year - 1);
+                } else setMonth(month - 1);
+              }}
+            >
+              <Ionicons name="chevron-back" size={20} />
+            </TouchableOpacity>
+
+            <Text style={styles.calendarMonthText}>
+              {monthNames[month]} {year}
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => {
+                if (month === 11) {
+                  setMonth(0);
+                  setYear(year + 1);
+                } else setMonth(month + 1);
+              }}
+            >
+              <Ionicons name="chevron-forward" size={20} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.calendarWeekRow}>
+            {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
+              <Text key={d} style={styles.calendarWeekDay}>{d}</Text>
+            ))}
+          </View>
+
+          <View style={styles.calendarGrid}>
+            {days.map((d, i) => (
+              <TouchableOpacity
+                key={i}
+                disabled={!d}
+                style={styles.calendarDayCell}
+                onPress={() => {
+                  const final =
+                    `${year}-${String(month + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+                  onSelect(final);
+                  onClose();
+                }}
+              >
+                <Text style={[styles.calendarDayText, !d && { opacity: 0 }]}>
+                  {d || ""}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.modalCancelBtn} onPress={onClose}>
+            <Text style={styles.modalCancelText}>Cancel</Text>
+          </TouchableOpacity>
+
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+/* ------------------------------------------------------
+   MAIN SCREEN
+------------------------------------------------------- */
+
+export default function NurseAddImmunizationScreen() {
+  const { child_health_id } =
+    useLocalSearchParams<{ child_health_id: string }>();
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [userSession, setUserSession] = useState<any>(null);
+
+  const [childInfo, setChildInfo] = useState<any>(null);
+  const [vaccines, setVaccines] = useState<any[]>([]);
+  const [doses, setDoses] = useState<any[]>([]);
+
+  const [formData, setFormData] = useState({
+    vaccine_type_id: null as number | null,
+    dose_type_id: null as number | null,
+  });
+
+  const [dateGiven, setDateGiven] = useState<string | null>(null);
+
+  const [vaccineModal, setVaccineModal] = useState(false);
+  const [doseModal, setDoseModal] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
+
+  const handleBackPress = () => {
+    router.push(`/(nurse)/child-health/${child_health_id}/immunization`);
+  };
+
+  /* LOAD DATA */
+  useFocusEffect(
+  React.useCallback(() => {
+      let active = true;
+
+      const load = async () => {
         try {
           setLoading(true);
+
           const session = await getUserSession();
-          if (!isActive) return;
           setUserSession(session);
 
-          // 1) Child info
-          const childResponse = await fetch(
-            `${API_BASE_URL}/household_api/child-health-records/${child_health_id}/`
+          const infoRes = await fetch(
+            `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_LIST(parseInt(child_health_id))}`
           );
-          if (!childResponse.ok) {
-            throw new Error(`Child info request failed: ${childResponse.status}`);
-          }
-          const childData = await childResponse.json();
-          if (!isActive) return;
-          if (childData.success) {
-            setChildInfo(childData.data);
-          } else {
-            throw new Error(childData.error || 'Failed to load child info');
+          const infoJson = await infoRes.json();
+
+          if (infoJson.success) {
+            setChildInfo({ child_full_name: infoJson.child_name });
           }
 
-          // 2) Immunization status
-          const statusResponse = await fetch(
-            `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_LIST(
-              parseInt(child_health_id as string, 10)
-            )}`
-          );
-          if (!statusResponse.ok) {
-            throw new Error(`Status request failed: ${statusResponse.status}`);
-          }
-          const statusData = await statusResponse.json();
-          if (!isActive) return;
-          if (statusData.success) {
-            setImmunizationStatus(statusData.data || []);
-          }
+          const vaccRes = await fetch(`${API_BASE_URL}${API_ENDPOINTS.VACCINE_TYPES}`);
+          const vaccJson = await vaccRes.json();
+          setVaccines(vaccJson.results || vaccJson);
 
-          // 3) Vaccine types
-          const vaccinesResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.VACCINE_TYPES}`);
-          if (!vaccinesResponse.ok) {
-            throw new Error(`Vaccines request failed: ${vaccinesResponse.status}`);
-          }
-          const vaccinesData = await vaccinesResponse.json();
-          if (!isActive) return;
-          if (Array.isArray(vaccinesData)) {
-            setVaccines(vaccinesData);
-          } else if (vaccinesData.results) {
-            setVaccines(vaccinesData.results);
-          } else {
-            setVaccines([]);
-          }
+          const doseRes = await fetch(`${API_BASE_URL}${API_ENDPOINTS.DOSE_TYPES}`);
+          const doseJson = await doseRes.json();
+          setDoses(doseJson.results || doseJson);
 
-          // 4) Dose types
-          const dosesResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.DOSE_TYPES}`);
-          if (!dosesResponse.ok) {
-            throw new Error(`Doses request failed: ${dosesResponse.status}`);
-          }
-          const dosesData = await dosesResponse.json();
-          if (!isActive) return;
-          if (Array.isArray(dosesData)) {
-            setDoses(dosesData);
-          } else if (dosesData.results) {
-            setDoses(dosesData.results);
-          } else {
-            setDoses([]);
-          }
-        } catch (error) {
-          console.error('❌ Failed to load data:', error);
-          if (isActive) {
-            Alert.alert(
-              'Error',
-              `Failed to load immunization data: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }\n\nPlease check your internet connection and try again.`
-            );
-          }
+        } catch (e) {
+          Alert.alert("Error", "Failed to load data.");
         } finally {
-          if (isActive) setLoading(false);
+          setLoading(false);
         }
       };
 
-      loadData();
+      load();
 
-      const onBackPress = () => {
+      const back = BackHandler.addEventListener("hardwareBackPress", () => {
         handleBackPress();
         return true;
-      };
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      });
 
-      return () => {
-        isActive = false;
-        backHandler.remove();
-      };
-    }, [child_health_id])
-  );
+      return () => back.remove();
+  }, [child_health_id])
+);
 
-  const updateFormData = (field: keyof FormData, value: number | null) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
 
-  /**
-   * Rules:
-   * - BCG: At Birth only
-   * - Hepatitis B: At Birth only
-   * - Pentavalent: 1st / 2nd / 3rd only (no At Birth)
-   * - Others:
-   *   * at_birth = true → At Birth → 1st → 2nd → 3rd
-   *   * at_birth = false → 1st → 2nd → 3rd
-   */
-  const getAvailableDoses = (vaccineTypeId: number | null): DoseType[] => {
-    if (!vaccineTypeId) return [];
-
-    const selectedVaccine = vaccines.find(v => v.vaccine_type_id === vaccineTypeId);
-    if (!selectedVaccine) return [];
-
-    const status = immunizationStatus.find(s => s.vaccine_type_id === vaccineTypeId);
-
-    const effectiveStatus: ImmunizationStatus = status || {
-      vaccine_type_id: vaccineTypeId,
-      at_birth_given: false,
-      first_dose_given: false,
-      second_dose_given: false,
-      third_dose_given: false,
-    };
-
-    const findDose = (doseName: string) =>
-      doses.find(d => d.dose_name.toLowerCase() === doseName.toLowerCase());
-
-    const nameLower = selectedVaccine.vaccine_name.toLowerCase();
-    const isBCG = nameLower.includes('bcg');
-    const isHepaB =
-      nameLower.includes('hepa') ||
-      nameLower.includes('hepatitis b') ||
-      nameLower.includes('hep b');
-    const isAtBirthOnly = isBCG || isHepaB;
-    const isPenta = nameLower.includes('pentavalent') || nameLower.includes('penta');
-
-    const available: DoseType[] = [];
-
-    // BCG & Hepa B: At Birth ONLY
-    if (isAtBirthOnly) {
-      if (!effectiveStatus.at_birth_given) {
-        const atBirth = findDose('At Birth');
-        if (atBirth) available.push(atBirth);
-      }
-      return available;
-    }
-
-    // Pentavalent: 1st, 2nd, 3rd only
-    if (isPenta) {
-      if (!effectiveStatus.first_dose_given) {
-        const first = findDose('First Dose');
-        if (first) available.push(first);
-      } else if (!effectiveStatus.second_dose_given) {
-        const second = findDose('Second Dose');
-        if (second) available.push(second);
-      } else if (!effectiveStatus.third_dose_given) {
-        const third = findDose('Third Dose');
-        if (third) available.push(third);
-      }
-      return available;
-    }
-
-    // Other vaccines
-    if (selectedVaccine.at_birth) {
-      if (!effectiveStatus.at_birth_given) {
-        const atBirth = findDose('At Birth');
-        if (atBirth) available.push(atBirth);
-      } else if (!effectiveStatus.first_dose_given) {
-        const first = findDose('First Dose');
-        if (first) available.push(first);
-      } else if (!effectiveStatus.second_dose_given) {
-        const second = findDose('Second Dose');
-        if (second) available.push(second);
-      } else if (!effectiveStatus.third_dose_given) {
-        const third = findDose('Third Dose');
-        if (third) available.push(third);
-      }
-    } else {
-      if (!effectiveStatus.first_dose_given) {
-        const first = findDose('First Dose');
-        if (first) available.push(first);
-      } else if (!effectiveStatus.second_dose_given) {
-        const second = findDose('Second Dose');
-        if (second) available.push(second);
-      } else if (!effectiveStatus.third_dose_given) {
-        const third = findDose('Third Dose');
-        if (third) available.push(third);
-      }
-    }
-
-    return available;
-  };
-
-  /**
-   * A vaccine is "completed" when:
-   * - At least one dose has been given, AND
-   * - There are no more available doses according to getAvailableDoses().
-   */
-  const isVaccineCompleted = (vaccineTypeId: number): boolean => {
-    const status = immunizationStatus.find(s => s.vaccine_type_id === vaccineTypeId);
-    const hasAnyDoseGiven = status
-      ? status.at_birth_given ||
-        status.first_dose_given ||
-        status.second_dose_given ||
-        status.third_dose_given
-      : false;
-
-    if (!hasAnyDoseGiven) return false;
-
-    const remaining = getAvailableDoses(vaccineTypeId);
-    return remaining.length === 0;
+  const updateForm = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const validateForm = () => {
-    if (!formData.vaccine_type_id) {
-      Alert.alert('Required', 'Please select a vaccine type');
-      return false;
-    }
-
-    if (!formData.dose_type_id) {
-      Alert.alert('Required', 'Please select a dose');
-      return false;
-    }
-
-    const availableDoses = getAvailableDoses(formData.vaccine_type_id);
-    const isValidDose = availableDoses.some(d => d.dose_type_id === formData.dose_type_id);
-
-    if (!isValidDose) {
-      Alert.alert(
-        'Invalid dose',
-        'This dose cannot be administered yet. Please follow the required sequence.'
-      );
-      return false;
-    }
-
+    if (!formData.vaccine_type_id)
+      return Alert.alert("Required", "Select a vaccine.");
+    if (!formData.dose_type_id)
+      return Alert.alert("Required", "Select a dose.");
+    if (!dateGiven)
+      return Alert.alert("Required", "Select date given.");
     return true;
   };
 
-  const handleSubmit = () => {
+  const submitImmunization = async () => {
     if (!validateForm()) return;
 
-    const selectedVaccine = vaccines.find(v => v.vaccine_type_id === formData.vaccine_type_id);
-    const selectedDose = doses.find(d => d.dose_type_id === formData.dose_type_id);
-
-    Alert.alert(
-      'Confirm',
-      `Save ${selectedVaccine?.vaccine_name} — ${selectedDose?.dose_name} for this child?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Save', onPress: submitImmunization },
-      ]
-    );
-  };
-
-  const submitImmunization = async () => {
     try {
       setSubmitting(true);
-      const personnelId = userSession?.user_id || 1;
 
       const payload = {
-        personnel_id: personnelId,
         vaccine_type_id: formData.vaccine_type_id,
         dose_type_id: formData.dose_type_id,
+        date_given: dateGiven,
+        personnel_id: userSession?.user_id,
       };
 
-      const response = await fetch(
+      const res = await fetch(
         `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_ADD(
-          parseInt(child_health_id as string, 10)
+          parseInt(child_health_id)
         )}`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         }
       );
 
-      const data = await response.json();
+      const json = await res.json();
 
-      if (response.ok && data.success) {
-        Alert.alert(
-          'Saved',
-          'Immunization recorded successfully.',
-          [
-            {
-              text: 'Add another',
-              onPress: () => {
-                setFormData({ vaccine_type_id: null, dose_type_id: null });
-                // Data will reload on focus next time
-              },
+      if (json.success) {
+        Alert.alert("Success", "Immunization added.", [
+          {
+            text: "Add another",
+            onPress: () => {
+              setFormData({
+                vaccine_type_id: null,
+                dose_type_id: null,
+              });
+              setDateGiven(null);
             },
-            { text: 'Back to records', onPress: handleBackPress },
-          ],
-          { cancelable: false }
-        );
+          },
+          { text: "Back to records", onPress: handleBackPress },
+        ]);
       } else {
-        Alert.alert('Error', data.error || 'Failed to save immunization');
+        Alert.alert("Error", json.error || "Failed to save.");
       }
-    } catch (error) {
-      console.error('❌ Submit error:', error);
-      Alert.alert('Error', 'Network error occurred');
+    } catch {
+      Alert.alert("Error", "Network error.");
     } finally {
       setSubmitting(false);
     }
@@ -398,441 +338,341 @@ export default function NurseAddImmunizationScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <CustomHeader title="Add Immunization" onBackPress={handleBackPress} />
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <ThemedText style={styles.loadingText}>Loading...</ThemedText>
+          <Text style={{ marginTop: 10, color: theme.colors.textSecondary }}>
+            Loading...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const availableDoses = getAvailableDoses(formData.vaccine_type_id);
-  const selectedVaccine = vaccines.find(v => v.vaccine_type_id === formData.vaccine_type_id);
-  const vaccineStatus = immunizationStatus.find(
-    s => s.vaccine_type_id === formData.vaccine_type_id
-  );
-
-  const allDosesComplete =
-    formData.vaccine_type_id != null && availableDoses.length === 0 && !!selectedVaccine;
-
-  const nameLower = (selectedVaccine?.vaccine_name || '').toLowerCase();
-  const isBCG = nameLower.includes('bcg');
-  const isHepaB =
-    nameLower.includes('hepa') ||
-    nameLower.includes('hepatitis b') ||
-    nameLower.includes('hep b');
-  const isAtBirthOnly = isBCG || isHepaB;
-
-  const isSaveDisabled =
-    submitting ||
-    !formData.vaccine_type_id ||
-    !formData.dose_type_id ||
-    allDosesComplete;
-
-  // Prevent selecting completed vaccines
-  const handleVaccineChange = (value: any) => {
-    if (value == null) {
-      updateFormData('vaccine_type_id', null);
-      updateFormData('dose_type_id', null);
-      return;
-    }
-
-    if (isVaccineCompleted(value)) {
-      const v = vaccines.find(vac => vac.vaccine_type_id === value);
-      Alert.alert(
-        'Vaccine complete',
-        `${v?.vaccine_name || 'This vaccine'} already has all required doses recorded for this child.`
-      );
-      return;
-    }
-
-    updateFormData('vaccine_type_id', value);
-    updateFormData('dose_type_id', null);
-  };
-
+  /* ------------------------------------------------------
+     MAIN UI
+  ------------------------------------------------------- */
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader title="Add Immunization" onBackPress={handleBackPress} />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Child summary */}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+
+        {/* Child Info Card */}
         <View style={styles.childCard}>
-          <View style={styles.childAvatar}>
-            <Ionicons name="medkit" size={26} color={theme.colors.primaryDeep} />
+          <View style={styles.childIcon}>
+            <Ionicons name="medkit" size={24} color={theme.colors.primaryDeep} />
           </View>
-          <View style={styles.childInfo}>
-            <ThemedText style={styles.childName}>
-              {childInfo?.child_full_name || 'Child record'}
-            </ThemedText>
-            <ThemedText style={styles.childMeta}>
-              New immunization entry will be linked to this child.
-            </ThemedText>
+          <View>
+            <Text style={styles.childName}>
+              {childInfo?.child_full_name ?? "Child"}
+            </Text>
+            <Text style={styles.childMeta}>New immunization entry</Text>
           </View>
         </View>
 
-        {/* Info line */}
-        <View style={styles.infoStrip}>
-          <Ionicons name="bulb" size={16} color={theme.colors.primaryDeep} />
-          <ThemedText style={styles.infoStripText}>
-            BCG and Hepatitis B are given only at birth. Pentavalent is given as 1st, 2nd, and 3rd
-            doses. Delays do not block recording as long as the child is under 5 years.
-          </ThemedText>
-        </View>
-
-        {/* Form */}
-        <View style={styles.card}>
-          <ThemedText style={styles.cardTitle}>Immunization details</ThemedText>
-
+        {/* Form Card */}
+        <View style={styles.formCard}>
+          
           {/* Vaccine */}
-          <View style={styles.fieldGroup}>
-            <ThemedText style={styles.label}>Vaccine *</ThemedText>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={formData.vaccine_type_id}
-                onValueChange={handleVaccineChange}
-                style={styles.picker}
-              >
-                <Picker.Item label="Select vaccine..." value={null} />
-                {vaccines.map(v => {
-                  const completed = isVaccineCompleted(v.vaccine_type_id);
-                  return (
-                    <Picker.Item
-                      key={v.vaccine_type_id}
-                      label={completed ? `${v.vaccine_name} (Completed)` : v.vaccine_name}
-                      value={v.vaccine_type_id}
-                    />
-                  );
-                })}
-              </Picker>
-            </View>
-          </View>
+          <Text style={styles.label}>Vaccine *</Text>
+          <TouchableOpacity
+            style={styles.selectInput}
+            onPress={() => setVaccineModal(true)}
+          >
+            <Text
+              style={{
+                color: formData.vaccine_type_id
+                  ? theme.colors.textPrimary
+                  : theme.colors.textMuted,
+              }}
+            >
+              {
+                vaccines.find(
+                  (v) => v.vaccine_type_id === formData.vaccine_type_id
+                )?.vaccine_name || "Select vaccine..."
+              }
+            </Text>
+            <Ionicons name="chevron-down" size={18} color={theme.colors.textMuted} />
+          </TouchableOpacity>
 
           {/* Dose */}
-          <View style={styles.fieldGroup}>
-            <ThemedText style={styles.label}>Dose *</ThemedText>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={formData.dose_type_id}
-                onValueChange={value => updateFormData('dose_type_id', value)}
-                enabled={!!formData.vaccine_type_id && !allDosesComplete}
-                style={styles.picker}
-              >
-                <Picker.Item
-                  label={
-                    !formData.vaccine_type_id
-                      ? 'Select vaccine first...'
-                      : allDosesComplete
-                      ? 'All required doses completed'
-                      : 'Select dose...'
-                  }
-                  value={null}
-                />
-                {!allDosesComplete &&
-                  availableDoses.map(d => (
-                    <Picker.Item
-                      key={d.dose_type_id}
-                      label={d.dose_name}
-                      value={d.dose_type_id}
-                    />
-                  ))}
-              </Picker>
-            </View>
-
-            {allDosesComplete && selectedVaccine && (
-              <View style={styles.noticeDone}>
-                <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
-                <ThemedText style={styles.noticeText}>
-                  All required doses for {selectedVaccine.vaccine_name} have already been
-                  completed.
-                </ThemedText>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Status / Progress */}
-        {formData.vaccine_type_id && vaccineStatus && (
-          <View style={[styles.card, styles.statusCard]}>
-            <ThemedText style={styles.cardTitle}>
-              Progress for {selectedVaccine?.vaccine_name}
-            </ThemedText>
-            <View style={styles.statusRow}>
-              {(isAtBirthOnly || selectedVaccine?.at_birth) && (
-                <View
-                  style={[
-                    styles.statusChip,
-                    vaccineStatus.at_birth_given && styles.statusChipDone,
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      vaccineStatus.at_birth_given ? 'checkmark-circle' : 'ellipse-outline'
-                    }
-                    size={14}
-                    color={
-                      vaccineStatus.at_birth_given
-                        ? theme.colors.success
-                        : theme.colors.textMuted
-                    }
-                  />
-                  <ThemedText style={styles.statusChipText}>At birth</ThemedText>
-                </View>
-              )}
-
-              {!isAtBirthOnly && (
-                <>
-                  <View
-                    style={[
-                      styles.statusChip,
-                      vaccineStatus.first_dose_given && styles.statusChipDone,
-                    ]}
-                  >
-                    <Ionicons
-                      name={
-                        vaccineStatus.first_dose_given
-                          ? 'checkmark-circle'
-                          : 'ellipse-outline'
-                      }
-                      size={14}
-                      color={
-                        vaccineStatus.first_dose_given
-                          ? theme.colors.success
-                          : theme.colors.textMuted
-                      }
-                    />
-                    <ThemedText style={styles.statusChipText}>First dose</ThemedText>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.statusChip,
-                      vaccineStatus.second_dose_given && styles.statusChipDone,
-                    ]}
-                  >
-                    <Ionicons
-                      name={
-                        vaccineStatus.second_dose_given
-                          ? 'checkmark-circle'
-                          : 'ellipse-outline'
-                      }
-                      size={14}
-                      color={
-                        vaccineStatus.second_dose_given
-                          ? theme.colors.success
-                          : theme.colors.textMuted
-                      }
-                    />
-                    <ThemedText style={styles.statusChipText}>Second dose</ThemedText>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.statusChip,
-                      vaccineStatus.third_dose_given && styles.statusChipDone,
-                    ]}
-                  >
-                    <Ionicons
-                      name={
-                        vaccineStatus.third_dose_given
-                          ? 'checkmark-circle'
-                          : 'ellipse-outline'
-                      }
-                      size={14}
-                      color={
-                        vaccineStatus.third_dose_given
-                          ? theme.colors.success
-                          : theme.colors.textMuted
-                      }
-                    />
-                    <ThemedText style={styles.statusChipText}>Third dose</ThemedText>
-                  </View>
-                </>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Save button */}
-        <View style={styles.buttonArea}>
+          <Text style={[styles.label, { marginTop: 16 }]}>Dose *</Text>
           <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={isSaveDisabled}
-            style={[
-              styles.saveButton,
-              isSaveDisabled && styles.saveButtonDisabled,
-            ]}
+            style={styles.selectInput}
+            onPress={() => {
+              if (!formData.vaccine_type_id)
+                return Alert.alert("Select vaccine first.");
+              setDoseModal(true);
+            }}
           >
-            <ThemedText style={styles.saveButtonText}>
-              {submitting ? 'Saving...' : 'Save Immunization'}
-            </ThemedText>
+            <Text
+              style={{
+                color: formData.dose_type_id
+                  ? theme.colors.textPrimary
+                  : theme.colors.textMuted,
+              }}
+            >
+              {
+                doses.find((d) => d.dose_type_id === formData.dose_type_id)
+                  ?.dose_name || "Select dose..."
+              }
+            </Text>
+            <Ionicons name="chevron-down" size={18} color={theme.colors.textMuted} />
           </TouchableOpacity>
+
+          {/* Date */}
+          <Text style={[styles.label, { marginTop: 16 }]}>Date Given *</Text>
+          <TouchableOpacity
+            style={styles.selectInput}
+            onPress={() => setCalendarVisible(true)}
+          >
+            <Text
+              style={{
+                color: dateGiven
+                  ? theme.colors.textPrimary
+                  : theme.colors.textMuted,
+              }}
+            >
+              {dateGiven || "Select date..."}
+            </Text>
+            <Ionicons name="calendar" size={18} color={theme.colors.textMuted} />
+          </TouchableOpacity>
+
         </View>
+
+        {/* Save Button */}
+        <TouchableOpacity
+          style={[styles.saveButton, submitting && { opacity: 0.5 }]}
+          onPress={submitImmunization}
+        >
+          <Text style={styles.saveButtonText}>
+            {submitting ? "Saving..." : "Save Immunization"}
+          </Text>
+        </TouchableOpacity>
+
       </ScrollView>
+
+      {/* Vaccine Modal */}
+      <SelectModal
+        visible={vaccineModal}
+        title="Select Vaccine"
+        items={vaccines.map((v) => ({
+          label: v.vaccine_name,
+          value: v.vaccine_type_id,
+        }))}
+        selectedValue={formData.vaccine_type_id}
+        onSelect={(value: any) => updateForm("vaccine_type_id", value)}
+        onClose={() => setVaccineModal(false)}
+      />
+
+      {/* Dose Modal */}
+      <SelectModal
+        visible={doseModal}
+        title="Select Dose"
+        items={doses.map((d) => ({
+          label: d.dose_name,
+          value: d.dose_type_id,
+        }))}
+        selectedValue={formData.dose_type_id}
+        onSelect={(value: any) => updateForm("dose_type_id", value)}
+        onClose={() => setDoseModal(false)}
+      />
+
+      {/* Calendar Modal */}
+      <CalendarBottomSheet
+        visible={calendarVisible}
+        onClose={() => setCalendarVisible(false)}
+        onSelect={setDateGiven}
+      />
+
     </SafeAreaView>
   );
 }
 
+/* ------------------------------------------------------
+   STYLES — LAMBO ADMIN STYLE
+------------------------------------------------------- */
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+
   scrollContent: {
     padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xxl,
+    paddingBottom: 120,
   },
+
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  /* CHILD CARD */
   childCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xl,
-    padding: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
   },
-  childAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.pill,
+
+  childIcon: {
+    height: 42,
+    width: 42,
+    borderRadius: 20,
     backgroundColor: theme.colors.primarySoft,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
-  childInfo: {
-    flex: 1,
-  },
+
   childName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.textPrimary,
   },
+
   childMeta: {
-    marginTop: 2,
-    fontSize: 13,
+    fontSize: 12,
     color: theme.colors.textSecondary,
   },
-  infoStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primarySoft,
-    borderRadius: theme.radius.lg,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
-    gap: theme.spacing.sm,
-  },
-  infoStripText: {
-    flex: 1,
-    fontSize: 12,
-    color: theme.colors.primaryDeep,
-  },
-  card: {
+
+  /* FORM CARD */
+  formCard: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
     padding: theme.spacing.lg,
+    borderRadius: theme.radius.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    marginBottom: theme.spacing.lg,
   },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
-  },
-  fieldGroup: {
-    marginBottom: theme.spacing.lg,
-  },
+
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
   },
-  pickerWrapper: {
-    borderRadius: theme.radius.lg,
+
+  selectInput: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    overflow: 'hidden',
-  },
-  picker: {
-    color: theme.colors.textPrimary,
-    backgroundColor: 'transparent',
-  },
-  noticeDone: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: theme.spacing.sm,
-    padding: theme.spacing.sm,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.successSoft,
-    gap: theme.spacing.sm,
-  },
-  noticeText: {
-    flex: 1,
-    fontSize: 12,
-    color: theme.colors.success,
-  },
-  statusCard: {
-    borderColor: theme.colors.success,
-    backgroundColor: theme.colors.successSoft,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
-  },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    marginTop: 6,
     backgroundColor: theme.colors.surface,
   },
-  statusChipDone: {
-    borderColor: theme.colors.success,
+
+  /* SAVE BUTTON */
+  saveButton: {
+    marginTop: theme.spacing.lg,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
   },
-  statusChipText: {
-    fontSize: 11,
+
+  saveButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFF",
+  },
+
+  /* MODAL BASE */
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+
+  modalSheet: {
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.lg,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
+  },
+
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
     color: theme.colors.textPrimary,
   },
-  buttonArea: {
-    marginTop: theme.spacing.lg,
+
+  modalDivider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: theme.spacing.md,
   },
-  saveButton: {
-    backgroundColor: theme.colors.danger,
-    borderRadius: theme.radius.lg,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+  modalItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 8,
   },
-  saveButtonDisabled: {
-    backgroundColor: theme.colors.disabled,
+
+  modalItemSelected: {
+    backgroundColor: theme.colors.primarySoft,
+    borderRadius: theme.radius.sm,
   },
-  saveButtonText: {
-    color: '#FFFFFF',
+
+  modalItemText: {
     fontSize: 15,
-    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+
+  modalCancelBtn: {
+    marginTop: theme.spacing.md,
+  },
+
+  modalCancelText: {
+    fontSize: 15,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+
+  /* CALENDAR */
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  calendarMonthText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  calendarWeekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: theme.spacing.md,
+  },
+
+  calendarWeekDay: {
+    width: "14.28%",
+    textAlign: "center",
+    fontWeight: "600",
+    color: theme.colors.textSecondary,
+  },
+
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: theme.spacing.md,
+  },
+
+  calendarDayCell: {
+    width: "14.28%",
+    paddingVertical: 8,
+    alignItems: "center",
+  },
+
+  calendarDayText: {
+    fontSize: 14,
+    color: theme.colors.textPrimary,
   },
 });
