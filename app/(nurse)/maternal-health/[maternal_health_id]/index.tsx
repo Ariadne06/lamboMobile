@@ -271,15 +271,23 @@ export default function NurseMaternalHealthDetailScreen() {
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Laboratory Screening */}
-          <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#3B82F6' }]}
-            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/lab-screening` as any)}
-          >
-            <MaterialIcons name="science" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Laboratory Screening</ThemedText>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+         <TouchableOpacity
+  style={[styles.actionButtonFull, { backgroundColor: "#3B82F6" }]}
+  onPress={() =>
+    router.push(
+      `/(nurse)/maternal-health/${maternal_health_id}/laboratory-screening`
+    )
+  }
+>
+  <MaterialIcons name="science" size={24} color="#FFFFFF" />
+  <ThemedText style={styles.actionButtonFullText}>
+    Laboratory Screening
+  </ThemedText>
+  <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+</TouchableOpacity>
+
+
+
 
           {/* Checkup Records */}
           <TouchableOpacity

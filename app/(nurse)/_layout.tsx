@@ -94,6 +94,11 @@ export default function NurseTabLayout() {
         name="maternal-health/[maternal_health_id]/index"
         options={{ href: null }}
       />
+
+     <Tabs.Screen name="maternal-health/[maternal_health_id]/laboratory-screening/index" options={{ href: null }} />
+<Tabs.Screen name="maternal-health/[maternal_health_id]/laboratory-screening/add-screening" options={{ href: null }} />
+
+
     </Tabs>
   );
 }
