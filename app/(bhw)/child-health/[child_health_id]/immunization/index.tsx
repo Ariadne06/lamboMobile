@@ -66,7 +66,7 @@ export default function ImmunizationListScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchImmunizations(); // Refresh data when screen comes into focus
+      fetchImmunizations();
       
       const onBackPress = () => {
         handleBackPress();
@@ -86,7 +86,7 @@ export default function ImmunizationListScreen() {
       const response = await fetch(url);
       const data = await response.json();
 
-      console.log('✅ Immunization data:', data);
+      console.log('✅ Immunization response:', data);
 
       if (data.success) {
         setRecords(data.data || []);
@@ -123,7 +123,6 @@ export default function ImmunizationListScreen() {
     backgroundColor: string;
     icon: string;
   } => {
-    // Count how many doses have been given
     const dosesGiven = [
       record.at_birth_given,
       record.first_dose_given,
@@ -247,7 +246,8 @@ export default function ImmunizationListScreen() {
 
                   {/* Dose Checklist */}
                   <View style={styles.doseList}>
-                    {record.at_birth_given !== undefined && record.at_birth_given !== null && (
+                    {/* Only show At Birth if the vaccine has it */}
+                    {(record.at_birth_given !== null && record.at_birth_given !== undefined) && (
                       <View style={styles.doseRow}>
                         <Ionicons 
                           name={record.at_birth_given ? "checkmark-circle" : "ellipse-outline"}
@@ -257,7 +257,9 @@ export default function ImmunizationListScreen() {
                         <ThemedText style={styles.doseLabel}>At Birth</ThemedText>
                       </View>
                     )}
-                    {record.first_dose_given !== undefined && record.first_dose_given !== null && (
+                    
+                    {/* First Dose */}
+                    {(record.first_dose_given !== null && record.first_dose_given !== undefined) && (
                       <View style={styles.doseRow}>
                         <Ionicons 
                           name={record.first_dose_given ? "checkmark-circle" : "ellipse-outline"}
@@ -267,7 +269,9 @@ export default function ImmunizationListScreen() {
                         <ThemedText style={styles.doseLabel}>1st Dose</ThemedText>
                       </View>
                     )}
-                    {record.second_dose_given !== undefined && record.second_dose_given !== null && (
+                    
+                    {/* Second Dose */}
+                    {(record.second_dose_given !== null && record.second_dose_given !== undefined) && (
                       <View style={styles.doseRow}>
                         <Ionicons 
                           name={record.second_dose_given ? "checkmark-circle" : "ellipse-outline"}
@@ -277,7 +281,9 @@ export default function ImmunizationListScreen() {
                         <ThemedText style={styles.doseLabel}>2nd Dose</ThemedText>
                       </View>
                     )}
-                    {record.third_dose_given !== undefined && record.third_dose_given !== null && (
+                    
+                    {/* Third Dose */}
+                    {(record.third_dose_given !== null && record.third_dose_given !== undefined) && (
                       <View style={styles.doseRow}>
                         <Ionicons 
                           name={record.third_dose_given ? "checkmark-circle" : "ellipse-outline"}
