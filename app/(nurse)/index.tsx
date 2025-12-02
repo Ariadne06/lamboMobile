@@ -1,623 +1,608 @@
-import React, { ReactNode } from 'react';
+// src/components/BhwDashboard.tsx
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Dimensions,
   ScrollView,
   StyleSheet,
-  Dimensions,
-  StyleProp,
-  ViewStyle,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
+  Text,
+  View,
+} from "react-native";
+import { API_BASE_URL, API_ENDPOINTS } from "@/constants/apiConfig";
 
-// ——— Theme ——-
-const COLORS = {
-  primary: '#FF3D33',
-  primaryDark: '#E5312A',
-  success: '#10B981',
-  warning: '#F59E0B',
-  info: '#3B82F6',
-  purple: '#8B5CF6',
-  background: '#F8FAFC',
-  cardBg: '#FFFFFF',
-  textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
-  subtle: '#F1F5F9',
+type HouseholdsPerPurokItem = {
+  sitio_id: number | null;
+  sitio_name: string;
+  total_households: number;
 };
 
-// ——— Types ———
-type DashboardCardProps = { children: ReactNode; style?: StyleProp<ViewStyle> };
-type StatCardProps = {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  style?: StyleProp<ViewStyle>;
-};
-type SectionHeaderProps = { title: string; subtitle?: string };
+export type BhwDashboardResponse = {
+  total_households: number;
+  total_families: number;
 
-// ——— Data (sample) ———
-const DATA = {
-  totalPopulation: 1240,
-  male: 610,
-  female: 630,
-  vaccinated: 892,
-  unvaccinated: 348,
-  todayAppointments: 18,
-  pendingRecords: 3,
-  pregnantMothers: 24,
-  children: 210,
-  purokDistribution: [
-    { label: 'Purok 1', value: 320 },
-    { label: 'Purok 2', value: 210 },
-    { label: 'Purok 3', value: 280 },
-    { label: 'Purok 4', value: 170 },
-    { label: 'Purok 5', value: 260 },
-  ],
-  ageDistribution: [
-    { label: '0-14', value: 210, color: COLORS.info },
-    { label: '15-24', value: 180, color: COLORS.success },
-    { label: '25-54', value: 580, color: COLORS.warning },
-    { label: '55-64', value: 140, color: COLORS.purple },
-    { label: '65+', value: 130, color: COLORS.primary },
-  ],
+  total_active_maternal: number;
+  total_active_maternal_by_bhw: number;
+
+  total_children_upcoming_immun_5d: number;
+
+  households_visited_today_by_bhw: number;
+
+  total_male: number;
+  total_female: number;
+  age_group_0_5: number;
+  age_group_6_12: number;
+  age_group_13_17: number;
+  age_group_18_59: number;
+  age_group_60_plus: number;
+
+  hh_visited_count: number;
+  hh_not_visited_count: number;
+  hh_visited_percent: number;
+
+  fam_visited_count: number;
+  fam_not_visited_count: number;
+  fam_visited_percent: number;
+
+  households_per_purok: HouseholdsPerPurokItem[] | string | null;
+
+  quarter_id: number;
 };
 
-// ——— Reusable ——–
-const DashboardCard: React.FC<DashboardCardProps> = ({ children, style }) => (
-  <View style={[styles.card, style]}>{children}</View>
-);
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon,
-  color,
-  style,
-}) => (
-  <DashboardCard style={[styles.statCard, style]}>
-    <View style={styles.statTop}>
-      <View style={[styles.iconWrap, { backgroundColor: `${color}12` }]}>
-        <Ionicons name={icon} size={20} color={color} />
-      </View>
-      <ThemedText type="default" style={[styles.statValue, { color }]}>
-        {value}
-      </ThemedText>
-    </View>
-    <ThemedText type="defaultSemiBold" style={styles.statTitle}>
-      {title}
-    </ThemedText>
-    {!!subtitle && (
-      <ThemedText type="default" style={styles.statSubtitle}>
-        {subtitle}
-      </ThemedText>
-    )}
-  </DashboardCard>
-);
-
-const SectionHeader: React.FC<SectionHeaderProps> = ({ title, subtitle }) => (
-  <View style={styles.sectionHeader}>
-    <ThemedText type="title" style={styles.sectionTitle}>
-      {title}
-    </ThemedText>
-    {!!subtitle && (
-      <ThemedText type="default" style={styles.sectionSubtitle}>
-        {subtitle}
-      </ThemedText>
-    )}
-  </View>
-);
-
-// Simple Bar Chart Component
-const SimpleBarChart: React.FC<{ data: typeof DATA.purokDistribution }> = ({ data }) => {
-  const maxValue = Math.max(...data.map(item => item.value));
-  
-  return (
-    <View style={styles.simpleChart}>
-      <View style={styles.chartBars}>
-        {data.map((item, index) => {
-          const height = (item.value / maxValue) * 120;
-          return (
-            <View key={index} style={styles.barContainer}>
-              <View style={styles.barValueContainer}>
-                <ThemedText style={styles.barValue}>{item.value}</ThemedText>
-              </View>
-              <View 
-                style={[
-                  styles.bar, 
-                  { 
-                    height, 
-                    backgroundColor: index % 2 === 0 ? COLORS.primary : COLORS.primaryDark 
-                  }
-                ]} 
-              />
-              <ThemedText style={styles.barLabel}>
-                {item.label.replace('Purok ', 'P')}
-              </ThemedText>
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-};
-
-// Simple Progress Circle Component
-const ProgressCircle: React.FC<{ percentage: number; color: string; size?: number }> = ({ 
-  percentage, 
-  color, 
-  size = 80 
-}) => {
-  const radius = size / 2 - 8;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <View style={[styles.progressCircle, { width: size, height: size }]}>
-      <View style={[styles.progressBackground, { width: size - 16, height: size - 16, borderRadius: (size - 16) / 2 }]} />
-      <View style={[styles.progressFill, { 
-        width: size - 16, 
-        height: size - 16, 
-        borderRadius: (size - 16) / 2,
-        borderColor: color,
-        borderWidth: 8,
-        transform: [{ rotate: `${(percentage / 100) * 360}deg` }]
-      }]} />
-      <View style={styles.progressCenter}>
-        <ThemedText style={[styles.progressText, { color }]}>{percentage}%</ThemedText>
-      </View>
-    </View>
-  );
-};
-
-// Age Distribution Component
-const AgeDistribution: React.FC<{ data: typeof DATA.ageDistribution }> = ({ data }) => {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  
-  return (
-    <View style={styles.ageDistribution}>
-      <View style={styles.ageList}>
-        {data.map((item, index) => {
-          const percentage = Math.round((item.value / total) * 100);
-          return (
-            <View key={index} style={styles.ageItem}>
-              <View style={styles.ageItemLeft}>
-                <View style={[styles.ageColorDot, { backgroundColor: item.color }]} />
-                <ThemedText style={styles.ageLabel}>{item.label}</ThemedText>
-              </View>
-              <View style={styles.ageItemRight}>
-                <ThemedText style={styles.ageValue}>{item.value}</ThemedText>
-                <ThemedText style={styles.agePercentage}>({percentage}%)</ThemedText>
-              </View>
-            </View>
-          );
-        })}
-      </View>
-      <View style={styles.ageVisual}>
-        <View style={styles.ageCenter}>
-          <ThemedText style={styles.ageCenterLabel}>Total</ThemedText>
-          <ThemedText style={styles.ageCenterValue}>{total}</ThemedText>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// ——— Screen ———
-export default function NurseDashboard() {
-  const vaccinationRate = Math.round(
-    (DATA.vaccinated / DATA.totalPopulation) * 100
-  );
-  const malePct = Math.round((DATA.male / DATA.totalPopulation) * 100);
-  const femalePct = 100 - malePct;
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <ThemedText type="title" style={styles.welcome}>
-              Good Morning 👋
-            </ThemedText>
-            <ThemedText style={styles.welcomeSub}>
-              Today&apos;s health overview
-            </ThemedText>
-          </View>
-          <View style={styles.profile}>
-            <Ionicons name="person-circle" size={38} color={COLORS.primary} />
-          </View>
-        </View>
-
-        {/* Priority strip */}
-        <View style={styles.infoStrip}>
-          <View style={styles.infoPill}>
-            <View style={[styles.dot, { backgroundColor: COLORS.warning }]} />
-            <ThemedText style={styles.infoText}>
-              {DATA.pendingRecords} records need review
-            </ThemedText>
-          </View>
-          <View style={styles.infoPill}>
-            <View style={[styles.dot, { backgroundColor: COLORS.success }]} />
-            <ThemedText style={styles.infoText}>
-              {DATA.todayAppointments} tasks today
-            </ThemedText>
-          </View>
-        </View>
-
-        {/* KPIs */}
-        <SectionHeader title="Snapshot" />
-        <View style={styles.grid2}>
-          <StatCard
-            title="Population"
-            value={DATA.totalPopulation.toLocaleString()}
-            subtitle="Active residents"
-            icon="people"
-            color={COLORS.primary}
-          />
-          <StatCard
-            title="Vaccinated"
-            value={`${vaccinationRate}%`}
-            subtitle={`${DATA.vaccinated} residents`}
-            icon="shield-checkmark"
-            color={COLORS.success}
-          />
-          <StatCard
-            title="Pending Records"
-            value={DATA.pendingRecords}
-            subtitle="Need review"
-            icon="document-text"
-            color={COLORS.warning}
-          />
-          <StatCard
-            title="Today's Tasks"
-            value={DATA.todayAppointments}
-            subtitle="Appointments"
-            icon="calendar"
-            color={COLORS.info}
-          />
-        </View>
-
-        {/* Demographics */}
-        <SectionHeader
-          title="Demographics"
-          subtitle="Gender & monitored groups"
-        />
-        <View style={styles.grid2}>
-          <StatCard
-            title="Male"
-            value={DATA.male}
-            subtitle={`${malePct}% of population`}
-            icon="man"
-            color={COLORS.info}
-          />
-          <StatCard
-            title="Female"
-            value={DATA.female}
-            subtitle={`${femalePct}% of population`}
-            icon="woman"
-            color={COLORS.purple}
-          />
-          <StatCard
-            title="Pregnant Mothers"
-            value={DATA.pregnantMothers}
-            subtitle="Under monitoring"
-            icon="heart"
-            color={COLORS.primary}
-          />
-          <StatCard
-            title="Children (0–14)"
-            value={DATA.children}
-            subtitle="Growth monitoring"
-            icon="happy"
-            color={COLORS.success}
-          />
-        </View>
-
-        {/* Analytics */}
-        <SectionHeader
-          title="Analytics"
-          subtitle="Population across puroks and age groups"
-        />
-        
-        {/* Vaccination Progress */}
-        <DashboardCard style={styles.progressCard}>
-          <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
-            Vaccination Progress
-          </ThemedText>
-          <View style={styles.progressContainer}>
-            <ProgressCircle 
-              percentage={vaccinationRate} 
-              color={COLORS.success} 
-              size={100} 
-            />
-            <View style={styles.progressStats}>
-              <View style={styles.progressStat}>
-                <ThemedText style={styles.progressStatValue}>{DATA.vaccinated}</ThemedText>
-                <ThemedText style={styles.progressStatLabel}>Vaccinated</ThemedText>
-              </View>
-              <View style={styles.progressStat}>
-                <ThemedText style={styles.progressStatValue}>{DATA.unvaccinated}</ThemedText>
-                <ThemedText style={styles.progressStatLabel}>Unvaccinated</ThemedText>
-              </View>
-            </View>
-          </View>
-        </DashboardCard>
-
-        <View style={styles.chartsWrap}>
-          <DashboardCard style={styles.chartCard}>
-            <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
-              Residents per Purok
-            </ThemedText>
-            <SimpleBarChart data={DATA.purokDistribution} />
-          </DashboardCard>
-
-          <DashboardCard style={[styles.chartCard, styles.chartRight]}>
-            <ThemedText type="defaultSemiBold" style={styles.chartTitle}>
-              Age Distribution
-            </ThemedText>
-            <AgeDistribution data={DATA.ageDistribution} />
-          </DashboardCard>
-        </View>
-
-        <View style={{ height: 16 }} />
-      </ScrollView>
-    </SafeAreaView>
-  );
+interface BhwDashboardProps {
+  quarterId?: number;
 }
 
-// ——— Styles ———
+const screenWidth = Dimensions.get("window").width;
+
+const BhwDashboard: React.FC<BhwDashboardProps> = ({ quarterId }) => {
+  const [data, setData] = useState<BhwDashboardResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const baseUrl = `${API_BASE_URL}${API_ENDPOINTS.bhwDashboard}`;
+      const url =
+        quarterId != null ? `${baseUrl}?quarter_id=${quarterId}` : baseUrl;
+
+      console.log("Dashboard URL:", url);
+
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || `Request failed with status ${res.status}`);
+      }
+
+      const json: BhwDashboardResponse = await res.json();
+      console.log("Dashboard response:", JSON.stringify(json, null, 2));
+      setData(json);
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err.message || "Failed to load dashboard data. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quarterId]);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
+    );
+  }
+
+  if (!data) {
+    return (
+      <View style={styles.center}>
+        <Text>No dashboard data available.</Text>
+      </View>
+    );
+  }
+
+  // Normalize households_per_purok to always be an array
+  let householdsPerPurok: HouseholdsPerPurokItem[] = [];
+  if (Array.isArray(data.households_per_purok)) {
+    householdsPerPurok = data.households_per_purok;
+  } else if (typeof data.households_per_purok === "string") {
+    try {
+      const parsed = JSON.parse(data.households_per_purok);
+      if (Array.isArray(parsed)) {
+        householdsPerPurok = parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to parse households_per_purok JSON:", e);
+    }
+  }
+
+  // Gender “visual”
+  const totalGender = data.total_male + data.total_female || 1;
+  const malePercent = (data.total_male / totalGender) * 100;
+  const femalePercent = (data.total_female / totalGender) * 100;
+
+  // Age groups bar “chart”
+  const ageGroups = [
+    { label: "0–5", value: data.age_group_0_5 },
+    { label: "6–12", value: data.age_group_6_12 },
+    { label: "13–17", value: data.age_group_13_17 },
+    { label: "18–59", value: data.age_group_18_59 },
+    { label: "60+", value: data.age_group_60_plus },
+  ];
+  const maxAgeValue = Math.max(
+    ...ageGroups.map((g) => g.value),
+    1 // avoid divide by zero
+  );
+
+  const hhCoverage = Math.min(Math.max(data.hh_visited_percent, 0), 100);
+  const famCoverage = Math.min(Math.max(data.fam_visited_percent, 0), 100);
+
+  // For households per purok “chart”
+  const totalHouseholdsAll = data.total_households || 1;
+
+  return (
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Dashboard</Text>
+        <Text style={styles.headerSubtitle}>
+          Quarter ID: {data.quarter_id}
+        </Text>
+      </View>
+
+      <View style={styles.container}>
+        {/* Overview */}
+        <Text style={styles.sectionLabel}>Overview</Text>
+        <View style={styles.row}>
+          <View style={[styles.card, styles.cardPrimary]}>
+            <Text style={[styles.cardLabel, styles.cardLabelLight]}>
+              Total Households
+            </Text>
+            <Text style={[styles.cardValue, styles.cardValueLight]}>
+              {data.total_households}
+            </Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Total Families</Text>
+            <Text style={styles.cardValue}>{data.total_families}</Text>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Households Visited Today (You)</Text>
+            <Text style={styles.cardValue}>
+              {data.households_visited_today_by_bhw}
+            </Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Upcoming Child Immunizations</Text>
+            <Text style={styles.cardValue}>
+              {data.total_children_upcoming_immun_5d}
+            </Text>
+          </View>
+        </View>
+
+        {/* Maternal */}
+        <Text style={styles.sectionLabel}>Maternal Cases</Text>
+        <View style={styles.row}>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Active Maternal (Total)</Text>
+            <Text style={styles.cardValue}>{data.total_active_maternal}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Active Maternal (You)</Text>
+            <Text style={styles.cardValue}>
+              {data.total_active_maternal_by_bhw}
+            </Text>
+          </View>
+        </View>
+
+        {/* Demographics + simple charts */}
+        <Text style={styles.sectionLabel}>Population Breakdown</Text>
+
+        {/* Gender */}
+        <View style={styles.rowStack}>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Gender</Text>
+            <View style={styles.genderRow}>
+              <View style={styles.genderLabelCol}>
+                <Text style={styles.genderLabel}>Male</Text>
+                <Text style={styles.genderLabel}>Female</Text>
+              </View>
+              <View style={styles.genderBarsCol}>
+                {/* Male bar */}
+                <View style={styles.genderBarRow}>
+                  <View style={styles.genderBarBackground}>
+                    <View
+                      style={[
+                        styles.genderBarFillMale,
+                        { width: `${malePercent}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.genderValue}>
+                    {data.total_male} ({malePercent.toFixed(0)}%)
+                  </Text>
+                </View>
+                {/* Female bar */}
+                <View style={styles.genderBarRow}>
+                  <View style={styles.genderBarBackground}>
+                    <View
+                      style={[
+                        styles.genderBarFillFemale,
+                        { width: `${femalePercent}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.genderValue}>
+                    {data.total_female} ({femalePercent.toFixed(0)}%)
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Age group bar “chart” */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Age Groups</Text>
+          <View style={styles.ageChartContainer}>
+            {ageGroups.map((group) => {
+              const heightPercent = (group.value / maxAgeValue) * 100;
+              return (
+                <View key={group.label} style={styles.ageBarWrapper}>
+                  <View style={styles.ageBarBackground}>
+                    <View
+                      style={[
+                        styles.ageBarFill,
+                        { height: `${heightPercent}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.ageBarLabel}>{group.label}</Text>
+                  <Text style={styles.ageBarValue}>{group.value}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Visitation progress */}
+        <Text style={styles.sectionLabel}>Visitation Progress</Text>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Household Visitation</Text>
+          <Text style={styles.progressText}>
+            Visited:{" "}
+            <Text style={styles.bold}>{data.hh_visited_count}</Text> /{" "}
+            <Text style={styles.bold}>
+              {data.hh_visited_count + data.hh_not_visited_count}
+            </Text>
+          </Text>
+          <View style={styles.progressBarBackground}>
+            <View
+              style={[styles.progressBarFill, { width: `${hhCoverage}%` }]}
+            />
+          </View>
+          <Text style={styles.progressPercent}>
+            {hhCoverage.toFixed(1)}% coverage
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Family Visitation</Text>
+          <Text style={styles.progressText}>
+            Visited:{" "}
+            <Text style={styles.bold}>{data.fam_visited_count}</Text> /{" "}
+            <Text style={styles.bold}>
+              {data.fam_visited_count + data.fam_not_visited_count}
+            </Text>
+          </Text>
+          <View style={styles.progressBarBackground}>
+            <View
+              style={[
+                styles.progressBarFillSecondary,
+                { width: `${famCoverage}%` },
+              ]}
+            />
+          </View>
+          <Text style={styles.progressPercent}>
+            {famCoverage.toFixed(1)}% coverage
+          </Text>
+        </View>
+
+        {/* Households per Purok – visualized */}
+        <Text style={styles.sectionLabel}>Households per Purok / Sitio</Text>
+        <View style={styles.card}>
+          {householdsPerPurok.length > 0 ? (
+            householdsPerPurok.map((item, index) => {
+              const sharePercent =
+                (item.total_households / totalHouseholdsAll) * 100;
+              return (
+                <View key={index} style={styles.purokRow}>
+                  <View style={styles.purokHeader}>
+                    <Text style={[styles.listCell, styles.bold]}>
+                      {item.sitio_name}
+                    </Text>
+                    <Text style={styles.listCell}>
+                      {item.total_households}{" "}
+                      <Text style={styles.purokPercentText}>
+                        ({sharePercent.toFixed(1)}%)
+                      </Text>
+                    </Text>
+                  </View>
+                  <View style={styles.purokBarBackground}>
+                    <View
+                      style={[
+                        styles.purokBarFill,
+                        { width: `${sharePercent}%` },
+                      ]}
+                    />
+                  </View>
+                </View>
+              );
+            })
+          ) : (
+            <Text>No sitio data available.</Text>
+          )}
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
-  content: { paddingBottom: 16 },
-
+  scrollContent: {
+    paddingBottom: 24,
+    backgroundColor: "#f3f4f6", // gray-100
+  },
   header: {
+    backgroundColor: "#b91c1c", // red-700
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: COLORS.cardBg,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingVertical: 20,
+    paddingTop: 40,
   },
-  welcome: { fontSize: 20, color: COLORS.textPrimary },
-  welcomeSub: { color: COLORS.textSecondary, marginTop: 2 },
-  profile: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: `${COLORS.primary}12`,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "700",
   },
-
-  sectionHeader: { paddingHorizontal: 16, marginTop: 14, marginBottom: 8 },
-  sectionTitle: { fontSize: 18, color: COLORS.textPrimary },
-  sectionSubtitle: { color: COLORS.textSecondary, marginTop: 2 },
-
-  infoStrip: {
-    flexDirection: 'row',
-    gap: 8,
+  headerSubtitle: {
+    color: "#fee2e2",
+    marginTop: 4,
+  },
+  container: {
     paddingHorizontal: 16,
-    paddingTop: 10,
-  },
-  infoPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.subtle,
-    borderColor: COLORS.border,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  dot: { width: 8, height: 8, borderRadius: 8, marginRight: 8 },
-  infoText: { color: COLORS.textSecondary, fontSize: 12 },
-
-  grid2: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    paddingHorizontal: 16,
-  },
-
-  card: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statCard: {
-    flexBasis: '48%',
-  },
-  statTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statValue: { fontSize: 20, fontWeight: '700' },
-  statTitle: { fontSize: 13, color: COLORS.textPrimary },
-  statSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-
-  // Progress Card Styles
-  progressCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-  },
-  progressCircle: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressBackground: {
-    position: 'absolute',
-    backgroundColor: COLORS.subtle,
-  },
-  progressFill: {
-    position: 'absolute',
-    backgroundColor: 'transparent',
-  },
-  progressCenter: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  progressStats: {
-    flex: 1,
-    gap: 12,
-  },
-  progressStat: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  progressStatValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  progressStatLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-
-  chartsWrap: {
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  chartCard: {
-    flexGrow: 1,
-    flexBasis: 340,
-    paddingTop: 12,
-  },
-  chartRight: { },
-  chartTitle: { fontSize: 14, color: COLORS.textPrimary, marginBottom: 10 },
-
-  // Simple Bar Chart Styles
-  simpleChart: {
-    paddingVertical: 10,
-  },
-  chartBars: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    height: 160,
-  },
-  barContainer: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  barValueContainer: {
-    marginBottom: 4,
-  },
-  barValue: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-  },
-  bar: {
-    width: 20,
-    backgroundColor: COLORS.primary,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  barLabel: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-
-  // Age Distribution Styles
-  ageDistribution: {
-    gap: 16,
-  },
-  ageList: {
-    gap: 8,
-  },
-  ageItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  ageItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  ageColorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  ageLabel: {
-    fontSize: 13,
-    color: COLORS.textPrimary,
-  },
-  ageItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  ageValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  agePercentage: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-  },
-  ageVisual: {
-    alignItems: 'center',
     paddingTop: 16,
   },
-  ageCenter: {
-    alignItems: 'center',
-    backgroundColor: COLORS.subtle,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#f3f4f6",
+  },
+  loadingText: {
+    marginTop: 8,
+  },
+  errorText: {
+    color: "#b91c1c",
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6b7280", // gray-500
+    marginBottom: 4,
+    marginTop: 8,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  rowStack: {
+    marginBottom: 8,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: "#ffffff",
     borderRadius: 12,
+    padding: 12,
+    marginRight: 8,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  ageCenterLabel: {
+  cardPrimary: {
+    backgroundColor: "#ef4444", // red-500
+  },
+  cardLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: "#6b7280",
+    marginBottom: 4,
   },
-  ageCenterValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
+  cardLabelLight: {
+    color: "#fee2e2",
+  },
+  cardValue: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  cardValueLight: {
+    color: "#fff",
+  },
+  sectionTitle: {
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#111827",
+  },
+  bold: {
+    fontWeight: "600",
+  },
+
+  // Gender visualization
+  genderRow: {
+    flexDirection: "row",
+  },
+  genderLabelCol: {
+    width: 60,
+    justifyContent: "space-between",
+    paddingVertical: 2,
+  },
+  genderLabel: {
+    color: "#374151",
+    marginBottom: 8,
+  },
+  genderBarsCol: {
+    flex: 1,
+  },
+  genderBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  genderBarBackground: {
+    flex: 1,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "#e5e7eb",
+    marginRight: 6,
+    overflow: "hidden",
+  },
+  genderBarFillMale: {
+    height: "100%",
+    backgroundColor: "#3b82f6", // blue
+  },
+  genderBarFillFemale: {
+    height: "100%",
+    backgroundColor: "#ec4899", // pink
+  },
+  genderValue: {
+    fontSize: 11,
+    color: "#4b5563",
+  },
+
+  // Age group bar "chart"
+  ageChartContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    height: 160,
+    paddingHorizontal: 4,
+  },
+  ageBarWrapper: {
+    alignItems: "center",
+    flex: 1,
+  },
+  ageBarBackground: {
+    width: (screenWidth - 100) / 7,
+    height: 110,
+    borderRadius: 8,
+    backgroundColor: "#e5e7eb",
+    justifyContent: "flex-end",
+    overflow: "hidden",
+  },
+  ageBarFill: {
+    width: "100%",
+    backgroundColor: "#ef4444",
+    borderRadius: 8,
+  },
+  ageBarLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#4b5563",
+  },
+  ageBarValue: {
+    fontSize: 11,
+    color: "#9ca3af",
+  },
+
+  // Progress
+  progressText: {
+    marginBottom: 6,
+    color: "#374151",
+  },
+  progressBarBackground: {
+    width: "100%",
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "#e5e7eb",
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "#ef4444", // red
+  },
+  progressBarFillSecondary: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "#3b82f6", // blue
+  },
+  progressPercent: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#6b7280",
+  },
+
+  // Purok visualization
+  purokRow: {
+    marginBottom: 10,
+  },
+  purokHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  purokBarBackground: {
+    width: "100%",
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "#e5e7eb",
+    overflow: "hidden",
+  },
+  purokBarFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "#10b981", // emerald-500
+  },
+  purokPercentText: {
+    fontSize: 12,
+    color: "#6b7280",
+  },
+
+  // Purok text cells
+  listCell: {
+    fontSize: 14,
+    color: "#374151",
   },
 });
+
+export default BhwDashboard;
