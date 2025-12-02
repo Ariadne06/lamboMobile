@@ -244,7 +244,7 @@ export default function NurseMaternalHealthDetailScreen() {
           {/* Medical & Surgical History */}
           <TouchableOpacity
             style={[styles.actionButtonFull, { backgroundColor: '#EF4444' }]}
-            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/medical-surgical-history` as any)}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/medical-surgical-history`)}
           >
             <MaterialIcons name="medical-services" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Medical & Surgical History</ThemedText>
@@ -264,7 +264,7 @@ export default function NurseMaternalHealthDetailScreen() {
           {/* Disease Surveillance */}
           <TouchableOpacity
             style={[styles.actionButtonFull, { backgroundColor: '#EC4899' }]}
-            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/disease-surveillance` as any)}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/disease-surveillance`)}
           >
             <MaterialIcons name="coronavirus" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Disease Surveillance</ThemedText>
@@ -322,7 +322,7 @@ export default function NurseMaternalHealthDetailScreen() {
           {/* Delivery Outcome */}
           <TouchableOpacity
             style={[styles.actionButtonFull, { backgroundColor: '#EC4899' }]}
-            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/delivery-outcome` as any)}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/pregnancy-outcome` as any)}
           >
             <MaterialIcons name="child-care" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Delivery Outcome</ThemedText>
@@ -332,7 +332,7 @@ export default function NurseMaternalHealthDetailScreen() {
           {/* Postpartum */}
           <TouchableOpacity
             style={[styles.actionButtonFull, { backgroundColor: '#F59E0B' }]}
-            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/postpartum` as any)}
+            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/postpartum-visit` as any)}
           >
             <MaterialIcons name="healing" size={24} color="#FFFFFF" />
             <ThemedText style={styles.actionButtonFullText}>Postpartum Visits</ThemedText>
