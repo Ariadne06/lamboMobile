@@ -225,10 +225,10 @@ export default function PostpartumVisitsScreen() {
             <MaterialCommunityIcons name="clipboard-text-clock" size={80} color={theme.colors.textMuted} />
             <ThemedText style={styles.emptyTitle}>No Postpartum Visits</ThemedText>
             <ThemedText style={styles.emptySubtext}>
-              Record postpartum care visits after delivery to monitor mother's recovery.
+              Record postpartum care visits after delivery to monitor mother&apos;s recovery.
             </ThemedText>
 
-            {/* ✅ Show button ONLY if pregnancy outcome exists */}
+            {/*  Show button ONLY if pregnancy outcome exists */}
             {hasPregnancyOutcome ? (
               <TouchableOpacity style={styles.addButton} onPress={handleAddVisit} activeOpacity={0.7}>
                 <Ionicons name="add-circle" size={24} color="#FFFFFF" />
