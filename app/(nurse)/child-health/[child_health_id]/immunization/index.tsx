@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
@@ -8,334 +8,281 @@ import {
   RefreshControl,
   TouchableOpacity,
   BackHandler,
-} from 'react-native';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
-import CustomHeader from '@/components/ui/CustomHeader';
-import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
+} from "react-native";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { ThemedText } from "@/components/ThemedText";
+import CustomHeader from "@/components/ui/CustomHeader";
+import { API_BASE_URL, API_ENDPOINTS } from "@/constants/apiConfig";
 
+/* ------------------------------------------------------
+   THEME
+------------------------------------------------------- */
 const theme = {
   colors: {
-    background: '#F8FAFC',
-    surface: '#FFFFFF',
-    border: '#E5E7EB',
-    primary: '#E11D2F', // red-ish like your header
-    primaryLight: '#FFE4E6',
-    success: '#16A34A',
-    successLight: '#DCFCE7',
-    warning: '#F59E0B',
-    warningLight: '#FEF3C7',
-    danger: '#EF4444',
-    dangerLight: '#FEE2E2',
-    textPrimary: '#111827',
-    textSecondary: '#6B7280',
-    textMuted: '#9CA3AF',
-    chipBg: '#F3F4F6',
+    background: "#F8FAFC",
+    surface: "#FFFFFF",
+    border: "#E5E7EB",
+    primary: "#E11D2F",
+    primaryLight: "#FFE4E6",
+    success: "#16A34A",
+    successLight: "#DCFCE7",
+    warning: "#F59E0B",
+    warningLight: "#FEF3C7",
+    danger: "#EF4444",
+    dangerLight: "#FEE2E2",
+    textPrimary: "#111827",
+    textSecondary: "#6B7280",
+    textMuted: "#9CA3AF",
   },
-  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
-  radius: { sm: 6, md: 8, lg: 12, xl: 16, pill: 999 },
 };
 
+/* ------------------------------------------------------
+   INTERFACE
+------------------------------------------------------- */
 interface ImmunizationRecord {
   vaccine_type_id: number;
   vaccine_name: string;
-  at_birth_given: boolean;
-  first_dose_given: boolean;
-  second_dose_given: boolean;
-  third_dose_given: boolean;
+
+  at_birth_date: string | null;
+  first_dose_date: string | null;
+  second_dose_date: string | null;
+  third_dose_date: string | null;
+
   last_administered: string | null;
   next_recommended_date: string | null;
   is_delayed: boolean;
 }
 
-type StatusInfo = {
-  label: string;
-  color: string;
-  bgColor: string;
-  icon: string;
-  shieldColor: string;
-  cardBg: string;
-  cardBorder: string;
-};
-
+/* ------------------------------------------------------
+   MAIN SCREEN
+------------------------------------------------------- */
 export default function NurseImmunizationListScreen() {
-  const { child_health_id } = useLocalSearchParams<{ child_health_id: string }>();
+  const { child_health_id } =
+    useLocalSearchParams<{ child_health_id: string }>();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [records, setRecords] = useState<ImmunizationRecord[]>([]);
-  const [childName, setChildName] = useState('');
+  const [childName, setChildName] = useState("");
 
-  useEffect(() => {
-    fetchImmunizations();
+  /* ------------------------------------------------------
+     HANDLE BACK PRESS
+  ------------------------------------------------------- */
+  const handleBackPress = React.useCallback(() => {
+    router.push(`/(nurse)/child-health/${child_health_id}`);
+    return true;
   }, [child_health_id]);
 
-  const handleBackPress = () => {
-    router.push(`/(nurse)/child-health/${child_health_id}` as any);
-  };
-
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchImmunizations();
-
-      const onBackPress = () => {
-        handleBackPress();
-        return true;
-      };
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => backHandler.remove();
-    }, [child_health_id])
-  );
-
+  /* ------------------------------------------------------
+     FETCH IMMUNIZATIONS (ALWAYS USE RIGHT CHILD ID)
+  ------------------------------------------------------- */
   const fetchImmunizations = async () => {
+    if (!child_health_id) return;
+
     try {
       setLoading(true);
-      const url = `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_LIST(
-        parseInt(child_health_id as string, 10)
-      )}`;
 
-      const response = await fetch(url);
-      const data = await response.json();
+      const res = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_LIST(
+          parseInt(child_health_id)
+        )}`
+      );
+
+      const data = await res.json();
 
       if (data.success) {
-        setChildName(data.child_name || '');
-        setRecords(data.data || []);
+        setChildName(data.child_name);
+        setRecords(data.data);
       }
-    } catch (error) {
-      console.error('❌ Failed to load immunizations:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const handleRefresh = () => {
-    setRefreshing(true);
+  /* ------------------------------------------------------
+     REFETCH WHEN CHILD ID CHANGES
+  ------------------------------------------------------- */
+  useEffect(() => {
     fetchImmunizations();
+  }, [child_health_id]);
+
+  /* ------------------------------------------------------
+     REFETCH WHEN SCREEN FOCUSES
+  ------------------------------------------------------- */
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchImmunizations();
+
+      const handler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        handleBackPress
+      );
+
+      return () => handler.remove();
+    }, [child_health_id, handleBackPress])
+  );
+
+  /* ------------------------------------------------------
+     FORMATTING HELPERS
+  ------------------------------------------------------- */
+  const formatDate = (val: string | null) => {
+    if (!val) return "—";
+    return new Date(val).toLocaleDateString("en-US");
   };
 
-  const handleAddImmunization = () => {
-    router.push(`/(nurse)/child-health/${child_health_id}/immunization/add-immunization` as any);
-  };
-
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US'); // MM/DD/YYYY style
-  };
-
-  const renderDoseChip = (
-    label: string,
-    given: boolean,
-    disabled: boolean = false
-  ) => {
-    return (
-      <View
+  const renderDoseChip = (label: string, given: boolean, disabled = false) => (
+    <View
+      style={[
+        styles.doseChip,
+        given && styles.doseChipGiven,
+        disabled && styles.doseChipDisabled,
+      ]}
+    >
+      <Ionicons
+        name={given ? "checkmark-circle" : "ellipse-outline"}
+        size={14}
+        color={
+          disabled
+            ? theme.colors.textMuted
+            : given
+            ? theme.colors.success
+            : theme.colors.textMuted
+        }
+        style={{ marginRight: 4 }}
+      />
+      <ThemedText
         style={[
-          styles.doseChip,
-          given && styles.doseChipGiven,
-          disabled && styles.doseChipDisabled,
+          styles.doseChipText,
+          given && styles.doseChipTextGiven,
+          disabled && styles.doseChipTextDisabled,
         ]}
       >
-        <View style={styles.doseChipIconCircle}>
-          <Ionicons
-            name={given ? 'checkmark' : 'ellipse-outline'}
-            size={14}
-            color={
-              disabled
-                ? theme.colors.textMuted
-                : given
-                ? theme.colors.success
-                : theme.colors.textMuted
-            }
-          />
-        </View>
-        <ThemedText
-          style={[
-            styles.doseChipText,
-            given && styles.doseChipTextGiven,
-            disabled && styles.doseChipTextDisabled,
-          ]}
-        >
-          {label}
-        </ThemedText>
-      </View>
-    );
-  };
+        {label}
+      </ThemedText>
+    </View>
+  );
 
-  const getStatusInfo = (record: ImmunizationRecord): StatusInfo => {
+  const getStatusInfo = (rec: ImmunizationRecord) => {
     const anyGiven =
-      record.at_birth_given ||
-      record.first_dose_given ||
-      record.second_dose_given ||
-      record.third_dose_given;
+      rec.at_birth_date ||
+      rec.first_dose_date ||
+      rec.second_dose_date ||
+      rec.third_dose_date;
 
-    // Not started
     if (!anyGiven) {
       return {
-        label: 'Not started',
+        label: "Not started",
         color: theme.colors.textMuted,
-        bgColor: '#E5E7EB',
-        icon: 'ellipse',
-        shieldColor: theme.colors.textMuted,
-        cardBg: theme.colors.surface,
-        cardBorder: theme.colors.border,
+        bgColor: "#E5E7EB",
+        icon: "ellipse",
+        border: theme.colors.border,
       };
     }
 
-    // Delayed
-    if (record.is_delayed) {
+    if (rec.is_delayed) {
       return {
-        label: 'Delayed',
+        label: "Delayed",
         color: theme.colors.danger,
         bgColor: theme.colors.dangerLight,
-        icon: 'alert',
-        shieldColor: theme.colors.warning,
-        cardBg: theme.colors.warningLight,
-        cardBorder: theme.colors.warning,
+        icon: "alert",
+        border: theme.colors.warning,
       };
     }
 
-    // Complete (has doses and no next due)
-    if (!record.next_recommended_date) {
+    if (!rec.next_recommended_date) {
       return {
-        label: 'Complete',
+        label: "Complete",
         color: theme.colors.success,
         bgColor: theme.colors.successLight,
-        icon: 'checkmark-circle',
-        shieldColor: theme.colors.success,
-        cardBg: theme.colors.surface,
-        cardBorder: theme.colors.success,
+        icon: "checkmark-circle",
+        border: theme.colors.success,
       };
     }
 
-    // In progress
     return {
-      label: 'In progress',
+      label: "In progress",
       color: theme.colors.primary,
       bgColor: theme.colors.primaryLight,
-      icon: 'time',
-      shieldColor: theme.colors.primary,
-      cardBg: theme.colors.surface,
-      cardBorder: theme.colors.border,
+      icon: "time",
+      border: theme.colors.border,
     };
   };
 
-  const renderRecordCard = (record: ImmunizationRecord, index: number) => {
-    const lowerName = record.vaccine_name.toLowerCase();
-    const isBCG = lowerName.includes('bcg');
-    const isHepaB =
-      lowerName.includes('hepa') ||
-      lowerName.includes('hepatitis b') ||
-      lowerName.includes('hep b');
-    const isAtBirthOnly = isBCG || isHepaB;
-    const isPenta = lowerName.includes('pentavalent') || lowerName.includes('penta');
+  const renderCard = (rec: ImmunizationRecord) => {
+    const lower = rec.vaccine_name.toLowerCase();
+    const isBCG = lower.includes("bcg");
+    const isHepa = lower.includes("hepa");
+    const isABOnly = isBCG || isHepa;
 
-    const status = getStatusInfo(record);
-    const dosesGivenCount = [
-      record.at_birth_given,
-      record.first_dose_given,
-      record.second_dose_given,
-      record.third_dose_given,
+    const doses = [
+      rec.at_birth_date,
+      rec.first_dose_date,
+      rec.second_dose_date,
+      rec.third_dose_date,
     ].filter(Boolean).length;
+
+    const info = getStatusInfo(rec);
 
     return (
       <View
-        key={record.vaccine_type_id}
-        style={[
-          styles.card,
-          {
-            backgroundColor: status.cardBg,
-            borderColor: status.cardBorder,
-          },
-          index === records.length - 1 && styles.lastCard,
-        ]}
+        key={rec.vaccine_type_id}
+        style={[styles.card, { borderColor: info.border }]}
       >
-        {/* Header: vaccine name + status pill + shield */}
-        <View style={styles.cardHeader}>
-          <View style={styles.vaccineTitleContainer}>
-            <ThemedText style={styles.vaccineName}>{record.vaccine_name}</ThemedText>
-
-            <View style={styles.statusRow}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View>
+            <ThemedText style={styles.vaccineName}>
+              {rec.vaccine_name}
+            </ThemedText>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View
-                style={[
-                  styles.statusPill,
-                  { backgroundColor: status.bgColor },
-                ]}
+                style={[styles.statusPill, { backgroundColor: info.bgColor }]}
               >
-                <Ionicons name={status.icon as any} size={12} color={status.color} />
+                <Ionicons name={info.icon as any} size={12} color={info.color} />
                 <ThemedText
-                  style={[styles.statusText, { color: status.color }]}
+                  style={{
+                    fontSize: 11,
+                    color: info.color,
+                    marginLeft: 4,
+                  }}
                 >
-                  {status.label}
+                  {info.label}
                 </ThemedText>
               </View>
 
-              <ThemedText style={styles.doseSummaryText}>
-                {dosesGivenCount === 0
-                  ? 'No doses given yet'
-                  : `${dosesGivenCount} dose${dosesGivenCount === 1 ? '' : 's'} given`}
+              <ThemedText style={styles.doseSummary}>
+                {doses === 0 ? "No doses" : `${doses} dose(s)`}
               </ThemedText>
             </View>
           </View>
-
-          <View style={styles.shieldBadge}>
-            <Ionicons name="shield" size={18} color={status.shieldColor} />
-          </View>
         </View>
 
-        {/* Dose chips row */}
-        <View style={styles.doseChipRow}>
-          {/* At birth */}
-          {renderDoseChip(
-            'At birth',
-            record.at_birth_given,
-            isPenta // Pentavalent: at birth not applicable
-          )}
-
-          {/* 1st dose */}
-          {renderDoseChip(
-            '1st dose',
-            record.first_dose_given,
-            isAtBirthOnly // BCG & Hepa B: only at birth
-          )}
-
-          {/* 2nd dose */}
-          {renderDoseChip(
-            '2nd dose',
-            record.second_dose_given,
-            isAtBirthOnly
-          )}
-
-          {/* 3rd dose */}
-          {renderDoseChip(
-            '3rd dose',
-            record.third_dose_given,
-            isAtBirthOnly
-          )}
+        <View style={styles.doseRow}>
+          {renderDoseChip("At birth", !!rec.at_birth_date)}
+          {renderDoseChip("1st dose", !!rec.first_dose_date, isABOnly)}
+          {renderDoseChip("2nd dose", !!rec.second_dose_date, isABOnly)}
+          {renderDoseChip("3rd dose", !!rec.third_dose_date, isABOnly)}
         </View>
 
-        {/* Dates row */}
-        <View style={styles.dateRowWrapper}>
-          <View style={styles.dateColumn}>
+        <View style={styles.dateRow}>
+          <View>
             <ThemedText style={styles.dateLabel}>Last given</ThemedText>
             <ThemedText style={styles.dateValue}>
-              {formatDate(record.last_administered)}
+              {formatDate(rec.last_administered)}
             </ThemedText>
           </View>
-          <View style={styles.dateColumn}>
+
+          <View>
             <ThemedText style={styles.dateLabel}>Next due</ThemedText>
             <ThemedText
               style={[
                 styles.dateValue,
-                record.next_recommended_date && record.is_delayed && {
-                  color: theme.colors.danger,
-                },
+                rec.is_delayed && { color: theme.colors.danger },
               ]}
             >
-              {formatDate(record.next_recommended_date)}
+              {formatDate(rec.next_recommended_date)}
             </ThemedText>
           </View>
         </View>
@@ -343,247 +290,153 @@ export default function NurseImmunizationListScreen() {
     );
   };
 
+  /* ------------------------------------------------------
+     LOADING SCREEN
+  ------------------------------------------------------- */
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <CustomHeader title="Child Immunization" onBackPress={handleBackPress} />
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <ThemedText style={styles.loadingText}>
-            Loading immunization records...
+          <ThemedText style={{ marginTop: 10, color: theme.colors.textSecondary }}>
+            Loading...
           </ThemedText>
         </View>
       </SafeAreaView>
     );
   }
 
+  /* ------------------------------------------------------
+     MAIN UI
+  ------------------------------------------------------- */
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader title="Child Immunization" onBackPress={handleBackPress} />
 
-      {/* Child name under header */}
-      {childName && (
-        <View style={styles.childHeaderRow}>
-          <ThemedText style={styles.childHeaderName}>{childName}</ThemedText>
-          <ThemedText style={styles.childHeaderSub}>
-            {records.length} vaccines tracked
-          </ThemedText>
-        </View>
-      )}
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={fetchImmunizations} />
+          }
+          contentContainerStyle={{ padding: 16, paddingBottom: 150 }}
+        >
+          {records.length === 0 ? (
+            <View style={styles.centered}>
+              <Ionicons name="medical-outline" size={60} color={theme.colors.textMuted} />
+              <ThemedText>No immunization records</ThemedText>
+            </View>
+          ) : (
+            records.map((rec) => renderCard(rec))
+          )}
+        </ScrollView>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-          />
-        }
-      >
-        {records.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="medical-outline" size={64} color={theme.colors.textMuted} />
-            <ThemedText style={styles.emptyText}>No immunization records yet</ThemedText>
-            <ThemedText style={styles.emptySubtext}>
-              Start tracking vaccines by adding the first dose.
-            </ThemedText>
-          </View>
-        ) : (
-          records.map(renderRecordCard)
-        )}
-      </ScrollView>
-
-      {/* Floating + button */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddImmunization}>
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() =>
+            router.push(
+              `/(nurse)/child-health/${child_health_id}/immunization/add-immunization`
+            )
+          }
+        >
+          <Ionicons name="add" size={28} color="#FFF" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
+/* ------------------------------------------------------
+   STYLES
+------------------------------------------------------- */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-  },
-  childHeaderRow: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
-  },
-  childHeaderName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
-  childHeaderSub: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  listContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: 100,
-    paddingTop: theme.spacing.sm,
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   card: {
-    borderRadius: theme.radius.xl,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
+    backgroundColor: "#FFF",
     borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
   },
-  lastCard: {
-    marginBottom: 0,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: theme.spacing.md,
-  },
-  vaccineTitleContainer: {
-    flex: 1,
-  },
-  vaccineName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-    marginBottom: 4,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
+
+  vaccineName: { fontSize: 16, fontWeight: "700" },
+
   statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radius.pill,
-    gap: theme.spacing.xs,
+    flexDirection: "row",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    alignItems: "center",
+    marginRight: 8,
   },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+
+  doseSummary: { fontSize: 11, color: theme.colors.textSecondary },
+
+  doseRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+    gap: 8,
   },
-  doseSummaryText: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-  },
-  shieldBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFFAA',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  doseChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
-    marginTop: theme.spacing.sm,
-  },
+
   doseChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.chipBg,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border,
   },
+
   doseChipGiven: {
     backgroundColor: theme.colors.successLight,
     borderColor: theme.colors.success,
   },
-  doseChipDisabled: {
-    opacity: 0.4,
-  },
-  doseChipIconCircle: {
-    marginRight: theme.spacing.xs,
-  },
+
+  doseChipDisabled: { opacity: 0.5 },
+
   doseChipText: {
     fontSize: 12,
+    fontWeight: "500",
     color: theme.colors.textPrimary,
-    fontWeight: '500',
   },
-  doseChipTextGiven: {
-    color: theme.colors.success,
-  },
-  doseChipTextDisabled: {
-    color: theme.colors.textMuted,
-  },
-  dateRowWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  doseChipTextGiven: { color: theme.colors.success },
+
+  doseChipTextDisabled: { color: theme.colors.textMuted },
+
+  dateRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    paddingTop: theme.spacing.sm,
+    marginTop: 12,
+    paddingTop: 12,
   },
-  dateColumn: {
-    flex: 1,
-  },
-  dateLabel: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    marginBottom: 2,
-  },
-  dateValue: {
-    fontSize: 13,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: theme.spacing.xl,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-    marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.xs,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-  },
+
+  dateLabel: { fontSize: 11, color: theme.colors.textSecondary },
+
+  dateValue: { fontSize: 13, fontWeight: "600", color: theme.colors.textPrimary },
+
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 30,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 12,
+    zIndex: 999,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 6,
   },
 });

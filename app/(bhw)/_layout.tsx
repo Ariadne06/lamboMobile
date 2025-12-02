@@ -313,6 +313,56 @@ export default function BHWTabLayout() {
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/pregnancy-outcome/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/pregnancy-outcome/add-outcome"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/postpartum-visits/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/postpartum-visits/add-postpartum"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/supplements/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/supplements/add-supplement"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/supplements/add-deworming"
+        options={{
+          href: null,
+        }}
+      />
+
     </Tabs>
     
   );

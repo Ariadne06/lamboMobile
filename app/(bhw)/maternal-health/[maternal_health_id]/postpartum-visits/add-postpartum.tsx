@@ -2,22 +2,22 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
-  TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
+  ActivityIndicator,
+  BackHandler,
+  SafeAreaView,
+  TextInput,
   Platform,
   Modal,
-  BackHandler,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
-import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
+import { API_BASE_URL } from '@/constants/apiConfig';
 import { getUserSession } from '@/utils/session';
 
 const theme = {
@@ -25,11 +25,9 @@ const theme = {
     background: '#F8FAFC',
     surface: '#FFFFFF',
     border: '#E5E7EB',
-    primary: '#8B5CF6',
-    primaryLight: '#F3E8FF',
+    primary: '#EC4899',
+    primaryLight: '#FDF2F8',
     success: '#10B981',
-    info: '#3B82F6',
-    infoLight: '#DBEAFE',
     textPrimary: '#111827',
     textSecondary: '#6B7280',
     textMuted: '#9CA3AF',
@@ -40,7 +38,7 @@ const theme = {
   radius: { sm: 6, md: 8, lg: 12, xl: 16 },
 };
 
-export default function AddCheckupScreen() {
+export default function AddPostpartumVisitScreen() {
   const { maternal_health_id } = useLocalSearchParams<{ maternal_health_id: string }>();
   const router = useRouter();
 
@@ -50,16 +48,16 @@ export default function AddCheckupScreen() {
   const [maternalName, setMaternalName] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  // Form state - BHW fields only
-  const [checkupDate, setCheckupDate] = useState<Date>(new Date());
+  // Form state
+  const [visitDate, setVisitDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   
   const [formData, setFormData] = useState({
-    aog_weeks: '',
     weight_kg: '',
     height_cm: '',
-    bmi: '',
     blood_pressure: '',
+    laboratory_notes: '',
+    notes: '',
   });
 
   // Errors
@@ -74,7 +72,7 @@ export default function AddCheckupScreen() {
       setShowConfirmModal(false);
       return;
     }
-    router.push(`/(bhw)/maternal-health/${maternal_health_id}/checkups` as any);
+    router.push(`/(bhw)/maternal-health/${maternal_health_id}/postpartum-visits` as any);
   };
 
   useFocusEffect(
@@ -90,21 +88,25 @@ export default function AddCheckupScreen() {
 
   const loadData = async () => {
     try {
-      setLoading(true);
       const session = await getUserSession();
+      if (!session) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        router.push('/(auth)/login');
+        return;
+      }
       setUserSession(session);
 
-      // Get maternal name
+      // Fetch maternal health record to get name
       const response = await fetch(
         `${API_BASE_URL}/household_api/maternal-health-records/${maternal_health_id}/`
       );
-      const data = await response.json();
 
-      if (data.success) {
-        setMaternalName(data.data.full_name || '');
+      const data = await response.json();
+      if (data.success && data.data) {
+        setMaternalName(data.data.full_name || 'Unknown');
       }
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('❌ Error loading data:', error);
       Alert.alert('Error', 'Failed to load maternal information');
     } finally {
       setLoading(false);
@@ -114,117 +116,82 @@ export default function AddCheckupScreen() {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
-      setCheckupDate(selectedDate);
-      setErrors({ ...errors, checkupDate: '' });
+      setVisitDate(selectedDate);
     }
   };
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    setErrors(prev => ({ ...prev, [field]: '' }));
-
-    // Auto-calculate BMI when weight or height changes
-    if (field === 'weight_kg' || field === 'height_cm') {
-      const weight = field === 'weight_kg' ? parseFloat(value) : parseFloat(formData.weight_kg);
-      const height = field === 'height_cm' ? parseFloat(value) : parseFloat(formData.height_cm);
-      
-      if (weight > 0 && height > 0) {
-        const heightInMeters = height / 100;
-        const bmi = weight / (heightInMeters * heightInMeters);
-        setFormData(prev => ({ ...prev, bmi: bmi.toFixed(2) }));
-      }
+    // Clear error for this field
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
-  };
-
-  const getTrimester = (weeks: number): string => {
-    if (weeks <= 12) return '1st Trimester';
-    if (weeks <= 28) return '2nd Trimester';
-    return '3rd Trimester';
   };
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
 
-    // AOG validation
-    if (!formData.aog_weeks.trim()) {
-      newErrors.aog_weeks = 'AOG (weeks) is required';
-    } else {
-      const weeks = parseInt(formData.aog_weeks);
-      if (isNaN(weeks) || weeks < 0 || weeks > 42) {
-        newErrors.aog_weeks = 'AOG must be between 0 and 42 weeks';
-      }
+    // Optional fields - just validate format if provided
+    if (formData.weight_kg && (parseFloat(formData.weight_kg) <= 0 || parseFloat(formData.weight_kg) > 200)) {
+      newErrors.weight_kg = 'Weight must be between 0 and 200 kg';
     }
 
-    // Weight validation
-    if (!formData.weight_kg.trim()) {
-      newErrors.weight_kg = 'Weight is required';
-    } else if (parseFloat(formData.weight_kg) <= 0) {
-      newErrors.weight_kg = 'Weight must be greater than 0';
+    if (formData.height_cm && (parseFloat(formData.height_cm) <= 0 || parseFloat(formData.height_cm) > 250)) {
+      newErrors.height_cm = 'Height must be between 0 and 250 cm';
     }
 
-    // Height validation
-    if (!formData.height_cm.trim()) {
-      newErrors.height_cm = 'Height is required';
-    } else if (parseFloat(formData.height_cm) <= 0) {
-      newErrors.height_cm = 'Height must be greater than 0';
-    }
-
-    // Blood pressure validation (optional but must be valid format if provided)
     if (formData.blood_pressure.trim()) {
-      const bpPattern = /^\d{2,3}\/\d{2,3}$/;
-      if (!bpPattern.test(formData.blood_pressure.trim())) {
+        const bpPattern = /^\d{2,3}\/\d{2,3}$/;
+        if (!bpPattern.test(formData.blood_pressure.trim())) {
         newErrors.blood_pressure = 'Format should be: 120/80';
-      }
+        }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please check all required fields');
-      return;
-    }
-
-    // Show review modal
-    setShowConfirmModal(true);
-  };
-
   const clearForm = () => {
+    setVisitDate(new Date());
     setFormData({
-      aog_weeks: '',
       weight_kg: '',
       height_cm: '',
-      bmi: '',
       blood_pressure: '',
+      laboratory_notes: '',
+      notes: '',
     });
-    setCheckupDate(new Date());
     setErrors({});
   };
 
-  const submitRecord = async () => {
-    try {
-      setSubmitting(true);
-      const personnelId = userSession?.user_id || 1;
+  const handleSubmit = () => {
+    if (!validateForm()) {
+      Alert.alert('Validation Error', 'Please correct the errors before submitting.');
+      return;
+    }
 
+    // Show confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  const submitRecord = async () => {
+    setSubmitting(true);
+    setShowConfirmModal(false);
+
+    try {
       const payload = {
-        personnel_id: personnelId,
-        aog_weeks: parseInt(formData.aog_weeks),
-        weight_kg: parseFloat(formData.weight_kg),
-        height_cm: parseFloat(formData.height_cm),
-        bmi: formData.bmi ? parseFloat(formData.bmi) : null,
+        date_of_visit: visitDate.toISOString().split('T')[0], // YYYY-MM-DD
+        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : null,
+        height_cm: formData.height_cm ? parseFloat(formData.height_cm) : null,
         blood_pressure: formData.blood_pressure.trim() || null,
-        // ✅ BHW doesn't record these (Midwife only)
-        fetal_heart_rate: null,
-        laboratory_results: null,
-        notes: null,
+        laboratory_notes: formData.laboratory_notes.trim() || null,
+        notes: formData.notes.trim() || null,
+        personnel_id: userSession.user_id,
       };
 
-      console.log('📤 Submitting BHW checkup:', payload);
+      console.log('📤 Submitting payload:', payload);
 
       const response = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.CHECKUP_ADD(parseInt(maternal_health_id))}`,
+        `${API_BASE_URL}/household_api/maternal-health-records/${maternal_health_id}/postpartum/add/`,
         {
           method: 'POST',
           headers: {
@@ -235,36 +202,33 @@ export default function AddCheckupScreen() {
       );
 
       const data = await response.json();
-      console.log('✅ Response:', data);
+      console.log('📥 Server response:', data);
 
-      if (response.ok && data.success) {
-        setShowConfirmModal(false);
-        clearForm(); // ✅ Clear form immediately after success
+      if (data.success) {
+        clearForm(); // ✅ Clear form after successful submission
         
         Alert.alert(
           'Success',
-          'Prenatal checkup recorded successfully!',
+          'Postpartum visit recorded successfully!',
           [
             {
               text: 'Add Another',
               onPress: () => {
-                // Form already cleared, stay on page
+                // Form is already cleared, just stay on page
               }
             },
             {
               text: 'View Records',
-              onPress: () => router.push(`/(bhw)/maternal-health/${maternal_health_id}/checkups` as any),
-              style: 'default'
+              onPress: () => router.push(`/(bhw)/maternal-health/${maternal_health_id}/postpartum-visits` as any)
             }
-          ],
-          { cancelable: false }
+          ]
         );
       } else {
-        Alert.alert('Error', data.error || 'Failed to record checkup');
+        Alert.alert('Error', data.error || 'Failed to record postpartum visit');
       }
     } catch (error) {
-      console.error('❌ Submit error:', error);
-      Alert.alert('Error', 'Network error occurred');
+      console.error('❌ Submission error:', error);
+      Alert.alert('Error', 'Failed to submit. Please check your connection.');
     } finally {
       setSubmitting(false);
     }
@@ -274,14 +238,14 @@ export default function AddCheckupScreen() {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
+      year: 'numeric'
     });
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <CustomHeader title="Add Prenatal Checkup" onBackPress={handleBackPress} />
+        <CustomHeader title="Add Postpartum Visit" onBackPress={handleBackPress} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <ThemedText style={styles.loadingText}>Loading...</ThemedText>
@@ -292,138 +256,122 @@ export default function AddCheckupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomHeader title="Add Prenatal Checkup" onBackPress={handleBackPress} />
+      <CustomHeader title="Add Postpartum Visit" onBackPress={handleBackPress} />
 
-      {/* Maternal Name Banner */}
-      {maternalName && (
-        <View style={styles.bannerCard}>
-          <MaterialCommunityIcons name="account-heart" size={28} color={theme.colors.primary} />
-          <View style={styles.bannerInfo}>
-            <ThemedText style={styles.maternalName}>{maternalName}</ThemedText>
-            <ThemedText style={styles.bannerSubtext}>BHW Checkup Record</ThemedText>
-          </View>
+      {/* Maternal Info Banner */}
+      <View style={styles.bannerCard}>
+        <Ionicons name="heart-circle" size={28} color={theme.colors.primary} />
+        <View style={styles.bannerInfo}>
+          <ThemedText style={styles.maternalName}>{maternalName}</ThemedText>
+          <ThemedText style={styles.bannerSubtext}>Postpartum Follow-up</ThemedText>
         </View>
-      )}
-
-      {/* Info Notice */}
-      <View style={styles.infoNotice}>
-        <Ionicons name="information-circle" size={20} color={theme.colors.info} />
-        <ThemedText style={styles.infoText}>
-          As BHW, you record AOG, weight, height, BMI, and blood pressure. Fetal heart rate, lab results, and notes will be added by the Midwife.
-        </ThemedText>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Basic Measurements Card */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Visit Date Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="ruler" size={20} color={theme.colors.primary} />
-            <ThemedText style={styles.cardTitle}>Basic Measurements</ThemedText>
+            <Ionicons name="calendar" size={20} color={theme.colors.primary} />
+            <ThemedText style={styles.cardTitle}>Visit Information</ThemedText>
           </View>
 
-          {/* AOG Weeks */}
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>
-              Age of Gestation (weeks) <ThemedText style={{ color: theme.colors.error }}>*</ThemedText>
-            </ThemedText>
-            <TextInput
-              style={[styles.input, errors.aog_weeks && styles.inputError]}
-              value={formData.aog_weeks}
-              onChangeText={(text) => updateFormData('aog_weeks', text)}
-              placeholder="e.g., 16"
-              keyboardType="numeric"
-              maxLength={2}
+            <ThemedText style={styles.label}>Date of Visit *</ThemedText>
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <ThemedText style={styles.dateButtonText}>{formatDate(visitDate)}</ThemedText>
+              <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={visitDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
             />
-            {errors.aog_weeks && (
-              <ThemedText style={styles.errorText}>{errors.aog_weeks}</ThemedText>
-            )}
-            {/* Show trimester if valid AOG */}
-            {formData.aog_weeks && !errors.aog_weeks && (
-              <ThemedText style={styles.helperText}>
-                📅 {getTrimester(parseInt(formData.aog_weeks))}
-              </ThemedText>
-            )}
+          )}
+        </View>
+
+        {/* Vital Signs Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="fitness" size={20} color={theme.colors.success} />
+            <ThemedText style={styles.cardTitle}>Vital Signs (Optional)</ThemedText>
           </View>
 
-          {/* Weight */}
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>
-              Weight (kg) <ThemedText style={{ color: theme.colors.error }}>*</ThemedText>
-            </ThemedText>
+            <ThemedText style={styles.label}>Weight (kg)</ThemedText>
             <TextInput
               style={[styles.input, errors.weight_kg && styles.inputError]}
-              value={formData.weight_kg}
-              onChangeText={(text) => updateFormData('weight_kg', text)}
               placeholder="e.g., 65.5"
               keyboardType="decimal-pad"
+              value={formData.weight_kg}
+              onChangeText={(text) => updateFormData('weight_kg', text)}
             />
             {errors.weight_kg && (
               <ThemedText style={styles.errorText}>{errors.weight_kg}</ThemedText>
             )}
           </View>
 
-          {/* Height */}
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>
-              Height (cm) <ThemedText style={{ color: theme.colors.error }}>*</ThemedText>
-            </ThemedText>
+            <ThemedText style={styles.label}>Height (cm)</ThemedText>
             <TextInput
               style={[styles.input, errors.height_cm && styles.inputError]}
-              value={formData.height_cm}
-              onChangeText={(text) => updateFormData('height_cm', text)}
               placeholder="e.g., 160"
               keyboardType="decimal-pad"
+              value={formData.height_cm}
+              onChangeText={(text) => updateFormData('height_cm', text)}
             />
             {errors.height_cm && (
               <ThemedText style={styles.errorText}>{errors.height_cm}</ThemedText>
             )}
           </View>
 
-          {/* BMI (Auto-calculated) */}
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>BMI (auto-calculated)</ThemedText>
-            <View style={styles.bmiContainer}>
-              <ThemedText style={styles.bmiValue}>
-                {formData.bmi || '—'}
-              </ThemedText>
-              {formData.bmi && (
-                <ThemedText style={styles.bmiCategory}>
-                  {parseFloat(formData.bmi) < 18.5 && '⚠️ Underweight'}
-                  {parseFloat(formData.bmi) >= 18.5 && parseFloat(formData.bmi) < 25 && '✅ Normal'}
-                  {parseFloat(formData.bmi) >= 25 && parseFloat(formData.bmi) < 30 && '⚠️ Overweight'}
-                  {parseFloat(formData.bmi) >= 30 && '⚠️ Obese'}
-                </ThemedText>
-              )}
-            </View>
+            <ThemedText style={styles.label}>Blood Pressure</ThemedText>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., 120/80"
+              value={formData.blood_pressure}
+              onChangeText={(text) => updateFormData('blood_pressure', text)}
+            />
           </View>
         </View>
 
-        {/* Vital Signs Card */}
+        {/* Notes Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="heart-pulse" size={20} color={theme.colors.primary} />
-            <ThemedText style={styles.cardTitle}>Vital Signs</ThemedText>
+            <Ionicons name="document-text" size={20} color={theme.colors.primary} />
+            <ThemedText style={styles.cardTitle}>Additional Information</ThemedText>
           </View>
 
-          {/* Blood Pressure */}
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Blood Pressure (optional)</ThemedText>
+            <ThemedText style={styles.label}>Laboratory Result</ThemedText>
             <TextInput
-              style={[styles.input, errors.blood_pressure && styles.inputError]}
-              value={formData.blood_pressure}
-              onChangeText={(text) => updateFormData('blood_pressure', text)}
-              placeholder="e.g., 120/80"
-              keyboardType="numbers-and-punctuation"
+              style={[styles.input, styles.textArea]}
+              placeholder="Lab test results, findings..."
+              multiline
+              numberOfLines={3}
+              value={formData.laboratory_notes}
+              onChangeText={(text) => updateFormData('laboratory_notes', text)}
             />
-            {errors.blood_pressure && (
-              <ThemedText style={styles.errorText}>{errors.blood_pressure}</ThemedText>
-            )}
-            <ThemedText style={styles.helperText}>
-              Format: systolic/diastolic (e.g., 120/80)
-            </ThemedText>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <ThemedText style={styles.label}>Notes</ThemedText>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Assessment Findings, Risk Assessment, FP Counselling, etc."
+              multiline
+              numberOfLines={4}
+              value={formData.notes}
+              onChangeText={(text) => updateFormData('notes', text)}
+            />
           </View>
         </View>
 
@@ -437,14 +385,18 @@ export default function AddCheckupScreen() {
           onPress={handleSubmit}
           disabled={submitting}
         >
-          <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-          <ThemedText style={styles.submitButtonText}>
-            Add Record
-          </ThemedText>
+          {submitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
+              <ThemedText style={styles.submitButtonText}>Review & Submit</ThemedText>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* ✅ Review & Submit Modal */}
+      {/* ✅ Centered Confirmation Modal */}
       <Modal
         visible={showConfirmModal}
         transparent
@@ -455,83 +407,77 @@ export default function AddCheckupScreen() {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               {/* Close Button */}
-              <TouchableOpacity
+              <TouchableOpacity 
                 style={styles.closeButton}
                 onPress={() => setShowConfirmModal(false)}
               >
-                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
+                <Ionicons name="close-circle" size={28} color={theme.colors.textMuted} />
               </TouchableOpacity>
 
-              {/* Header */}
               <View style={styles.modalHeader}>
-                <MaterialCommunityIcons name="clipboard-check" size={48} color={theme.colors.primary} />
-                <ThemedText style={styles.modalTitle}>Review Checkup Record</ThemedText>
-                <ThemedText style={styles.modalSubtitle}>
-                  Please verify the information before submitting
-                </ThemedText>
+                <Ionicons name="clipboard-outline" size={32} color={theme.colors.primary} />
+                <ThemedText style={styles.modalTitle}>Review Postpartum Visit</ThemedText>
+                <ThemedText style={styles.modalSubtitle}>Please verify all information before submitting</ThemedText>
               </View>
 
-              {/* Review Content */}
-              <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
-                {/* Basic Info Section */}
+              <ScrollView 
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={styles.modalScrollContent}
+              >
                 <View style={styles.reviewSection}>
-                  <ThemedText style={styles.reviewSectionTitle}>Basic Information</ThemedText>
-                  <ReviewRow label="Mother's Name" value={maternalName} />
-                  <ReviewRow label="Checkup Date" value={formatDate(checkupDate)} />
+                  <ThemedText style={styles.reviewSectionTitle}>📅 Visit Information</ThemedText>
+                  <ReviewRow label="Date of Visit" value={formatDate(visitDate)} />
                 </View>
 
-                {/* Measurements Section */}
                 <View style={styles.reviewSection}>
-                  <ThemedText style={styles.reviewSectionTitle}>Measurements</ThemedText>
-                  <ReviewRow 
-                    label="Age of Gestation" 
-                    value={`${formData.aog_weeks} weeks (${getTrimester(parseInt(formData.aog_weeks))})`} 
-                  />
-                  <ReviewRow label="Weight" value={`${formData.weight_kg} kg`} />
-                  <ReviewRow label="Height" value={`${formData.height_cm} cm`} />
-                  <ReviewRow label="BMI" value={formData.bmi || 'Not calculated'} />
+                  <ThemedText style={styles.reviewSectionTitle}>💪 Vital Signs</ThemedText>
+                  <ReviewRow label="Weight" value={formData.weight_kg ? `${formData.weight_kg} kg` : 'Not provided'} />
+                  <ReviewRow label="Height" value={formData.height_cm ? `${formData.height_cm} cm` : 'Not provided'} />
+                  <ReviewRow label="Blood Pressure" value={formData.blood_pressure || 'Not provided'} />
                 </View>
 
-                {/* Vital Signs Section */}
-                <View style={styles.reviewSection}>
-                  <ThemedText style={styles.reviewSectionTitle}>Vital Signs</ThemedText>
-                  <ReviewRow 
-                    label="Blood Pressure" 
-                    value={formData.blood_pressure || 'Not recorded'} 
-                  />
-                </View>
+                {(formData.laboratory_notes || formData.notes) && (
+                  <View style={styles.reviewSection}>
+                    <ThemedText style={styles.reviewSectionTitle}>📝 Additional Information</ThemedText>
+                    
+                    {formData.laboratory_notes && (
+                      <View style={styles.notesReview}>
+                        <ThemedText style={styles.notesReviewLabel}>🔬 Laboratory Results:</ThemedText>
+                        <ThemedText style={styles.notesReviewText}>{formData.laboratory_notes}</ThemedText>
+                      </View>
+                    )}
 
-                {/* Notice */}
-                <View style={styles.noticeBox}>
-                  <Ionicons name="information-circle" size={16} color={theme.colors.info} />
-                  <ThemedText style={styles.noticeText}>
-                    Fetal heart rate, laboratory results, and notes will be added by the Midwife during their assessment.
-                  </ThemedText>
-                </View>
+                    {formData.notes && (
+                      <View style={styles.notesReview}>
+                        <ThemedText style={styles.notesReviewLabel}>📋 Notes:</ThemedText>
+                        <ThemedText style={styles.notesReviewText}>{formData.notes}</ThemedText>
+                      </View>
+                    )}
+                  </View>
+                )}
               </ScrollView>
 
-              {/* Actions */}
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={styles.modalButtonSecondary}
                   onPress={() => setShowConfirmModal(false)}
-                  disabled={submitting}
                 >
-                  <Ionicons name="pencil" size={18} color={theme.colors.primary} />
+                  <Ionicons name="pencil" size={20} color={theme.colors.primary} />
                   <ThemedText style={styles.modalButtonSecondaryText}>Edit</ThemedText>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.modalButtonPrimary, submitting && styles.modalButtonDisabled]}
+                  style={styles.modalButtonPrimary}
                   onPress={submitRecord}
                   disabled={submitting}
                 >
                   {submitting ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
-                      <ThemedText style={styles.modalButtonPrimaryText}>Submit</ThemedText>
+                      <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                      <ThemedText style={styles.modalButtonPrimaryText}>Confirm</ThemedText>
                     </>
                   )}
                 </TouchableOpacity>
@@ -540,22 +486,10 @@ export default function AddCheckupScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Date Picker */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={checkupDate}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-        />
-      )}
     </SafeAreaView>
   );
 }
 
-// Review Row Component
 const ReviewRow = ({ label, value }: { label: string; value: string }) => (
   <View style={styles.reviewRow}>
     <ThemedText style={styles.reviewLabel}>{label}:</ThemedText>
@@ -600,24 +534,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.colors.textSecondary,
     marginTop: 2,
-  },
-  infoNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.infoLight,
-    padding: theme.spacing.md,
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.info,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 12,
-    color: theme.colors.info,
-    lineHeight: 16,
   },
   scrollView: {
     flex: 1,
@@ -672,34 +588,28 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: theme.colors.error,
   },
-  bmiContainer: {
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: theme.colors.background,
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  bmiValue: {
-    fontSize: 18,
-    fontWeight: '700',
+  dateButtonText: {
+    fontSize: 15,
     color: theme.colors.textPrimary,
-  },
-  bmiCategory: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
+    fontWeight: '500',
   },
   errorText: {
     fontSize: 12,
     color: theme.colors.error,
-    marginTop: theme.spacing.xs,
-  },
-  helperText: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
     marginTop: theme.spacing.xs,
   },
   submitContainer: {
@@ -716,7 +626,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.success,
     paddingVertical: theme.spacing.lg,
     borderRadius: theme.radius.lg,
     gap: theme.spacing.sm,
@@ -729,7 +639,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  // Modal Styles
+  // ✅ Centered Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -816,20 +726,22 @@ const styles = StyleSheet.create({
     flex: 1.2,
     textAlign: 'right',
   },
-  noticeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.infoLight,
+  notesReview: {
+    backgroundColor: theme.colors.background,
     padding: theme.spacing.md,
     borderRadius: theme.radius.md,
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
   },
-  noticeText: {
-    flex: 1,
-    fontSize: 12,
-    color: theme.colors.info,
-    lineHeight: 16,
+  notesReviewLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs,
+  },
+  notesReviewText: {
+    fontSize: 13,
+    color: theme.colors.textPrimary,
+    lineHeight: 18,
   },
   modalActions: {
     flexDirection: 'row',
@@ -861,7 +773,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.success,
     paddingVertical: theme.spacing.lg,
     borderRadius: theme.radius.lg,
     gap: theme.spacing.sm,
@@ -870,8 +782,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
-  },
-  modalButtonDisabled: {
-    opacity: 0.6,
   },
 });
