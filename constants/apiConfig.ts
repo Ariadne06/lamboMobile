@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
   RESIDENT_REGISTER: '/api/register/',
   VERIFY_ID_FIELDS: '/api/verify-id-fields/',
   VERIFY_GUARDIAN: '/api/verify-guardian/',
+ RESIDENT_LIST: `${API_BASE_URL}/residents/`, 
+   //UPDATE_STATUS: `${API_BASE_URL}/residents/{residentId}/update-status/`,
+
 
 
   // Profile
