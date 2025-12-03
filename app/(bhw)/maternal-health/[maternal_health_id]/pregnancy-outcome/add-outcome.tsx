@@ -71,16 +71,18 @@ export default function AddPregnancyOutcomeScreen() {
   const [timeOfDelivery, setTimeOfDelivery] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
 
+  // ✅ NEW: Baby information fields
+  const [babyBirthweight, setBabyBirthweight] = useState('');
+  const [babySex, setBabySex] = useState<string | null>(null);
+
   useEffect(() => {
     loadData();
   }, []);
 
-  // ✅ Add handleBackPress function
   const handleBackPress = () => {
     router.push(`/(bhw)/maternal-health/${maternal_health_id}/pregnancy-outcome` as any);
   };
 
-  // ✅ Add useFocusEffect for hardware back button
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
@@ -98,7 +100,6 @@ export default function AddPregnancyOutcomeScreen() {
       setHasError(false);
       setErrorMessage('');
 
-      // ✅ Check session first
       const session = await getUserSession();
       if (!session) {
         Alert.alert('Session Expired', 'Please log in again', [
@@ -139,17 +140,13 @@ export default function AddPregnancyOutcomeScreen() {
         attendantRes.json(),
       ]);
 
-      // ✅ Handle different API response formats
       const extractData = (data: any) => {
-        // If data has 'results' property (paginated response)
         if (data && data.results && Array.isArray(data.results)) {
           return data.results;
         }
-        // If data is directly an array
         if (Array.isArray(data)) {
           return data;
         }
-        // If data has 'data' property
         if (data && data.data && Array.isArray(data.data)) {
           return data.data;
         }
@@ -170,7 +167,6 @@ export default function AddPregnancyOutcomeScreen() {
         birth_attendants: birth_attendants.length,
       });
 
-      // ✅ Only show error if ALL data is empty
       const allEmpty = (
         outcome_types.length === 0 &&
         delivery_types.length === 0 &&
@@ -202,7 +198,6 @@ export default function AddPregnancyOutcomeScreen() {
     }
   };
 
-  // ✅ Function to clear the form
   const clearForm = () => {
     setOutcomeTypeId(null);
     setDeliveryTypeId(null);
@@ -213,6 +208,8 @@ export default function AddPregnancyOutcomeScreen() {
     setOtherAttendant('');
     setDateTerminated(new Date());
     setTimeOfDelivery(new Date());
+    setBabyBirthweight('');
+    setBabySex(null);
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -276,6 +273,23 @@ export default function AddPregnancyOutcomeScreen() {
       }
     }
 
+    // ✅ NEW: Validate baby birthweight if provided
+    if (babyBirthweight.trim()) {
+      const weight = Number(babyBirthweight);
+      if (isNaN(weight)) {
+        Alert.alert('Invalid Input', 'Baby birthweight must be a number');
+        return false;
+      }
+      if (weight < 0) {
+        Alert.alert('Invalid Input', 'Baby birthweight cannot be negative');
+        return false;
+      }
+      if (weight > 10000) {
+        Alert.alert('Invalid Input', 'Baby birthweight seems unusually high (over 10kg). Please verify.');
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -285,10 +299,9 @@ export default function AddPregnancyOutcomeScreen() {
     try {
       setSubmitting(true);
 
-      // ✅ Re-fetch session to ensure it's fresh
       const session = await getUserSession();
       
-      console.log('🔍 Current session:', session); // Debug log
+      console.log('🔍 Current session:', session);
 
       if (!session) {
         Alert.alert('Session Expired', 'Please log in again', [
@@ -300,7 +313,6 @@ export default function AddPregnancyOutcomeScreen() {
         return;
       }
 
-      // ✅ Use user_id from session
       const personnelId = session.user_id;
 
       if (!personnelId) {
@@ -314,8 +326,8 @@ export default function AddPregnancyOutcomeScreen() {
         return;
       }
 
-      const formattedTime = timeOfDelivery.toTimeString().split(' ')[0]; // HH:MM:SS
-      const formattedDate = dateTerminated.toISOString().split('T')[0]; // YYYY-MM-DD
+      const formattedTime = timeOfDelivery.toTimeString().split(' ')[0];
+      const formattedDate = dateTerminated.toISOString().split('T')[0];
 
       const selectedPlace = lookupData?.place_delivery_types.find(
         (p) => p.place_delivery_type_id === placeDeliveryTypeId
@@ -339,6 +351,8 @@ export default function AddPregnancyOutcomeScreen() {
         other_attendant: isOtherAttendant ? otherAttendant.trim() : null,
         time_of_delivery: formattedTime,
         date_terminated: formattedDate,
+        baby_birthweight_in_grams: babyBirthweight.trim() ? parseInt(babyBirthweight) : null,
+        baby_sex: babySex || null,
         personnel_id: personnelId,
       };
 
@@ -359,14 +373,12 @@ export default function AddPregnancyOutcomeScreen() {
       console.log('✅ Response:', data);
 
       if (data.success) {
-        // ✅ Clear the form first
         clearForm();
         
         Alert.alert('Success', 'Pregnancy outcome recorded successfully', [
           {
             text: 'OK',
             onPress: () => {
-              // ✅ Navigate to the pregnancy outcome list screen
               router.replace(`/(bhw)/maternal-health/${maternal_health_id}/pregnancy-outcome`);
             },
           },
@@ -574,6 +586,66 @@ export default function AddPregnancyOutcomeScreen() {
                 onChange={handleTimeChange}
               />
             )}
+          </View>
+        </View>
+
+        {/* ✅ NEW: Baby Information Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="heart" size={20} color={theme.colors.primary} />
+            <ThemedText style={styles.sectionTitle}>Baby Information</ThemedText>
+          </View>
+
+          {/* Baby Birthweight */}
+          <View style={styles.fieldGroup}>
+            <ThemedText style={styles.label}>Baby Birthweight (grams)</ThemedText>
+            <TextInput
+              style={styles.textInput}
+              value={babyBirthweight}
+              onChangeText={setBabyBirthweight}
+              placeholder="e.g., 3200"
+              placeholderTextColor={theme.colors.textMuted}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Baby Sex */}
+          <View style={styles.fieldGroup}>
+            <ThemedText style={styles.label}>Baby&apos;s Sex</ThemedText>
+            <View style={styles.optionsGrid}>
+              {['Male', 'Female'].map((sex) => (
+                <TouchableOpacity
+                  key={sex}
+                  style={[
+                    styles.optionCard,
+                    babySex === sex && styles.optionCardSelected,
+                  ]}
+                  onPress={() => setBabySex(sex)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.optionContent}>
+                    <View
+                      style={[
+                        styles.radioCircle,
+                        babySex === sex && styles.radioCircleSelected,
+                      ]}
+                    >
+                      {babySex === sex && (
+                        <View style={styles.radioCircleInner} />
+                      )}
+                    </View>
+                    <ThemedText
+                      style={[
+                        styles.optionText,
+                        babySex === sex && styles.optionTextSelected,
+                      ]}
+                    >
+                      {sex}
+                    </ThemedText>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
 
@@ -994,6 +1066,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textPrimary,
     textAlignVertical: 'top',
+  },
+  helperText: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    marginTop: theme.spacing.xs,
+    fontStyle: 'italic',
   },
   submitButton: {
     flexDirection: 'row',

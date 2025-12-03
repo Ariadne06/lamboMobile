@@ -10,30 +10,6 @@ export default function NurseMenuLayout() {
           headerShown: false,
         }}
       />
-      <Stack.Screen
-        name="residentlist"
-        options={{
-          title: 'Resident List',
-        }}
-      />
-      <Stack.Screen
-        name="householdlist"
-        options={{
-          title: 'Household List',
-        }}
-      />
-      <Stack.Screen
-        name="maternalrecord"
-        options={{
-          headerShown: false, 
-        }}
-      />
-      <Stack.Screen
-        name="childhealthrecord"
-        options={{
-          headerShown: false, 
-        }}
-      />
 
     </Stack>
   );

@@ -259,6 +259,9 @@ MATERNAL_LAB_SCREENING_CREATE: (maternalHealthId: number) =>
   GET_NOTIFICATIONS: '/api/notifications/get-notifications/',
   MARK_NOTIFICATION_READ: '/api/notifications/mark-read/',
   MARK_ALL_NOTIFICATIONS_READ: '/api/notifications/mark-all-read/',
+
+  // Child Immunization Schedule
+  CHILD_IMMUNIZATION_SCHEDULE: '/household_api/child-immunization-schedule/',
 };
 
 // API settings

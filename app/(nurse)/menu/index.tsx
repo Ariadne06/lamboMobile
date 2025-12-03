@@ -16,25 +16,6 @@ export default function NurseMenu() {
       <ScrollView style={styles.scroll}>
         <CustomHeader title="Midwife Menu" showBackButton={false} />
         <View style={styles.container}>        
-          
-          <ThemedText style={styles.sectionTitle}>Patient Management</ThemedText>
-          <View style={styles.section}>
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(nurse)/menu/residentlist')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="people-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Resident List</ThemedText>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(nurse)/menu/householdlist')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="home-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Household List</ThemedText>
-              </View>
-            </TouchableOpacity>
-          </View>
 
           <ThemedText style={styles.sectionTitle}>Health Records</ThemedText>
           <View style={styles.section}>
@@ -51,6 +32,14 @@ export default function NurseMenu() {
               <View style={styles.buttonContent}>
                 <Ionicons name="medical-outline" size={24} color="#1e293b" />
                 <ThemedText style={styles.buttonText}>Child Health Record</ThemedText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(nurse)/immunization-schedule')}>
+              <View style={styles.buttonContent}>
+                <Ionicons name="calendar-outline" size={24} color="#1e293b" />
+                <ThemedText style={styles.buttonText}>Immunization Schedule</ThemedText>
               </View>
             </TouchableOpacity>
           </View>

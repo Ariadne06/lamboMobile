@@ -130,6 +130,8 @@ export default function NurseTabLayout() {
       <Tabs.Screen name="maternal-health/[maternal_health_id]/postpartum-visit/index" options={{ href: null }} />
       <Tabs.Screen name="maternal-health/[maternal_health_id]/pregnancy-outcome/index" options={{ href: null }} />
 
+      <Tabs.Screen name="immunization-schedule/index" options={{ href: null }} />
+
     </Tabs>
   );
 }

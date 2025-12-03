@@ -653,7 +653,7 @@ useFocusEffect(
               activeOpacity={0.7}
             >
               <MaterialIcons name="vaccines" size={24} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonFullText}>View Immunization Records</ThemedText>
+              <ThemedText style={styles.actionButtonFullText}>Immunization Records</ThemedText>
               <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
             </TouchableOpacity>
 
