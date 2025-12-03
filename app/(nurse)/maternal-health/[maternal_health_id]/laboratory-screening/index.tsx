@@ -1,3 +1,4 @@
+// FULL IMPROVED UI – View + Add Screening
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -22,21 +23,31 @@ import { API_BASE_URL, API_ENDPOINTS } from "@/constants/apiConfig";
 
 const theme = {
   colors: {
-    background: "#F8FAFC",
+    background: "#F9FAFB",
     surface: "#FFFFFF",
     border: "#E5E7EB",
     primary: "#8B5CF6",
     primaryLight: "#F3E8FF",
-    success: "#10B981",
+    primaryText: "#6D28D9",
+    success: "#059669",
     successLight: "#ECFDF5",
-    info: "#3B82F6",
-    infoLight: "#DBEAFE",
-    textPrimary: "#111827",
+    pending: "#2563EB",
+    pendingLight: "#DBEAFE",
+    danger: "#DC2626",
+    dangerLight: "#FEE2E2",
+    textPrimary: "#1F2937",
     textSecondary: "#6B7280",
     textMuted: "#9CA3AF",
   },
   spacing: { sm: 8, md: 12, lg: 16, xl: 20 },
-  radius: { lg: 12, md: 8 },
+  radius: { md: 10, lg: 14 },
+  shadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 3,
+  },
 };
 
 interface LabScreeningRecord {
@@ -70,31 +81,24 @@ export default function LaboratoryScreeningScreen() {
         router.push(`/(nurse)/maternal-health/${maternal_health_id}`);
         return true;
       };
-
       const handler = BackHandler.addEventListener(
         "hardwareBackPress",
         onBackPress
       );
-
       return () => handler.remove();
-    }, [maternal_health_id])
+    }, [])
   );
 
   const loadData = async () => {
     try {
       setLoading(true);
 
-      // Fetch maternal info
       const motherRes = await fetch(
         `${API_BASE_URL}/household_api/maternal-health-records/${maternal_health_id}/`
       );
       const motherData = await motherRes.json();
+      if (motherData.success) setMaternalName(motherData.data.full_name);
 
-      if (motherData.success) {
-        setMaternalName(motherData.data.full_name || "");
-      }
-
-      // Fetch screening records
       const res = await fetch(
         `${API_BASE_URL}${API_ENDPOINTS.MATERNAL_LAB_SCREENING_LIST(
           Number(maternal_health_id)
@@ -105,11 +109,10 @@ export default function LaboratoryScreeningScreen() {
       if (data.success) {
         setRecords(data.data || []);
       } else {
-        Alert.alert("Error", data.error || "Failed to load records");
+        Alert.alert("Error", data.error);
       }
     } catch (e) {
-      console.error("❌ Lab screening load error:", e);
-      Alert.alert("Error", "Unable to load laboratory screening records.");
+      Alert.alert("Error", "Unable to load laboratory data.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -119,6 +122,12 @@ export default function LaboratoryScreeningScreen() {
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
+  };
+
+  const handleAddScreening = () => {
+    router.push(
+      `/(nurse)/maternal-health/${maternal_health_id}/laboratory-screening/add-screening`
+    );
   };
 
   const formatDate = (date: string | null) => {
@@ -132,16 +141,13 @@ export default function LaboratoryScreeningScreen() {
 
   const getResultStyle = (result: string | null) => {
     if (!result) {
-      return {
-        bg: theme.colors.infoLight,
-        text: theme.colors.info,
-      };
+      return { bg: theme.colors.pendingLight, text: theme.colors.pending };
     }
-    const lower = result.toLowerCase();
+    const low = result.toLowerCase();
     if (
-      lower.includes("normal") ||
-      lower.includes("negative") ||
-      lower.includes("non-reactive")
+      low.includes("normal") ||
+      low.includes("negative") ||
+      low.includes("non-reactive")
     ) {
       return {
         bg: theme.colors.successLight,
@@ -149,15 +155,9 @@ export default function LaboratoryScreeningScreen() {
       };
     }
     return {
-      bg: "#FEE2E2",
-      text: "#EF4444",
+      bg: theme.colors.dangerLight,
+      text: theme.colors.danger,
     };
-  };
-
-  const handleAddScreening = () => {
-    router.push(
-      `/(nurse)/maternal-health/${maternal_health_id}/laboratory-screening/add-screening`
-    );
   };
 
   if (loading) {
@@ -169,9 +169,8 @@ export default function LaboratoryScreeningScreen() {
             router.push(`/(nurse)/maternal-health/${maternal_health_id}`)
           }
         />
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <ThemedText>Loading...</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -186,68 +185,92 @@ export default function LaboratoryScreeningScreen() {
         }
       />
 
-      {/* Maternal Name */}
+      {/* HEADER */}
       <View style={styles.banner}>
         <MaterialCommunityIcons
-          name="test-tube"
-          size={26}
+          name="flask-outline"
+          size={28}
           color={theme.colors.primary}
         />
-        <ThemedText style={styles.maternalName}>
-          {maternalName || "Mother"}
-        </ThemedText>
+        <View>
+          <ThemedText style={styles.maternalName}>{maternalName}</ThemedText>
+          <ThemedText style={styles.subtitle}>Laboratory Tests</ThemedText>
+        </View>
       </View>
 
-      {/* Add Screening Button */}
-      <TouchableOpacity style={styles.addButton} onPress={handleAddScreening}>
+      {/* ADD BUTTON */}
+      <TouchableOpacity style={styles.addBtn} onPress={handleAddScreening}>
         <Ionicons name="add-circle" size={22} color="#fff" />
-        <ThemedText style={styles.addButtonText}>Add Screening</ThemedText>
+        <ThemedText style={styles.addBtnText}>Add Screening</ThemedText>
       </TouchableOpacity>
 
-      {/* Records */}
+      {/* RECORD LIST */}
       <ScrollView
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.listContainer}
       >
         {records.length === 0 ? (
-          <View style={styles.empty}>
+          <View style={styles.emptyBox}>
             <MaterialCommunityIcons
               name="flask-empty-outline"
-              size={60}
+              size={70}
               color={theme.colors.textMuted}
             />
-            <ThemedText>No laboratory results yet.</ThemedText>
+            <ThemedText style={styles.emptyText}>
+              No laboratory results yet.
+            </ThemedText>
           </View>
         ) : (
           records.map((rec) => {
-            const style = getResultStyle(rec.result);
+            const resultStyle = getResultStyle(rec.result);
+
             return (
               <View key={rec.lab_screening_id} style={styles.card}>
-                <ThemedText style={styles.cardTitle}>
-                  {rec.test_name}
-                </ThemedText>
+                <View style={styles.cardHeader}>
+                  <MaterialCommunityIcons
+                    name="file-document-outline"
+                    size={22}
+                    color={theme.colors.primary}
+                  />
+                  <ThemedText style={styles.cardTitle}>{rec.test_name}</ThemedText>
+                </View>
 
-                <ThemedText>Date: {formatDate(rec.test_date)}</ThemedText>
+                <View style={styles.infoRow}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={16}
+                    color={theme.colors.textMuted}
+                  />
+                  <ThemedText style={styles.infoValue}>
+                    {formatDate(rec.test_date)}
+                  </ThemedText>
+                </View>
 
                 <View
-                  style={[styles.resultBadge, { backgroundColor: style.bg }]}
+                  style={[
+                    styles.badge,
+                    { backgroundColor: resultStyle.bg },
+                  ]}
                 >
-                  <ThemedText style={{ color: style.text }}>
+                  <ThemedText style={{ color: resultStyle.text, fontWeight: "700" }}>
                     {rec.result || "Pending"}
                   </ThemedText>
                 </View>
 
-                {rec.iron_tablet_given_date && rec.iron_tablet_quantity && (
-                  <ThemedText style={styles.ironText}>
-                    Iron tablets: {rec.iron_tablet_quantity} pcs on{" "}
-                    {formatDate(rec.iron_tablet_given_date)}
-                  </ThemedText>
+                {rec.iron_tablet_given_date && (
+                  <View style={styles.ironBox}>
+                    <MaterialCommunityIcons
+                      name="pill"
+                      size={18}
+                      color={theme.colors.primary}
+                    />
+                    <ThemedText style={styles.ironText}>
+                      Iron Supplement: {rec.iron_tablet_quantity} tablet(s) •{" "}
+                      {formatDate(rec.iron_tablet_given_date)}
+                    </ThemedText>
+                  </View>
                 )}
               </View>
             );
@@ -260,11 +283,9 @@ export default function LaboratoryScreeningScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   banner: {
     flexDirection: "row",
     alignItems: "center",
@@ -272,30 +293,47 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     margin: theme.spacing.lg,
     borderRadius: theme.radius.lg,
-    gap: theme.spacing.md,
+    ...theme.shadow,
   },
   maternalName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
     color: theme.colors.textPrimary,
   },
-  addButton: {
+  subtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: 3,
+  },
+
+  addBtn: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: theme.colors.primary,
     padding: theme.spacing.md,
+    marginHorizontal: theme.spacing.lg,
     borderRadius: theme.radius.md,
     justifyContent: "center",
-    marginHorizontal: theme.spacing.lg,
-    marginTop: -8,
+    ...theme.shadow,
   },
-  addButtonText: {
+  addBtnText: {
     color: "#fff",
+    fontWeight: "700",
     marginLeft: 6,
-    fontWeight: "600",
   },
-  scrollContent: { padding: theme.spacing.lg, paddingBottom: 50 },
-  empty: { alignItems: "center", marginTop: 40 },
+
+  listContainer: { padding: theme.spacing.lg },
+
+  emptyBox: {
+    alignItems: "center",
+    marginTop: 50,
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+  },
+
   card: {
     backgroundColor: theme.colors.surface,
     padding: theme.spacing.lg,
@@ -303,22 +341,48 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    ...theme.shadow,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 8,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
-    marginBottom: 6,
+    color: theme.colors.textPrimary,
   },
-  resultBadge: {
-    marginTop: 6,
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+  },
+
+  badge: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 20,
     alignSelf: "flex-start",
+    marginTop: 4,
+  },
+
+  ironBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 14,
+    gap: 8,
   },
   ironText: {
-    marginTop: 8,
-    color: theme.colors.info,
+    fontSize: 14,
+    color: theme.colors.primaryText,
     fontWeight: "600",
   },
 });
