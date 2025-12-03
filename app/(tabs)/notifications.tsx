@@ -154,7 +154,7 @@ export default function NotificationsScreen() {
       <Ionicons name="notifications-off-outline" size={64} color="#d1d5db" />
       <ThemedText style={styles.emptyText}>No notifications yet</ThemedText>
       <ThemedText style={styles.emptySubtext}>
-        You'll see updates about your requests and account here
+        You&apos;ll see updates about your requests and account here
       </ThemedText>
     </View>
   );
