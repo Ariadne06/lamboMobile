@@ -45,6 +45,14 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="notifications" color={color} />,
+        }}
+      />
+
       {/* Hidden routes - accessible via navigation but not shown in tab bar */}
       <Tabs.Screen
         name="health"
@@ -91,6 +99,14 @@ export default function TabLayout() {
         options={{
           href: null,
           title: 'Transactions',
+        }}
+      />
+
+      <Tabs.Screen
+        name="notification-detail"
+        options={{
+          href: null,
+          title: 'Notification Detail',
         }}
       />
 

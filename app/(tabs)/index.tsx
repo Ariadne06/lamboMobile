@@ -13,7 +13,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       <ScrollView style={styles.scroll}>
-        <CustomHeader title="Menu" showBackButton={false} />
+        <CustomHeader title="Menu" showBackButton={false} showNotificationBell={true} />
         <View style={styles.container}>        
           <ThemedText style={styles.sectionTitle}>Services</ThemedText>
           <View style={styles.section}>

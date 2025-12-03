@@ -3,9 +3,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
-import { RegisterProvider } from '@/context/registercontext'; // Add this import
+import { NotificationProvider } from '@/context/notificationContext';
+import { RegisterProvider } from '@/context/registercontext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 
@@ -31,6 +32,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <RegisterProvider>
+          <NotificationProvider>
             <Stack screenOptions={{ headerShown: false }}>
               {/* Root entry point */}
               <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -71,6 +73,7 @@ export default function RootLayout() {
               {/* Other standalone screens */}
               <Stack.Screen name="+not-found" options={{ headerShown: false }} />
             </Stack>
+          </NotificationProvider>
         </RegisterProvider>
       <StatusBar style="auto" />
     </ThemeProvider>

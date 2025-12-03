@@ -1,13 +1,15 @@
-import React from 'react';
-import { View, StatusBar, Platform, TouchableOpacity, StyleSheet } from 'react-native';
+import NotificationBell from '@/components/NotificationBell';
+import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
+import React from 'react';
+import { Platform, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 type CustomHeaderProps = {
   title: string;
   showBackButton?: boolean;
   onBackPress?: () => void;
+  showNotificationBell?: boolean;
 };
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 24;
@@ -16,7 +18,8 @@ const HEADER_HEIGHT = 56;
 export default function CustomHeader({ 
   title, 
   showBackButton = true,
-  onBackPress
+  onBackPress,
+  showNotificationBell = false,
 }: CustomHeaderProps) {
   const router = useRouter();
 
@@ -57,7 +60,11 @@ export default function CustomHeader({
               {title}
             </ThemedText>
           </View>
-          <View style={styles.iconPlaceholder} />
+          {showNotificationBell ? (
+            <NotificationBell size={24} color="#fff" />
+          ) : (
+            <View style={styles.iconPlaceholder} />
+          )}
         </View>
       </View>
     </View>

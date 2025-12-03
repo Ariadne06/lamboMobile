@@ -109,6 +109,9 @@ bhwDashboard: "/household_api/bhw-dashboard/",
   FAMILY_MARK_VISITED: '/household_api/families/',
   FAMILY_GH_READINESS: '/household_api/families/',
 
+  // Dashboard
+  BHW_DASHBOARD: '/household_api/bhw/dashboard/',
+
   // Data endpoints 
   CIVIL_STATUSES: '/api/civil-statuses/',
   EDUCATIONAL_ATTAINMENTS: '/api/educational-attainments/',
@@ -249,6 +252,13 @@ MATERNAL_LAB_SCREENING_CREATE: (maternalHealthId: number) =>
   MATERNAL_POSTPARTUM_ADD: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/postpartum/add/`,
   
+  // ========================================
+  // NOTIFICATIONS
+  // ========================================
+  REGISTER_PUSH_TOKEN: '/api/notifications/register-push-token/',
+  GET_NOTIFICATIONS: '/api/notifications/get-notifications/',
+  MARK_NOTIFICATION_READ: '/api/notifications/mark-read/',
+  MARK_ALL_NOTIFICATIONS_READ: '/api/notifications/mark-all-read/',
 };
 
 // API settings
