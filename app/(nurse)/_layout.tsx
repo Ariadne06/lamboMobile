@@ -120,15 +120,15 @@ export default function NurseTabLayout() {
         options={{ href: null }}
       />
 
-     <Tabs.Screen name="maternal-health/[maternal_health_id]/laboratory-screening/index" options={{ href: null }} />
-<Tabs.Screen name="maternal-health/[maternal_health_id]/laboratory-screening/add-screening" options={{ href: null }} />
+      <Tabs.Screen name="maternal-health/[maternal_health_id]/laboratory-screening/index" options={{ href: null }} />
+      <Tabs.Screen name="maternal-health/[maternal_health_id]/laboratory-screening/add-screening" options={{ href: null }} />
 
-<Tabs.Screen name="maternal-health/[maternal_health_id]/disease-surveillance/index" options={{ href: null }} />
-<Tabs.Screen name="maternal-health/[maternal_health_id]/disease-surveillance/add-disease" options={{ href: null }} />
+      <Tabs.Screen name="maternal-health/[maternal_health_id]/disease-surveillance/index" options={{ href: null }} />
+      <Tabs.Screen name="maternal-health/[maternal_health_id]/disease-surveillance/add-disease" options={{ href: null }} />
 
-<Tabs.Screen name="maternal-health/[maternal_health_id]/medical-surgical-history/index" options={{ href: null }} />
-<Tabs.Screen name="maternal-health/[maternal_health_id]/postpartum-visit/index" options={{ href: null }} />
-<Tabs.Screen name="maternal-health/[maternal_health_id]/pregnancy-outcome/index" options={{ href: null }} />
+      <Tabs.Screen name="maternal-health/[maternal_health_id]/medical-surgical-history/index" options={{ href: null }} />
+      <Tabs.Screen name="maternal-health/[maternal_health_id]/postpartum-visit/index" options={{ href: null }} />
+      <Tabs.Screen name="maternal-health/[maternal_health_id]/pregnancy-outcome/index" options={{ href: null }} />
 
     </Tabs>
   );
