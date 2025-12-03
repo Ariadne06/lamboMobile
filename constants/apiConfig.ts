@@ -249,6 +249,13 @@ bhwDashboard: "/household_api/bhw-dashboard/",
   MATERNAL_POSTPARTUM_ADD: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/postpartum/add/`,
   
+  // ========================================
+  // NOTIFICATIONS
+  // ========================================
+  REGISTER_PUSH_TOKEN: '/api/notifications/register-push-token/',
+  GET_NOTIFICATIONS: '/api/notifications/get-notifications/',
+  MARK_NOTIFICATION_READ: '/api/notifications/mark-read/',
+  MARK_ALL_NOTIFICATIONS_READ: '/api/notifications/mark-all-read/',
 };
 
 // API settings

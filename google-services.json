@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "645219229256",
+    "project_id": "lambo-mobile-app",
+    "storage_bucket": "lambo-mobile-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:645219229256:android:1e7fbb19662883c3f7827d",
+        "android_client_info": {
+          "package_name": "com.cansaga.lambomobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClkdG671pBgWqeDxvdjVf5ftxyPTA7iww"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
