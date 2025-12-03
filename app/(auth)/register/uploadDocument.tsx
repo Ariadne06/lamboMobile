@@ -656,9 +656,9 @@ const handleVerify = async () => {
           <View style={styles.errorCard}>
             <View style={styles.errorHeader}>
               <Ionicons name="alert-circle" size={48} color="#EF4444" />
-              <Text style={styles.errorTitle}>Details Don't Match</Text>
+              <Text style={styles.errorTitle}>Details Don&apos;t Match</Text>
               <Text style={styles.errorMessage}>
-                The information you entered doesn't match the text on your document.
+                The information you entered doesn&apos;t match the text on your document.
               </Text>
             </View>
 
@@ -852,7 +852,7 @@ const handleVerify = async () => {
                       <Ionicons name="close" size={16} color="#EF4444" />
                     </View>
                     <View style={styles.tipTextContainer}>
-                      <Text style={styles.tipTitle}>Don't use flash</Text>
+                      <Text style={styles.tipTitle}>Don&apos;t use flash</Text>
                       <Text style={styles.tipDescription}>Causes glare and reflections</Text>
                     </View>
                   </View>
@@ -872,7 +872,7 @@ const handleVerify = async () => {
                       <Ionicons name="close" size={16} color="#EF4444" />
                     </View>
                     <View style={styles.tipTextContainer}>
-                      <Text style={styles.tipTitle}>Don't tilt camera</Text>
+                      <Text style={styles.tipTitle}>Don&apos;t tilt camera</Text>
                       <Text style={styles.tipDescription}>Hold parallel to document surface</Text>
                     </View>
                   </View>
@@ -882,7 +882,7 @@ const handleVerify = async () => {
                       <Ionicons name="close" size={16} color="#EF4444" />
                     </View>
                     <View style={styles.tipTextContainer}>
-                      <Text style={styles.tipTitle}>Don't use damaged IDs</Text>
+                      <Text style={styles.tipTitle}>Don&apos;t use damaged IDs</Text>
                       <Text style={styles.tipDescription}>Worn or torn documents may fail</Text>
                     </View>
                   </View>
