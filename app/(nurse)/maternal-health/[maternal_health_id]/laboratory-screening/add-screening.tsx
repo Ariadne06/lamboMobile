@@ -10,13 +10,13 @@ import {
   TextInput,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "@/components/ui/CustomHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants/apiConfig";
 
-// ---------- TYPES ----------
 interface TestType {
   test_type_id: number;
   test_name: string;
@@ -26,11 +26,8 @@ interface FormState {
   test_type_id: string;
   test_date: string;
   result: string;
-  iron_tablet_given_date: string;
-  iron_tablet_quantity: string;
 }
 
-// ---------- THEME ----------
 const theme = {
   colors: {
     background: "#F8FAFC",
@@ -44,7 +41,6 @@ const theme = {
   radius: { md: 8 },
 };
 
-// ---------------------------------------------------------
 export default function AddScreening() {
   const router = useRouter();
   const { maternal_health_id } =
@@ -52,12 +48,12 @@ export default function AddScreening() {
 
   const [loading, setLoading] = useState(false);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const [form, setForm] = useState<FormState>({
     test_type_id: "",
     test_date: "",
     result: "",
-    iron_tablet_given_date: "",
-    iron_tablet_quantity: "",
   });
 
   const updateField = (key: keyof FormState, value: string) => {
@@ -72,32 +68,23 @@ export default function AddScreening() {
 
   // ---------- Load Test Types ----------
   useEffect(() => {
-  fetch(`${API_BASE_URL}/test-types/`)
-    .then((res) => res.json())
-    .then((json) => {
-      if (json.success) {
-        console.log("Loaded test types:", json.data);
-        setTestTypes(json.data);
-      } else {
-        console.log("Test type API error:", json);
-      }
-    })
-    .catch((err) => {
-      console.log("Fetch error:", err);
-      Alert.alert("Error", "Failed to load test types");
-    });
-}, []);
+    fetch(`${API_BASE_URL}/household_api/test-types/`)
+      .then((res) => res.json())
+      .then((json) => {
+        console.log("Loaded test types:", json);
 
-
-  // ---------- Detect if iron supplement fields should show ----------
-  const selectedType = testTypes.find(
-    (t) => String(t.test_type_id) === form.test_type_id
-  );
-
-  const requiresIron =
-    selectedType &&
-    (selectedType.test_name.includes("CBC") ||
-      selectedType.test_name.includes("Hemoglobin"));
+        if (Array.isArray(json)) {
+          setTestTypes(json);
+        } else if (json.success && Array.isArray(json.data)) {
+          setTestTypes(json.data);
+        } else {
+          console.warn("Unexpected test type response:", json);
+        }
+      })
+      .catch(() => {
+        Alert.alert("Error", "Failed to load test types");
+      });
+  }, []);
 
   // ---------- Submit ----------
   const handleSubmit = async () => {
@@ -109,22 +96,23 @@ export default function AddScreening() {
     try {
       setLoading(true);
 
-      const personnel = await AsyncStorage.getItem("personnel_id");
-      if (!personnel) {
-        Alert.alert("Error", "Personnel ID missing. Please log in again.");
+      const sessionRaw = await AsyncStorage.getItem("user_session");
+      if (!sessionRaw) {
+        Alert.alert("Error", "User session missing. Please log in again.");
         return;
       }
+
+      const session = JSON.parse(sessionRaw);
+      const personnel_id = session.user_id;
 
       const payload = {
         test_type_id: parseInt(form.test_type_id),
         test_date: form.test_date,
         result: form.result || null,
-        iron_tablet_given_date: form.iron_tablet_given_date || null,
-        iron_tablet_quantity: form.iron_tablet_quantity
-          ? parseInt(form.iron_tablet_quantity)
-          : null,
-        personnel_id: parseInt(personnel),
+        personnel_id: personnel_id,
       };
+
+      console.log("Submitting payload:", payload);
 
       const response = await fetch(
         `${API_BASE_URL}${API_ENDPOINTS.MATERNAL_LAB_SCREENING_CREATE(
@@ -138,13 +126,11 @@ export default function AddScreening() {
       );
 
       const json = await response.json();
+      console.log("Server response:", json);
 
       if (json.success) {
         Alert.alert("Success", "Laboratory screening added!", [
-          {
-            text: "OK",
-            onPress: handleBackPress,
-          },
+          { text: "OK", onPress: handleBackPress },
         ]);
       } else {
         Alert.alert("Error", json.error || "Failed to add screening");
@@ -156,12 +142,13 @@ export default function AddScreening() {
     setLoading(false);
   };
 
-  // ---------------------------------------------------------
+  // ---------------------------- UI ----------------------------
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader title="Add Laboratory Screening" onBackPress={handleBackPress} />
 
       <ScrollView contentContainerStyle={styles.content}>
+        
         {/* Test Type */}
         <ThemedText style={styles.label}>Test Type *</ThemedText>
         <View style={styles.selectBox}>
@@ -180,49 +167,39 @@ export default function AddScreening() {
           </Picker>
         </View>
 
-        {/* Test Date */}
-        <ThemedText style={styles.label}>Test Date *</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
-          value={form.test_date}
-          onChangeText={(v) => updateField("test_date", v)}
-        />
+       <ThemedText style={styles.label}>Test Date *</ThemedText>
+
+<TextInput
+  style={styles.input}
+  placeholder="YYYY-MM-DD"
+  value={form.test_date}
+  onChangeText={(v) => {
+    // Auto-convert slashes to dashes
+    const cleaned = v.replace(/\//g, "-");
+    updateField("test_date", cleaned);
+  }}
+  maxLength={10}
+/>
+
+{/* Format notes */}
+<ThemedText style={{ 
+  fontSize: 12, 
+  color: "#6B7280", 
+  marginTop: -10, 
+  marginBottom: 16 
+}}>
+  Please follow the format: YYYY-MM-DD (e.g., 2025-12-01)
+</ThemedText>
+
 
         {/* Result */}
-        <ThemedText style={styles.label}>Result</ThemedText>
+        <ThemedText style={styles.label}>Result (Optional)</ThemedText>
         <TextInput
           style={styles.input}
-          placeholder="Result (optional)"
+          placeholder="Result"
           value={form.result}
           onChangeText={(v) => updateField("result", v)}
         />
-
-        {/* Iron Supplement Fields */}
-        {requiresIron && (
-          <>
-            <ThemedText style={styles.label}>Iron Supplement Date</ThemedText>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={form.iron_tablet_given_date}
-              onChangeText={(v) =>
-                updateField("iron_tablet_given_date", v)
-              }
-            />
-
-            <ThemedText style={styles.label}>Iron Tablet Quantity</ThemedText>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter quantity"
-              keyboardType="numeric"
-              value={form.iron_tablet_quantity}
-              onChangeText={(v) =>
-                updateField("iron_tablet_quantity", v)
-              }
-            />
-          </>
-        )}
 
         {/* Submit */}
         <TouchableOpacity
@@ -236,12 +213,13 @@ export default function AddScreening() {
             <ThemedText style={styles.submitText}>Submit</ThemedText>
           )}
         </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ---------- STYLES ----------
+// ---------------------------- STYLES ----------------------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg },
