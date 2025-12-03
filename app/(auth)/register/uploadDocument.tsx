@@ -433,9 +433,87 @@ const handleVerify = async () => {
   };
 
   const handleRegistrationError = (data: any) => {
-    const errorMessage = data.error || data.message;
-    Alert.alert('Registration Failed', errorMessage || 'Please try again.');
-  };
+  console.log('❌ Registration error data:', data);
+
+ 
+  const errorMessage = data.error || data.message || data.error_message || '';
+  const errorString = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
+  const errorCode = data.error_code || '';
+
+  
+  if (errorString.includes('E5009') || errorString.includes('same full name')) {
+    setErrorModal({
+      visible: true,
+      title: '⚠️ Account Already Exists',
+      message: `An account with your name (${formData.first_name} ${formData.middle_name || ''} ${formData.last_name}${formData.suffix ? ' ' + formData.suffix : ''}) and date of birth (${formData.dob}) already exists in our system.`,
+      icon: 'person-circle',
+      iconColor: '#f59e0b',
+      actions: [
+        {
+          text: 'Try Login',
+          onPress: () => {
+            setErrorModal(prev => ({ ...prev, visible: false }));
+            router.replace('/(auth)/login');
+          },
+          style: 'primary',
+        },
+        {
+          text: 'Contact Support',
+          onPress: () => {
+            setErrorModal(prev => ({ ...prev, visible: false }));
+            Alert.alert(
+              'Contact Support',
+              'If you believe this is an error, please visit the barangay office for assistance.\n\nBarangay Cansaga Office\nConsolacion, Cebu',
+              [{ text: 'OK' }]
+            );
+          },
+          style: 'secondary',
+        },
+      ],
+    });
+    return;
+  }
+
+  
+  const displayMessage = errorString || 
+                        data.error || 
+                        data.message || 
+                        data.error_message ||
+                        'An unexpected error occurred during registration. Please try again.';
+
+  // ✅ Show the error in the modal
+  setErrorModal({
+    visible: true,
+    title: '❌ Registration Failed',
+    message: displayMessage,
+    icon: 'alert-circle',
+    iconColor: '#ef4444',
+    actions: [
+      {
+        text: 'Try Again',
+        onPress: () => {
+          setErrorModal(prev => ({ ...prev, visible: false }));
+          setImage(null);
+          setVerified(false);
+          setUploading(false);
+        },
+        style: 'primary',
+      },
+      {
+        text: 'Contact Support',
+        onPress: () => {
+          setErrorModal(prev => ({ ...prev, visible: false }));
+          Alert.alert(
+            'Contact Support',
+            'Please visit the barangay office for assistance.\n\nBarangay Cansaga Office\nConsolacion, Cebu\n\nError Code: ' + (errorCode || 'UNKNOWN'),
+            [{ text: 'OK' }]
+          );
+        },
+        style: 'secondary',
+      },
+    ],
+  });
+};
 
   // Render conditions
   const showImagePreview = Boolean(image);

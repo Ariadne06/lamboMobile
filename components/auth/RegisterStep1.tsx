@@ -14,6 +14,17 @@ export default function RegisterStep1() {
 
   const isNonResident = formData.user_type === 'non_resident';
 
+  const getMaximumDate = () => {
+    return new Date(); 
+  };
+
+
+  const getMinimumDate = () => {
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 150);
+    return minDate;
+  };
+
    const handleNext = () => {
     // Check required fields for all users
     if (!formData.first_name?.trim()) {
@@ -28,6 +39,14 @@ export default function RegisterStep1() {
       Alert.alert('Missing Info', 'Please select your date of birth.');
       return;
     }
+
+    const selectedDate = new Date(formData.dob);
+    const today = new Date();
+    if (selectedDate > today) {
+      Alert.alert('Invalid Date', 'Date of birth cannot be in the future.');
+      return;
+    }
+
     if (!formData.sex) {
       Alert.alert('Missing Info', 'Please select your sex.');
       return;
@@ -157,6 +176,11 @@ export default function RegisterStep1() {
               onChange={(event, selectedDate) => {
                 setShowDatePicker(false);
                 if (selectedDate) {
+                  const today = new Date();
+                  if (selectedDate > today) {
+                    Alert.alert('Invalid Date', 'Date of birth cannot be in the future.');
+                    return;
+                  }
                   const formatted = selectedDate.toISOString().split('T')[0];
                   setFormData({ ...formData, dob: formatted });
                 }
