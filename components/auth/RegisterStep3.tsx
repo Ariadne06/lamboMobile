@@ -16,18 +16,29 @@ import { router } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
+import RegistrationReviewModal from '@/components/ui/RegistrationReviewModal';
 
 export default function RegisterStep3() {
-  const { formData, setFormData } = useRegister();
+  const { 
+    formData, 
+    setFormData, 
+    sitioOptions, 
+    religionOptions, 
+    civilStatusOptions, 
+    educationOptions, 
+    occupationOptions, 
+    nationalityOptions, 
+    employmentStatusOptions 
+  } = useRegister();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'available' | 'taken' | 'checking' | null>(null);
   const [usernameMessage, setUsernameMessage] = useState('');
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
-
 
   // Debounce timer for username checking
   useEffect(() => {
@@ -47,7 +58,7 @@ export default function RegisterStep3() {
     // Debounce: wait 1 second after user stops typing
     const timer = setTimeout(() => {
       checkUsernameAvailability(formData.username.trim());
-    }, 1000); // 
+    }, 1000);
 
     return () => {
       clearTimeout(timer);
@@ -57,12 +68,8 @@ export default function RegisterStep3() {
     };
   }, [formData.username]);
 
-
-
   const checkUsernameAvailability = async (username: string) => {
-    
     abortControllerRef.current = new AbortController();
- 
     setIsCheckingUsername(true);
     setUsernameStatus('checking');
     
@@ -73,7 +80,7 @@ export default function RegisterStep3() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username }),
-        signal: abortControllerRef.current.signal, 
+        signal: abortControllerRef.current.signal,
       });
 
       const data = await response.json();
@@ -98,7 +105,6 @@ export default function RegisterStep3() {
       setIsCheckingUsername(false);
     }
   };
-
 
   const handleNext = () => {
     // Username validation
@@ -140,7 +146,12 @@ export default function RegisterStep3() {
       return;
     }
     
-    // All validations passed
+    // Show review modal instead of navigating directly
+    setShowReviewModal(true);
+  };
+
+  const handleConfirmReview = () => {
+    setShowReviewModal(false);
     router.push('/(auth)/register/chooseDocument');
   };
 
@@ -174,7 +185,6 @@ export default function RegisterStep3() {
               )}
             </View>
             
-            {/* Username availability message */}
             {usernameMessage && !isCheckingUsername && (
               <ThemedText 
                 style={[
@@ -247,11 +257,26 @@ export default function RegisterStep3() {
             disabled={usernameStatus === 'taken'}
           >
             <ThemedText style={styles.nextButtonText}>
-              Next: Choose Document
+              Review & Continue
             </ThemedText>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Review Modal */}
+      <RegistrationReviewModal
+        visible={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onConfirm={handleConfirmReview}
+        formData={formData}
+        sitioOptions={sitioOptions}
+        religionOptions={religionOptions}
+        civilStatusOptions={civilStatusOptions}
+        educationOptions={educationOptions}
+        occupationOptions={occupationOptions}
+        nationalityOptions={nationalityOptions}
+        employmentStatusOptions={employmentStatusOptions}
+      />
     </SafeAreaView>
   );
 }
