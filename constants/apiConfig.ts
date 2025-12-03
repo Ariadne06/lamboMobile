@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
   RESIDENT_REGISTER: '/api/register/',
   VERIFY_ID_FIELDS: '/api/verify-id-fields/',
   VERIFY_GUARDIAN: '/api/verify-guardian/',
+ RESIDENT_LIST: `${API_BASE_URL}/residents/`, 
+   //UPDATE_STATUS: `${API_BASE_URL}/residents/{residentId}/update-status/`,
+
 
 
   // Profile
@@ -259,6 +262,12 @@ MATERNAL_LAB_SCREENING_CREATE: (maternalHealthId: number) =>
   GET_NOTIFICATIONS: '/api/notifications/get-notifications/',
   MARK_NOTIFICATION_READ: '/api/notifications/mark-read/',
   MARK_ALL_NOTIFICATIONS_READ: '/api/notifications/mark-all-read/',
+
+  // ========================================
+  // BUSINESS
+  // ========================================
+  MOBILE_BUSINESSES_BY_OWNER: '/api/mobile/businesses/',
+  MOBILE_SPECIFIC_BUSINESS: (businessId: number) => `/api/mobile/businesses/${businessId}/`,
 
   // Child Immunization Schedule
   CHILD_IMMUNIZATION_SCHEDULE: '/household_api/child-immunization-schedule/',

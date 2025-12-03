@@ -204,6 +204,20 @@ export default function BHWTabLayout() {
       />
 
       <Tabs.Screen
+        name="resident/index"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="resident/[residentId]/update-status"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
         name="maternal-health/index"
         options={{
           href: null,

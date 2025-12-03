@@ -33,7 +33,17 @@ export default function BHWMenu() {
                 <ThemedText style={styles.buttonText}>Household Record</ThemedText>
               </View>
             </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, { width: BUTTON_WIDTH }]} 
+              onPress={() => router.push('/(bhw)/resident')}>
+              <View style={styles.buttonContent}>
+                <Ionicons name="home-outline" size={24} color="#1e293b" />
+                <ThemedText style={styles.buttonText}>Resident Record</ThemedText>
+              </View>
+            </TouchableOpacity>
+            
           </View>
+         
 
           <ThemedText style={styles.sectionTitle}>Health Records</ThemedText>
           <View style={styles.section}>

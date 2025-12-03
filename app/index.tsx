@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { router } from 'expo-router';
-import { getUserSession, isSessionExpired } from '@/utils/session';
 import CustomSplashScreen from '@/components/CustomSplashScreen';
+import { registerForPushNotificationsAsync } from '@/utils/pushNotifications';
+import { getUserSession, isSessionExpired } from '@/utils/session';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 
 export default function SplashScreen() {
   const [showSplash, setShowSplash] = useState(true);
@@ -41,6 +42,14 @@ export default function SplashScreen() {
       
       if (session) {
         console.log(` Found session for: ${session.username} (${session.account_type})`);
+        
+        // Register for push notifications after detecting logged-in session
+        try {
+          await registerForPushNotificationsAsync();
+          console.log('✅ Push notifications registered');
+        } catch (error) {
+          console.error('❌ Failed to register push notifications:', error);
+        }
         
         setShowSplash(false);
         

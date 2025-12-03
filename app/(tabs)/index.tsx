@@ -1,14 +1,36 @@
 import { ThemedText } from '@/components/ThemedText';
 import CustomHeader from '@/components/ui/CustomHeader';
 import { showLogoutConfirmation } from '@/utils/auth';
+import { fetchResidentProfile, ResidentProfile } from '@/utils/profileService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Dimensions, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = Dimensions.get('window');
   const BUTTON_WIDTH = Math.min(width * 0.92, 400);
+  const [profile, setProfile] = useState<ResidentProfile | null>(null);
+  const [isResident, setIsResident] = useState(true); // Show all by default
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const profileData = await fetchResidentProfile();
+      if (profileData) {
+        setProfile(profileData);
+        // Hide features if status is "Relocated" or "Non-Resident"
+        const allowedStatuses = ['Resident'];
+        setIsResident(allowedStatuses.includes(profileData.resident_status));
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
@@ -17,14 +39,16 @@ export default function HomeScreen() {
         <View style={styles.container}>        
           <ThemedText style={styles.sectionTitle}>Services</ThemedText>
           <View style={styles.section}>
-            <TouchableOpacity 
-              style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/household/household')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="home-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Household Information</ThemedText>
-              </View>
-            </TouchableOpacity>
+            {isResident && (
+              <TouchableOpacity 
+                style={[styles.button, { width: BUTTON_WIDTH }]} 
+                onPress={() => router.push('/(tabs)/household/household')}>
+                <View style={styles.buttonContent}>
+                  <Ionicons name="home-outline" size={24} color="#1e293b" />
+                  <ThemedText style={styles.buttonText}>Household Information</ThemedText>
+                </View>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity 
               style={[styles.button, { width: BUTTON_WIDTH }]} 
@@ -35,14 +59,16 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/health/health')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="medkit-outline" size={22} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Health Records</ThemedText>
-              </View>
-            </TouchableOpacity>
+            {isResident && (
+              <TouchableOpacity 
+                style={[styles.button, { width: BUTTON_WIDTH }]} 
+                onPress={() => router.push('/(tabs)/health/health')}>
+                <View style={styles.buttonContent}>
+                  <Ionicons name="medkit-outline" size={22} color="#1e293b" />
+                  <ThemedText style={styles.buttonText}>Health Records</ThemedText>
+                </View>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity 
               style={[styles.button, { width: BUTTON_WIDTH }]} 
@@ -53,14 +79,16 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.button, { width: BUTTON_WIDTH }]} 
-              onPress={() => router.push('/(tabs)/documents')}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="documents-outline" size={24} color="#1e293b" />
-                <ThemedText style={styles.buttonText}>Certificate & Clearance Request</ThemedText>
-              </View>
-            </TouchableOpacity>
+            {isResident && (
+              <TouchableOpacity 
+                style={[styles.button, { width: BUTTON_WIDTH }]} 
+                onPress={() => router.push('/(tabs)/documents')}>
+                <View style={styles.buttonContent}>
+                  <Ionicons name="documents-outline" size={24} color="#1e293b" />
+                  <ThemedText style={styles.buttonText}>Certificate & Clearance Request</ThemedText>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
 
           <ThemedText style={styles.sectionTitle}>Account</ThemedText>
