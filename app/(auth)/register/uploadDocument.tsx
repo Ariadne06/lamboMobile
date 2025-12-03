@@ -862,7 +862,7 @@ const handleVerify = async () => {
                       <Ionicons name="close" size={16} color="#EF4444" />
                     </View>
                     <View style={styles.tipTextContainer}>
-                      <Text style={styles.tipTitle}>Don't cover corners</Text>
+                      <Text style={styles.tipTitle}>Don&apos;t cover corners</Text>
                       <Text style={styles.tipDescription}>Keep fingers away from edges</Text>
                     </View>
                   </View>
