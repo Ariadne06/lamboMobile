@@ -29,13 +29,6 @@ export default function TabLayout() {
         }),
       }}>
 
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Menu',
-          tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
-        }}
-      />
 
       <Tabs.Screen
         name="announcement"
@@ -50,6 +43,14 @@ export default function TabLayout() {
         options={{
           title: 'Notifications',
           tabBarIcon: ({ color }) => <Ionicons size={24} name="notifications" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Menu',
+          tabBarIcon: ({ color }) => <MaterialIcons size={24} name="menu" color={color} />,
         }}
       />
 
