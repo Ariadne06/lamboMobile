@@ -14,6 +14,12 @@ export default function BusinessLayout() {
           title: 'Business Info',
         }} 
       />
+      <Stack.Screen 
+        name="detail" 
+        options={{ 
+          title: 'Business Details',
+        }} 
+      />
     </Stack>
   );
 }

@@ -114,45 +114,46 @@ export default function TransactionsListScreen() {
       </View>
 
       {/* Filter Buttons */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        <TouchableOpacity
-          style={[styles.filterChip, filterStatus === '' && styles.filterChipActive]}
-          onPress={() => setFilterStatus('')}
+      <View style={styles.filterWrapper}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContent}
         >
-          <Text style={[styles.filterText, filterStatus === '' && styles.filterTextActive]}>
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterChip, filterStatus === 'Paid' && styles.filterChipActive]}
-          onPress={() => setFilterStatus('Paid')}
-        >
-          <Text style={[styles.filterText, filterStatus === 'Paid' && styles.filterTextActive]}>
-            Paid
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterChip, filterStatus === 'Pending' && styles.filterChipActive]}
-          onPress={() => setFilterStatus('Pending')}
-        >
-          <Text style={[styles.filterText, filterStatus === 'Pending' && styles.filterTextActive]}>
-            Pending
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterChip, filterStatus === 'Cancelled' && styles.filterChipActive]}
-          onPress={() => setFilterStatus('Cancelled')}
-        >
-          <Text style={[styles.filterText, filterStatus === 'Cancelled' && styles.filterTextActive]}>
-            Cancelled
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === '' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('')}
+          >
+            <Text style={[styles.filterText, filterStatus === '' && styles.filterTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === 'Paid' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('Paid')}
+          >
+            <Text style={[styles.filterText, filterStatus === 'Paid' && styles.filterTextActive]}>
+              Paid
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === 'Pending' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('Pending')}
+          >
+            <Text style={[styles.filterText, filterStatus === 'Pending' && styles.filterTextActive]}>
+              Pending
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === 'Cancelled' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('Cancelled')}
+          >
+            <Text style={[styles.filterText, filterStatus === 'Cancelled' && styles.filterTextActive]}>
+              Cancelled
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -260,28 +261,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1F2937',
   },
-  filterContainer: {
+  filterWrapper: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    paddingVertical: 6,
   },
   filterContent: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
+    alignItems: 'center',
   },
   filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
     backgroundColor: '#F3F4F6',
     marginRight: 8,
+    height: 28,
+    justifyContent: 'center',
   },
   filterChipActive: {
     backgroundColor: '#2563EB',
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: '#6B7280',
   },

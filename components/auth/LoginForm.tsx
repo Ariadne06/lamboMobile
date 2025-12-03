@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
+import { registerForPushNotificationsAsync } from '@/utils/pushNotifications';
 import { storeUserSession } from '@/utils/session';
 import { Ionicons } from '@expo/vector-icons';
 import { router, type Href } from 'expo-router';
@@ -46,6 +47,15 @@ export default function LoginForm() {
           session_token: data.session_token,
           login_time: new Date().toISOString(),
         });
+        
+        // Register for push notifications after successful login
+        try {
+          await registerForPushNotificationsAsync();
+          console.log('✅ Push notifications registered after login');
+        } catch (error) {
+          console.error('❌ Failed to register push notifications:', error);
+          // Don't block login if push registration fails
+        }
         
         // Navigate based on account type and role
         if (data.account_type === 'personnel') {

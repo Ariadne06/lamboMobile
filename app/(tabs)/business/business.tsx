@@ -1,16 +1,17 @@
-import React from 'react';
-import {
-  ScrollView,
-  View,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
-import { useLocalSearchParams } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserSession } from '@/utils/session';
+import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 type BusinessSummary = {
   business_id: number;
@@ -41,261 +42,192 @@ function formatCurrency(value: number | null): string {
   }
 }
 
-function formatDate(input: string | null): string {
-  if (!input) return '—';
-  const d = new Date(input);
-  if (Number.isNaN(+d)) return input;
-  return d.toLocaleDateString('en-PH', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  });
-}
-
-export default function BusinessInfoScreen() {
-  // Optional: if you navigate like `/business?businessId=22` from a list
-  const { businessId } = useLocalSearchParams<{ businessId?: string }>();
-
-  const [business, setBusiness] = React.useState<BusinessSummary | null>(null);
+export default function BusinessListScreen() {
+  const router = useRouter();
+  const [businesses, setBusinesses] = React.useState<BusinessSummary[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
+  const [refreshing, setRefreshing] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    const fetchBusiness = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchBusinessList = async () => {
+    try {
+      setError(null);
 
-        // 1️⃣ Get logged-in resident_id stored in user_session
-        const session = await getUserSession();
-        const storedUserId = session?.user_id;
-        console.log('Business screen - stored user_id:', storedUserId);
+      const session = await getUserSession();
+      const storedUserId = session?.user_id;
 
-        if (!storedUserId) {
-          setError('No logged-in resident found. Please log in again.');
-          setLoading(false);
-          return;
-        }
-
-        const ownerId = Number(storedUserId);
-        if (!ownerId || isNaN(ownerId)) {
-          setError('Invalid stored resident ID. Please log in again.');
-          setLoading(false);
-          return;
-        }
-
-        // 2️⃣ Call get_all_businesses_mobile_by_owner(ownerId)
-        const endpoint = `${API_BASE_URL}${API_ENDPOINTS.MOBILE_BUSINESSES_BY_OWNER(
-          ownerId
-        )}`;
-
-        console.log('Fetching businesses for owner from:', endpoint);
-
-        const res = await fetch(endpoint);
-        const rawText = await res.text();
-
-        if (!res.ok) {
-          console.log('Error response body:', rawText);
-          throw new Error(`HTTP ${res.status} - ${rawText}`);
-        }
-
-        let parsed: BusinessSummary[];
-        try {
-          parsed = JSON.parse(rawText);
-        } catch (e) {
-          console.log('Failed to parse JSON:', e);
-          throw new Error('Invalid JSON from server');
-        }
-
-        if (!parsed || parsed.length === 0) {
-          setBusiness(null);
-          setError('You currently have no registered business.');
-          setLoading(false);
-          return;
-        }
-
-        // 3️⃣ If businessId param is given → select that specific business
-        //    Otherwise → show the first business in the list
-        let selected: BusinessSummary | undefined;
-        const businessIdNum = businessId ? Number(businessId) : NaN;
-
-        if (businessId && !isNaN(businessIdNum)) {
-          selected = parsed.find((b) => b.business_id === businessIdNum);
-        }
-
-        if (!selected) {
-          selected = parsed[0];
-        }
-
-        setBusiness(selected);
-      } catch (err: any) {
-        console.error('Failed to load business', err);
-        setError(err?.message || 'Failed to load business information.');
-      } finally {
-        setLoading(false);
+      if (!storedUserId) {
+        setError('No logged-in resident found. Please log in again.');
+        return;
       }
-    };
 
-    fetchBusiness();
-  }, [businessId]);
+      const ownerIdNum = Number(storedUserId);
+      if (!ownerIdNum || isNaN(ownerIdNum)) {
+        setError('Invalid stored resident ID. Please log in again.');
+        return;
+      }
+
+      const endpoint = `${API_BASE_URL}${API_ENDPOINTS.MOBILE_BUSINESSES_BY_OWNER}?owner_id=${ownerIdNum}`;
+      console.log('Fetching businesses for owner from:', endpoint);
+
+      const res = await fetch(endpoint);
+      const rawText = await res.text();
+
+      if (!res.ok) {
+        console.log('Error response body:', rawText);
+        throw new Error(`HTTP ${res.status} - ${rawText}`);
+      }
+
+      let parsed: BusinessSummary[];
+      try {
+        parsed = JSON.parse(rawText);
+      } catch (e) {
+        console.log('Failed to parse JSON:', e);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      if (!parsed || parsed.length === 0) {
+        setBusinesses([]);
+        setError('You currently have no registered business.');
+        return;
+      }
+
+      setBusinesses(parsed);
+    } catch (err: any) {
+      console.error('Failed to load business list', err);
+      setError(err?.message || 'Failed to load business information.');
+    }
+  };
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await fetchBusinessList();
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchBusinessList();
+    setRefreshing(false);
+  };
+
+  const handleBusinessPress = (businessId: number) => {
+    router.push(`/business/detail?businessId=${businessId}`);
+  };
+
+  const renderBusinessCard = ({ item }: { item: BusinessSummary }) => {
+    const isActive = item.business_status_name?.toLowerCase() === 'active';
+
+    return (
+      <TouchableOpacity
+        style={styles.businessCard}
+        onPress={() => handleBusinessPress(item.business_id)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <MaterialIcons name="business" size={32} color="#FF3D33" />
+          </View>
+          <View style={styles.headerContent}>
+            <ThemedText style={styles.businessName} numberOfLines={2}>
+              {item.business_name}
+            </ThemedText>
+            <View style={[styles.statusBadge, isActive ? styles.statusActive : styles.statusInactive]}>
+              <Ionicons
+                name={isActive ? 'checkmark-circle' : 'close-circle'}
+                size={14}
+                color="#fff"
+                style={{ marginRight: 4 }}
+              />
+              <ThemedText style={styles.statusText}>{item.business_status_name}</ThemedText>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#9ca3af" />
+        </View>
+
+        <View style={styles.cardBody}>
+          <View style={styles.infoRow}>
+            <FontAwesome5 name="store" size={14} color="#6b7280" />
+            <ThemedText style={styles.infoLabel}>Type:</ThemedText>
+            <ThemedText style={styles.infoValue} numberOfLines={1}>
+              {item.business_type_name}
+            </ThemedText>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="cash-outline" size={16} color="#16a34a" />
+            <ThemedText style={styles.infoLabel}>Income:</ThemedText>
+            <ThemedText style={[styles.infoValue, { color: '#16a34a', fontWeight: '600' }]}>
+              {formatCurrency(item.total_gross_income)}
+            </ThemedText>
+          </View>
+
+          {item.full_address && (
+            <View style={styles.infoRow}>
+              <Ionicons name="location-outline" size={16} color="#6b7280" />
+              <ThemedText style={styles.addressText} numberOfLines={2}>
+                {item.full_address}
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-        <ThemedText style={styles.muted}>Loading business info...</ThemedText>
+        <ActivityIndicator size="large" color="#FF3D33" />
+        <ThemedText style={styles.muted}>Loading businesses...</ThemedText>
       </View>
     );
   }
 
-  if (error || !business) {
+  if (error && businesses.length === 0) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="alert-circle" size={40} color="#ef4444" />
-        <ThemedText style={[styles.muted, { marginTop: 8, textAlign: 'center' }]}>
-          {error || 'You currently have no registered business.'}
+        <Ionicons name="alert-circle" size={48} color="#ef4444" />
+        <ThemedText style={[styles.muted, { marginTop: 12, textAlign: 'center', fontSize: 16 }]}>
+          {error}
         </ThemedText>
       </View>
     );
   }
 
-  // Owner details (we only have address from this function)
-  const ownerName = 'Business Owner';
-  const ownerAddress = business.full_address || 'No address on record';
-
-  // Business detail fields
-  const businessName = business.business_name;
-  const businessType = business.business_type_name;
-  const businessAddress = business.full_address || 'No address on record';
-  const totalGrossIncome = business.total_gross_income;
-  const clearanceCategory = business.clearance_category_name || 'N/A';
-  const statusName = business.business_status_name;
-  const isActive = statusName?.toLowerCase() === 'active';
-  const issuanceDate = isActive ? formatDate(business.updated_at) : '—';
-
   return (
-    <ScrollView style={styles.container}>
-      {/* Business information */}
-      <View style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Business Information</ThemedText>
-
-        {/* Business Name */}
-        <View style={styles.infoRow}>
-          <MaterialIcons
-            name="business-center"
-            size={22}
-            color="#FFA333"
-            style={styles.icon}
+    <View style={styles.container}>
+      <FlatList
+        data={businesses}
+        renderItem={renderBusinessCard}
+        keyExtractor={(item) => item.business_id.toString()}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#FF3D33']}
+            tintColor="#FF3D33"
           />
-          <ThemedText style={styles.infoLabel}>Business Name: </ThemedText>
-          <ThemedText style={styles.infoText}>{businessName}</ThemedText>
-        </View>
-
-        {/* Business Type */}
-        <View style={styles.infoRow}>
-          <FontAwesome5 name="store" size={20} color="#FF3D33" style={styles.icon} />
-          <ThemedText style={styles.infoLabel}>Business Type: </ThemedText>
-          <ThemedText style={styles.infoText}>{businessType}</ThemedText>
-        </View>
-
-        {/* Total Gross Income */}
-        <View style={styles.infoRow}>
-          <Ionicons name="cash-outline" size={22} color="#16a34a" style={styles.icon} />
-          <ThemedText style={styles.infoLabel}>Total Gross Income: </ThemedText>
-          <ThemedText style={styles.infoText}>
-            {formatCurrency(totalGrossIncome)}
-          </ThemedText>
-        </View>
-
-        {/* Address */}
-        <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={22} color="#FF3D33" style={styles.icon} />
-          <ThemedText style={styles.infoLabel}>Address: </ThemedText>
-          <ThemedText style={styles.infoText}>{businessAddress}</ThemedText>
-        </View>
-
-        {/* Clearance Category */}
-        <View style={styles.infoRow}>
-          <Ionicons name="pricetag-outline" size={20} color="#6366f1" style={styles.icon} />
-          <ThemedText style={styles.infoLabel}>Clearance Category: </ThemedText>
-          <ThemedText style={styles.infoText}>{clearanceCategory}</ThemedText>
-        </View>
-
-        {/* Issuance Date (if active) */}
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={20} color="#0ea5e9" style={styles.icon} />
-          <ThemedText style={styles.infoLabel}>Issuance Date: </ThemedText>
-          <ThemedText style={styles.infoText}>
-            {isActive ? issuanceDate : '—'}
-          </ThemedText>
-        </View>
-
-        {/* Status */}
-        <View style={styles.infoRow}>
-          <Ionicons
-            name={isActive ? 'checkmark-circle' : 'close-circle'}
-            size={22}
-            color={isActive ? '#22c55e' : '#ef4444'}
-            style={styles.icon}
-          />
-          <ThemedText style={styles.infoLabel}>Status: </ThemedText>
-          <ThemedText
-            style={[
-              styles.infoText,
-              { color: isActive ? '#22c55e' : '#ef4444', fontWeight: 'bold' },
-            ]}
-          >
-            {statusName}
-          </ThemedText>
-        </View>
-      </View>
-    </ScrollView>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <MaterialIcons name="business" size={64} color="#d1d5db" />
+            <ThemedText style={styles.emptyText}>No businesses found</ThemedText>
+          </View>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    marginHorizontal: 16,
-    marginTop: 18,
-    marginBottom: 12,
-    padding: 18,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#FF3D33',
-    marginBottom: 12,
-    letterSpacing: 0.5,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    flexWrap: 'wrap',
-  },
-  icon: {
-    marginRight: 8,
-  },
-  infoLabel: {
-    fontSize: 15,
-    color: '#6b7280',
-    marginRight: 4,
-  },
-  infoText: {
-    fontSize: 15,
-    color: '#374151',
-    flexShrink: 1,
+    backgroundColor: '#f3f4f6',
   },
   centered: {
     flex: 1,
@@ -307,5 +239,101 @@ const styles = StyleSheet.create({
   muted: {
     fontSize: 14,
     color: '#6b7280',
+    marginTop: 8,
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+  businessCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#fee2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  headerContent: {
+    flex: 1,
+  },
+  businessName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 6,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusActive: {
+    backgroundColor: '#22c55e',
+  },
+  statusInactive: {
+    backgroundColor: '#ef4444',
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardBody: {
+    padding: 16,
+    gap: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#1f2937',
+    fontWeight: '600',
+    flex: 1,
+  },
+  addressText: {
+    fontSize: 13,
+    color: '#6b7280',
+    flex: 1,
+    lineHeight: 18,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#9ca3af',
+    marginTop: 16,
   },
 });
