@@ -377,6 +377,13 @@ export default function BHWTabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="immunization-schedule/index"
+        options={{
+          href: null,
+        }}
+      />
+
     </Tabs>
     
   );

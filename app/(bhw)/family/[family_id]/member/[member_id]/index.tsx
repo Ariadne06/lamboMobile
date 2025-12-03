@@ -925,7 +925,7 @@ export default function FamilyMemberDetailScreen() {
                 }}
               >
                 <Ionicons name="woman-outline" size={24} color={theme.colors.female} />
-                <ThemedText style={styles.relationshipOptionText}>Add Mother</ThemedText>
+                <ThemedText style={styles.relationshipOptionText}>Mother</ThemedText>
               </Pressable>
 
               <Pressable
@@ -937,7 +937,7 @@ export default function FamilyMemberDetailScreen() {
                 }}
               >
                 <Ionicons name="man-outline" size={24} color={theme.colors.primary} />
-                <ThemedText style={styles.relationshipOptionText}>Add Father</ThemedText>
+                <ThemedText style={styles.relationshipOptionText}>Father</ThemedText>
               </Pressable>
 
               <Pressable
@@ -947,9 +947,9 @@ export default function FamilyMemberDetailScreen() {
                   setShowAddRelationModal(false);
                   setShowResidentSearch(true);
                 }}
-              >
+              > 
                 <Ionicons name="person-outline" size={24} color={theme.colors.success} />
-                <ThemedText style={styles.relationshipOptionText}>Add Child</ThemedText>
+                <ThemedText style={styles.relationshipOptionText}>Child</ThemedText>
               </Pressable>
 
               <Pressable
@@ -961,7 +961,7 @@ export default function FamilyMemberDetailScreen() {
                 }}
               >
                 <Ionicons name="shield-outline" size={24} color={theme.colors.warning} />
-                <ThemedText style={styles.relationshipOptionText}>Add Guardian</ThemedText>
+                <ThemedText style={styles.relationshipOptionText}>Guardian</ThemedText>
               </Pressable>
             </View>
           </View>

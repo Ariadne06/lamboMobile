@@ -412,9 +412,7 @@ export default function NurseChildHealthDetailScreen() {
             >
                 <Ionicons name="fitness" size={20} color="#FFFFFF" />
                 <ThemedText style={styles.actionButtonFullText}>Growth Monitoring</ThemedText>
-                <View style={styles.viewOnlyBadge}>
-                <Ionicons name="eye" size={12} color="#FFFFFF" />
-                <ThemedText style={styles.viewOnlyText}>View Only</ThemedText>
+                <View style={styles.viewOnlyBadge}> 
                 </View>
             </TouchableOpacity>
 
@@ -426,8 +424,6 @@ export default function NurseChildHealthDetailScreen() {
                 <Ionicons name="heart" size={20} color="#FFFFFF" />
                 <ThemedText style={styles.actionButtonFullText}>Exclusive Breastfeed</ThemedText>
                 <View style={styles.viewOnlyBadge}>
-                <Ionicons name="eye" size={12} color="#FFFFFF" />
-                <ThemedText style={styles.viewOnlyText}>View Only</ThemedText>
                 </View>
             </TouchableOpacity>
 
@@ -438,9 +434,7 @@ export default function NurseChildHealthDetailScreen() {
             >
                 <Ionicons name="medical-outline" size={20} color="#FFFFFF" />
                 <ThemedText style={styles.actionButtonFullText}>Supplements</ThemedText>
-                <View style={styles.viewOnlyBadge}>
-                <Ionicons name="eye" size={12} color="#FFFFFF" />
-                <ThemedText style={styles.viewOnlyText}>View Only</ThemedText>
+                <View style={styles.viewOnlyBadge}>             
                 </View>
             </TouchableOpacity>
 
@@ -451,9 +445,7 @@ export default function NurseChildHealthDetailScreen() {
             >
                 <Ionicons name="document-text" size={20} color="#FFFFFF" />
                 <ThemedText style={styles.actionButtonFullText}>Medical & Surgical History</ThemedText>
-                <View style={styles.viewOnlyBadge}>
-                <Ionicons name="eye" size={12} color="#FFFFFF" />
-                <ThemedText style={styles.viewOnlyText}>View Only</ThemedText>
+                <View style={styles.viewOnlyBadge}>                         
                 </View>
             </TouchableOpacity>
         </View>

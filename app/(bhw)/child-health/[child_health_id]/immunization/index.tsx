@@ -38,12 +38,13 @@ const theme = {
 interface ImmunizationRecord {
   vaccine_type_id: number;
   vaccine_name: string;
-  at_birth_given: boolean;
-  first_dose_given: boolean;
-  second_dose_given: boolean;
-  third_dose_given: boolean;
+  at_birth_date: string | null;
+  first_dose_date: string | null;
+  second_dose_date: string | null;
+  third_dose_date: string | null;
   last_administered: string | null;
   next_recommended_date: string | null;
+  status: string;
   is_delayed: boolean;
 }
 
@@ -123,11 +124,12 @@ export default function ImmunizationListScreen() {
     backgroundColor: string;
     icon: string;
   } => {
+    // Count how many doses have been given
     const dosesGiven = [
-      record.at_birth_given,
-      record.first_dose_given,
-      record.second_dose_given,
-      record.third_dose_given,
+      record.at_birth_date,
+      record.first_dose_date,
+      record.second_dose_date,
+      record.third_dose_date,
     ].filter(Boolean).length;
 
     if (dosesGiven === 0) {
@@ -148,20 +150,20 @@ export default function ImmunizationListScreen() {
       };
     }
     
-    if (record.next_recommended_date) {
+    if (record.status === 'Completed') {
       return { 
-        text: 'In Progress', 
-        color: theme.colors.warning, 
-        backgroundColor: theme.colors.warningLight,
-        icon: 'time'
+        text: 'Complete', 
+        color: theme.colors.success, 
+        backgroundColor: theme.colors.successLight,
+        icon: 'checkmark-circle'
       };
     }
     
     return { 
-      text: 'Complete', 
-      color: theme.colors.success, 
-      backgroundColor: theme.colors.successLight,
-      icon: 'checkmark-circle'
+      text: 'In Progress', 
+      color: theme.colors.warning, 
+      backgroundColor: theme.colors.warningLight,
+      icon: 'time'
     };
   };
 
@@ -244,53 +246,73 @@ export default function ImmunizationListScreen() {
                     </View>
                   </View>
 
-                  {/* Dose Checklist */}
+                  {/* Dose List with Dates */}
                   <View style={styles.doseList}>
-                    {/* Only show At Birth if the vaccine has it */}
-                    {(record.at_birth_given !== null && record.at_birth_given !== undefined) && (
+                    {/* At Birth */}
+                    {record.at_birth_date !== null && (
                       <View style={styles.doseRow}>
-                        <Ionicons 
-                          name={record.at_birth_given ? "checkmark-circle" : "ellipse-outline"}
-                          size={20} 
-                          color={record.at_birth_given ? theme.colors.success : theme.colors.textMuted}
-                        />
-                        <ThemedText style={styles.doseLabel}>At Birth</ThemedText>
+                        <View style={styles.doseLeft}>
+                          <Ionicons 
+                            name={record.at_birth_date ? "checkmark-circle" : "ellipse-outline"}
+                            size={20} 
+                            color={record.at_birth_date ? theme.colors.success : theme.colors.textMuted}
+                          />
+                          <ThemedText style={styles.doseLabel}>At Birth</ThemedText>
+                        </View>
+                        <ThemedText style={styles.doseDate}>
+                          {formatDate(record.at_birth_date)}
+                        </ThemedText>
                       </View>
                     )}
                     
                     {/* First Dose */}
-                    {(record.first_dose_given !== null && record.first_dose_given !== undefined) && (
+                    {record.first_dose_date !== null && (
                       <View style={styles.doseRow}>
-                        <Ionicons 
-                          name={record.first_dose_given ? "checkmark-circle" : "ellipse-outline"}
-                          size={20} 
-                          color={record.first_dose_given ? theme.colors.success : theme.colors.textMuted}
-                        />
-                        <ThemedText style={styles.doseLabel}>1st Dose</ThemedText>
+                        <View style={styles.doseLeft}>
+                          <Ionicons 
+                            name={record.first_dose_date ? "checkmark-circle" : "ellipse-outline"}
+                            size={20} 
+                            color={record.first_dose_date ? theme.colors.success : theme.colors.textMuted}
+                          />
+                          <ThemedText style={styles.doseLabel}>1st Dose</ThemedText>
+                        </View>
+                        <ThemedText style={styles.doseDate}>
+                          {formatDate(record.first_dose_date)}
+                        </ThemedText>
                       </View>
                     )}
                     
                     {/* Second Dose */}
-                    {(record.second_dose_given !== null && record.second_dose_given !== undefined) && (
+                    {record.second_dose_date !== null && (
                       <View style={styles.doseRow}>
-                        <Ionicons 
-                          name={record.second_dose_given ? "checkmark-circle" : "ellipse-outline"}
-                          size={20} 
-                          color={record.second_dose_given ? theme.colors.success : theme.colors.textMuted}
-                        />
-                        <ThemedText style={styles.doseLabel}>2nd Dose</ThemedText>
+                        <View style={styles.doseLeft}>
+                          <Ionicons 
+                            name={record.second_dose_date ? "checkmark-circle" : "ellipse-outline"}
+                            size={20} 
+                            color={record.second_dose_date ? theme.colors.success : theme.colors.textMuted}
+                          />
+                          <ThemedText style={styles.doseLabel}>2nd Dose</ThemedText>
+                        </View>
+                        <ThemedText style={styles.doseDate}>
+                          {formatDate(record.second_dose_date)}
+                        </ThemedText>
                       </View>
                     )}
                     
                     {/* Third Dose */}
-                    {(record.third_dose_given !== null && record.third_dose_given !== undefined) && (
+                    {record.third_dose_date !== null && (
                       <View style={styles.doseRow}>
-                        <Ionicons 
-                          name={record.third_dose_given ? "checkmark-circle" : "ellipse-outline"}
-                          size={20} 
-                          color={record.third_dose_given ? theme.colors.success : theme.colors.textMuted}
-                        />
-                        <ThemedText style={styles.doseLabel}>3rd Dose</ThemedText>
+                        <View style={styles.doseLeft}>
+                          <Ionicons 
+                            name={record.third_dose_date ? "checkmark-circle" : "ellipse-outline"}
+                            size={20} 
+                            color={record.third_dose_date ? theme.colors.success : theme.colors.textMuted}
+                          />
+                          <ThemedText style={styles.doseLabel}>3rd Dose</ThemedText>
+                        </View>
+                        <ThemedText style={styles.doseDate}>
+                          {formatDate(record.third_dose_date)}
+                        </ThemedText>
                       </View>
                     )}
                   </View>
@@ -450,13 +472,27 @@ const styles = StyleSheet.create({
   doseRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
+  },
+  doseLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    flex: 1,
   },
   doseLabel: {
     fontSize: 14,
     color: theme.colors.textPrimary,
     fontWeight: '500',
+  },
+  doseDate: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
   dateSection: {
     borderTopWidth: 1,

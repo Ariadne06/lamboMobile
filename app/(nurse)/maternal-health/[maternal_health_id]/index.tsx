@@ -316,7 +316,7 @@ export default function NurseMaternalHealthDetailScreen() {
             onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/pregnancy-outcome` as any)}
           >
             <MaterialIcons name="child-care" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Delivery Outcome</ThemedText>
+            <ThemedText style={styles.actionButtonFullText}>Pregnancy Outcome</ThemedText>
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 

@@ -67,6 +67,16 @@ export default function BHWMenu() {
 
             <TouchableOpacity 
               style={[styles.button, { width: BUTTON_WIDTH }]}
+              onPress={() => router.push('/(bhw)/immunization-schedule')}
+            >
+              <View style={styles.buttonContent}>
+                <Ionicons name="calendar-outline" size={24} color="#1e293b" />
+                <ThemedText style={styles.buttonText}>Immunization Schedule</ThemedText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.button, { width: BUTTON_WIDTH }]}
               onPress={() => router.push('/(bhw)/general-health')}
             >
               <View style={styles.buttonContent}>

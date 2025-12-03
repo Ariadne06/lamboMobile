@@ -46,6 +46,8 @@ interface PregnancyOutcome {
   other_attendant: string | null;
   time_of_delivery: string | null;
   date_terminated: string;
+  baby_birthweight_in_grams: number | null;
+  baby_sex: string | null;
   recorded_by: number;
   created_at: string;
 }
@@ -201,6 +203,8 @@ export default function NursePregnancyOutcomeScreen() {
           </View>
         ) : (
           <>
+
+          
             {/* Outcome Details */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
@@ -213,6 +217,27 @@ export default function NursePregnancyOutcomeScreen() {
               <InfoRow label="Date Terminated" value={formatDate(outcome.date_terminated)} />
               <InfoRow label="Time of Delivery" value={formatTime(outcome.time_of_delivery)} />
             </View>
+
+             {/* Baby Information Card */}
+              {(outcome.baby_birthweight_in_grams || outcome.baby_sex) && (
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Ionicons name="heart" size={20} color={theme.colors.primary} />
+                    <ThemedText style={styles.cardTitle}>Baby Information</ThemedText>
+                  </View>
+            
+                    {outcome.baby_birthweight_in_grams && (
+                      <InfoRow 
+                        label="Birthweight" 
+                        value={`${outcome.baby_birthweight_in_grams} grams`} 
+                      />
+                      )}
+                    {outcome.baby_sex && (
+                      <InfoRow label="Sex" value={outcome.baby_sex} />
+                    )}
+                  </View>
+                )}
+            
 
             {/* Place of Delivery */}
             <View style={styles.card}>

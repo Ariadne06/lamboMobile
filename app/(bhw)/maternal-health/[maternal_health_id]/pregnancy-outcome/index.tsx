@@ -47,6 +47,8 @@ interface PregnancyOutcome {
   other_attendant: string | null;
   time_of_delivery: string | null;
   date_terminated: string;
+  baby_birthweight_in_grams: number | null;
+  baby_sex: string | null;
   recorded_by: number;
   created_at: string;
 }
@@ -158,11 +160,9 @@ export default function PregnancyOutcomeScreen() {
     return timeString;
   };
 
-  // ✅ NEW: Function to get the display value for place of delivery
   const getPlaceOfDeliveryDisplay = (): string => {
     if (!outcome) return 'N/A';
     
-    // If place_delivery_type is "Others", show the others_description instead
     if (outcome.place_delivery_type.toUpperCase() === 'OTHERS' && outcome.others_description) {
       return outcome.others_description;
     }
@@ -170,11 +170,9 @@ export default function PregnancyOutcomeScreen() {
     return outcome.place_delivery_type;
   };
 
-  // ✅ NEW: Function to get the display value for birth attendant
   const getBirthAttendantDisplay = (): string => {
     if (!outcome) return 'N/A';
     
-    // If birth_attendant is "Others", show the other_attendant instead
     if (outcome.birth_attendant.toUpperCase() === 'OTHERS' && outcome.other_attendant) {
       return outcome.other_attendant;
     }
@@ -263,6 +261,26 @@ export default function PregnancyOutcomeScreen() {
               <InfoRow label="Time of Delivery" value={formatTime(outcome.time_of_delivery)} />
             </View>
 
+            {/* Baby Information Card */}
+            {(outcome.baby_birthweight_in_grams || outcome.baby_sex) && (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="heart" size={20} color={theme.colors.primary} />
+                  <ThemedText style={styles.cardTitle}>Baby Information</ThemedText>
+                </View>
+
+                {outcome.baby_birthweight_in_grams && (
+                  <InfoRow 
+                    label="Birthweight" 
+                    value={`${outcome.baby_birthweight_in_grams} grams`} 
+                  />
+                )}
+                {outcome.baby_sex && (
+                  <InfoRow label="Sex" value={outcome.baby_sex} />
+                )}
+              </View>
+            )}
+
             {/* Place of Delivery Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
@@ -270,10 +288,8 @@ export default function PregnancyOutcomeScreen() {
                 <ThemedText style={styles.cardTitle}>Place of Delivery</ThemedText>
               </View>
 
-              {/* ✅ UPDATED: Use the new function to display place of delivery */}
               <InfoRow label="Place of Delivery" value={getPlaceOfDeliveryDisplay()} />
               
-              {/* ✅ UPDATED: Only show ownership if it's a health facility (not others) */}
               {outcome.place_delivery_type.toUpperCase() === 'HEALTH FACILITY' && outcome.ownership_type && (
                 <InfoRow label="Facility Ownership" value={outcome.ownership_type} />
               )}
@@ -286,7 +302,6 @@ export default function PregnancyOutcomeScreen() {
                 <ThemedText style={styles.cardTitle}>Birth Attendant</ThemedText>
               </View>
 
-              {/* ✅ UPDATED: Use the new function to display birth attendant */}
               <InfoRow label="Birth Attendant" value={getBirthAttendantDisplay()} />
             </View>
 
