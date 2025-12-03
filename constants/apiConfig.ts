@@ -213,6 +213,8 @@ bhwDashboard: "/household_api/bhw-dashboard/",
     `/household_api/maternal-health-records/${maternalHealthId}/checkups/add/`,
   CHECKUP_TRACK: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/checkups/track/`,
+  MATERNAL_CHECKUP_UPDATE: (maternalHealthId: number, checkupId: number) => 
+  `/household_api/maternal-health-records/${maternalHealthId}/checkups/${checkupId}/update/`,
 
   // ========================================
   // MATERNAL HEALTH - SUPPLEMENTS

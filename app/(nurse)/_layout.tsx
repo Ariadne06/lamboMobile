@@ -94,6 +94,31 @@ export default function NurseTabLayout() {
         name="maternal-health/[maternal_health_id]/index"
         options={{ href: null }}
       />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/obstetrical-history/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/supplements/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/immunization/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/checkups/index"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="maternal-health/[maternal_health_id]/checkups/[checkup_id]/update-checkup"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

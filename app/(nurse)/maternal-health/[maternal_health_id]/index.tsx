@@ -291,25 +291,16 @@ export default function NurseMaternalHealthDetailScreen() {
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Supplements */}
+          {/* Supplements & Deworming */}
           <TouchableOpacity
             style={[styles.actionButtonFull, { backgroundColor: '#14B8A6' }]}
             onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/supplements` as any)}
           >
             <MaterialIcons name="medication" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Supplements</ThemedText>
+            <ThemedText style={styles.actionButtonFullText}>Supplements & Deworming</ThemedText>
             <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Deworming */}
-          <TouchableOpacity
-            style={[styles.actionButtonFull, { backgroundColor: '#8B5CF6' }]}
-            onPress={() => router.push(`/(nurse)/maternal-health/${maternal_health_id}/deworming` as any)}
-          >
-            <MaterialIcons name="medication" size={24} color="#FFFFFF" />
-            <ThemedText style={styles.actionButtonFullText}>Deworming</ThemedText>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
 
           {/* Delivery Outcome */}
           <TouchableOpacity
