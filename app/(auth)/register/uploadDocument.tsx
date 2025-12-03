@@ -117,8 +117,7 @@ export default function UploadDocument() {
     }
   };
 
-  // ✅ ENHANCED: Verification handler with guardian document validation
-  // ✅ ENHANCED: Verification handler with guardian document validation
+ // ✅ ENHANCED: Verification handler with guardian document validation
 const handleVerify = async () => {
   if (!image) {
     Alert.alert('No Photo', 'Please take or select a photo first.');
@@ -216,20 +215,19 @@ const handleVerify = async () => {
       return;
     }
 
-    // ✅ FIXED: Check if document is a supporting document first
+    // ✅ FIXED: Check document type properly - supporting documents vs ID documents
     const isSupportingDoc = documentType && (
       documentType.toLowerCase().includes('birth') || 
       documentType.toLowerCase().includes('voter') ||
       documentType.toLowerCase().includes('certificate')
     );
 
-    // ✅ NEW: For supporting documents, skip OCR validation if header check passed
+    // ✅ For supporting documents (both regular and guardian), skip OCR validation if verified
     if (isSupportingDoc && (data.verified === true || data.status === 'match')) {
       console.log('✅ Supporting document verified successfully (header check only)');
       
       setVerified(true);
       
-      // For supporting documents, we don't need OCR fields
       if (data.extracted_fields) {
         setFormData((prev: any) => ({
           ...prev,
@@ -247,33 +245,7 @@ const handleVerify = async () => {
       return;
     }
 
-    // ✅ ENHANCED: Only check for empty OCR fields for ID documents (non-supporting)
-    if (!isSupportingDoc && isGuardianVerification && data.extracted_fields) {
-      const ocrFields = data.extracted_fields;
-      const hasEmptyOCR = !ocrFields.first_name && !ocrFields.last_name && !ocrFields.dob;
-      
-      if (hasEmptyOCR) {
-        console.log('❌ Guardian ID document: No readable text found');
-        
-        Alert.alert(
-          '📄 Document Not Readable',
-          `We couldn't read any text from your guardian's ${documentType}. Please ensure:\n\n• The document is clear and well-lit\n• All text is visible and readable\n• The photo is in focus\n• You're uploading the correct document type`,
-          [
-            {
-              text: 'Retake Photo',
-              onPress: () => setImage(null)
-            },
-            {
-              text: 'Change Document Type',
-              onPress: () => router.back()
-            }
-          ]
-        );
-        return;
-      }
-    }
-
-    // Handle field mismatches
+    // Handle field mismatches (for ID documents only)
     if (data.error_type === 'MISMATCH' && data.mismatches && !data.mismatches.header) {
       console.log('⚠️ Field mismatches detected:', data.mismatches);
       setMismatches(data.mismatches);
@@ -290,7 +262,7 @@ const handleVerify = async () => {
     if (data.verified === true || data.status === 'match') {
       console.log('✅ Document verified successfully');
       
-      // ✅ Additional validation specifically for ID documents only
+      // ✅ Additional validation for ID documents (not supporting documents)
       if (!isSupportingDoc && isGuardianVerification && data.extracted_fields) {
         const ocrFields = data.extracted_fields;
         
@@ -680,7 +652,7 @@ const handleVerify = async () => {
           <>
             <View style={styles.successCard}>
               <Ionicons name="checkmark-circle" size={64} color="#10B981" />
-              <Text style={styles.successTitle}>✅ Verified!</Text>
+              <Text style={styles.successTitle}>Verified!</Text>
               <Text style={styles.successMessage}>
                 Your document has been successfully verified.
               </Text>
