@@ -201,8 +201,9 @@ bhwDashboard: "/household_api/bhw-dashboard/",
   // ========================================
   MATERNAL_LAB_SCREENING_LIST: (maternalHealthId: number) =>
     `/household_api/maternal-health-records/${maternalHealthId}/laboratory-screening/`,
-  MATERNAL_LAB_SCREENING_ADD: (maternalHealthId: number) =>
-    `/household_api/maternal-health-records/${maternalHealthId}/laboratory-screening/add/`,
+MATERNAL_LAB_SCREENING_CREATE: (maternalHealthId: number) =>
+  `/household_api/maternal-health-records/${maternalHealthId}/lab-screening/add/`,
+
 
   // ========================================
   // MATERNAL HEALTH - CHECKUP RECORDS

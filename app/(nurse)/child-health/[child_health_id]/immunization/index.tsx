@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
@@ -8,35 +8,38 @@ import {
   RefreshControl,
   TouchableOpacity,
   BackHandler,
-} from 'react-native';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
-import CustomHeader from '@/components/ui/CustomHeader';
-import { API_BASE_URL, API_ENDPOINTS } from '@/constants/apiConfig';
+} from "react-native";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { ThemedText } from "@/components/ThemedText";
+import CustomHeader from "@/components/ui/CustomHeader";
+import { API_BASE_URL, API_ENDPOINTS } from "@/constants/apiConfig";
 
+/* ------------------------------------------------------
+   THEME
+------------------------------------------------------- */
 const theme = {
   colors: {
-    background: '#F8FAFC',
-    surface: '#FFFFFF',
-    border: '#E5E7EB',
-    primary: '#E11D2F',
-    primaryLight: '#FFE4E6',
-    success: '#16A34A',
-    successLight: '#DCFCE7',
-    warning: '#F59E0B',
-    warningLight: '#FEF3C7',
-    danger: '#EF4444',
-    dangerLight: '#FEE2E2',
-    textPrimary: '#111827',
-    textSecondary: '#6B7280',
-    textMuted: '#9CA3AF',
-    chipBg: '#F3F4F6',
+    background: "#F8FAFC",
+    surface: "#FFFFFF",
+    border: "#E5E7EB",
+    primary: "#E11D2F",
+    primaryLight: "#FFE4E6",
+    success: "#16A34A",
+    successLight: "#DCFCE7",
+    warning: "#F59E0B",
+    warningLight: "#FEF3C7",
+    danger: "#EF4444",
+    dangerLight: "#FEE2E2",
+    textPrimary: "#111827",
+    textSecondary: "#6B7280",
+    textMuted: "#9CA3AF",
   },
-  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
-  radius: { sm: 6, md: 8, lg: 12, xl: 16, pill: 999 },
 };
 
+/* ------------------------------------------------------
+   INTERFACE
+------------------------------------------------------- */
 interface ImmunizationRecord {
   vaccine_type_id: number;
   vaccine_name: string;
@@ -51,45 +54,39 @@ interface ImmunizationRecord {
   is_delayed: boolean;
 }
 
+/* ------------------------------------------------------
+   MAIN SCREEN
+------------------------------------------------------- */
 export default function NurseImmunizationListScreen() {
-  const { child_health_id } = useLocalSearchParams<{ child_health_id: string }>();
+  const { child_health_id } =
+    useLocalSearchParams<{ child_health_id: string }>();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [records, setRecords] = useState<ImmunizationRecord[]>([]);
-  const [childName, setChildName] = useState('');
+  const [childName, setChildName] = useState("");
 
-  useEffect(() => {
-    fetchImmunizations();
-  }, []);
-
-  const handleBackPress = () => {
+  /* ------------------------------------------------------
+     HANDLE BACK PRESS
+  ------------------------------------------------------- */
+  const handleBackPress = React.useCallback(() => {
     router.push(`/(nurse)/child-health/${child_health_id}`);
-  };
+    return true;
+  }, [child_health_id]);
 
-  const handleAddImmunization = () => {
-    router.push(`/(nurse)/child-health/${child_health_id}/immunization/add-immunization`);
-  };
-
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchImmunizations();
-      const handler = BackHandler.addEventListener("hardwareBackPress", () => {
-        handleBackPress();
-        return true;
-      });
-      return () => handler.remove();
-    }, [])
-  );
-
+  /* ------------------------------------------------------
+     FETCH IMMUNIZATIONS (ALWAYS USE RIGHT CHILD ID)
+  ------------------------------------------------------- */
   const fetchImmunizations = async () => {
+    if (!child_health_id) return;
+
     try {
       setLoading(true);
 
       const res = await fetch(
         `${API_BASE_URL}${API_ENDPOINTS.CHILD_IMMUNIZATIONS_LIST(
-          parseInt(child_health_id as string)
+          parseInt(child_health_id)
         )}`
       );
 
@@ -105,31 +102,64 @@ export default function NurseImmunizationListScreen() {
     }
   };
 
+  /* ------------------------------------------------------
+     REFETCH WHEN CHILD ID CHANGES
+  ------------------------------------------------------- */
+  useEffect(() => {
+    fetchImmunizations();
+  }, [child_health_id]);
+
+  /* ------------------------------------------------------
+     REFETCH WHEN SCREEN FOCUSES
+  ------------------------------------------------------- */
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchImmunizations();
+
+      const handler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        handleBackPress
+      );
+
+      return () => handler.remove();
+    }, [child_health_id, handleBackPress])
+  );
+
+  /* ------------------------------------------------------
+     FORMATTING HELPERS
+  ------------------------------------------------------- */
   const formatDate = (val: string | null) => {
     if (!val) return "—";
     return new Date(val).toLocaleDateString("en-US");
   };
 
   const renderDoseChip = (label: string, given: boolean, disabled = false) => (
-    <View style={[
-      styles.doseChip,
-      given && styles.doseChipGiven,
-      disabled && styles.doseChipDisabled
-    ]}>
+    <View
+      style={[
+        styles.doseChip,
+        given && styles.doseChipGiven,
+        disabled && styles.doseChipDisabled,
+      ]}
+    >
       <Ionicons
         name={given ? "checkmark-circle" : "ellipse-outline"}
         size={14}
         color={
-          disabled ? theme.colors.textMuted :
-          given ? theme.colors.success : theme.colors.textMuted
+          disabled
+            ? theme.colors.textMuted
+            : given
+            ? theme.colors.success
+            : theme.colors.textMuted
         }
         style={{ marginRight: 4 }}
       />
-      <ThemedText style={[
-        styles.doseChipText,
-        given && styles.doseChipTextGiven,
-        disabled && styles.doseChipTextDisabled
-      ]}>
+      <ThemedText
+        style={[
+          styles.doseChipText,
+          given && styles.doseChipTextGiven,
+          disabled && styles.doseChipTextDisabled,
+        ]}
+      >
         {label}
       </ThemedText>
     </View>
@@ -148,7 +178,7 @@ export default function NurseImmunizationListScreen() {
         color: theme.colors.textMuted,
         bgColor: "#E5E7EB",
         icon: "ellipse",
-        border: theme.colors.border
+        border: theme.colors.border,
       };
     }
 
@@ -158,7 +188,7 @@ export default function NurseImmunizationListScreen() {
         color: theme.colors.danger,
         bgColor: theme.colors.dangerLight,
         icon: "alert",
-        border: theme.colors.warning
+        border: theme.colors.warning,
       };
     }
 
@@ -168,7 +198,7 @@ export default function NurseImmunizationListScreen() {
         color: theme.colors.success,
         bgColor: theme.colors.successLight,
         icon: "checkmark-circle",
-        border: theme.colors.success
+        border: theme.colors.success,
       };
     }
 
@@ -177,7 +207,7 @@ export default function NurseImmunizationListScreen() {
       color: theme.colors.primary,
       bgColor: theme.colors.primaryLight,
       icon: "time",
-      border: theme.colors.border
+      border: theme.colors.border,
     };
   };
 
@@ -191,20 +221,33 @@ export default function NurseImmunizationListScreen() {
       rec.at_birth_date,
       rec.first_dose_date,
       rec.second_dose_date,
-      rec.third_dose_date
+      rec.third_dose_date,
     ].filter(Boolean).length;
 
     const info = getStatusInfo(rec);
 
     return (
-      <View key={rec.vaccine_type_id} style={[styles.card, { borderColor: info.border }]}>
+      <View
+        key={rec.vaccine_type_id}
+        style={[styles.card, { borderColor: info.border }]}
+      >
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <View>
-            <ThemedText style={styles.vaccineName}>{rec.vaccine_name}</ThemedText>
+            <ThemedText style={styles.vaccineName}>
+              {rec.vaccine_name}
+            </ThemedText>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={[styles.statusPill, { backgroundColor: info.bgColor }]}>
+              <View
+                style={[styles.statusPill, { backgroundColor: info.bgColor }]}
+              >
                 <Ionicons name={info.icon as any} size={12} color={info.color} />
-                <ThemedText style={{ fontSize: 11, color: info.color, marginLeft: 4 }}>
+                <ThemedText
+                  style={{
+                    fontSize: 11,
+                    color: info.color,
+                    marginLeft: 4,
+                  }}
+                >
                   {info.label}
                 </ThemedText>
               </View>
@@ -226,15 +269,19 @@ export default function NurseImmunizationListScreen() {
         <View style={styles.dateRow}>
           <View>
             <ThemedText style={styles.dateLabel}>Last given</ThemedText>
-            <ThemedText style={styles.dateValue}>{formatDate(rec.last_administered)}</ThemedText>
+            <ThemedText style={styles.dateValue}>
+              {formatDate(rec.last_administered)}
+            </ThemedText>
           </View>
 
           <View>
             <ThemedText style={styles.dateLabel}>Next due</ThemedText>
-            <ThemedText style={[
-              styles.dateValue,
-              rec.is_delayed && { color: theme.colors.danger }
-            ]}>
+            <ThemedText
+              style={[
+                styles.dateValue,
+                rec.is_delayed && { color: theme.colors.danger },
+              ]}
+            >
               {formatDate(rec.next_recommended_date)}
             </ThemedText>
           </View>
@@ -243,6 +290,9 @@ export default function NurseImmunizationListScreen() {
     );
   };
 
+  /* ------------------------------------------------------
+     LOADING SCREEN
+  ------------------------------------------------------- */
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -257,6 +307,9 @@ export default function NurseImmunizationListScreen() {
     );
   }
 
+  /* ------------------------------------------------------
+     MAIN UI
+  ------------------------------------------------------- */
   return (
     <SafeAreaView style={styles.container}>
       <CustomHeader title="Child Immunization" onBackPress={handleBackPress} />
@@ -274,15 +327,17 @@ export default function NurseImmunizationListScreen() {
               <ThemedText>No immunization records</ThemedText>
             </View>
           ) : (
-            records.map(rec => renderCard(rec))
+            records.map((rec) => renderCard(rec))
           )}
         </ScrollView>
 
-        {/* ADD IMMUNIZATION BUTTON (ALWAYS VISIBLE) */}
         <TouchableOpacity
           style={styles.fab}
-          onPress={handleAddImmunization}
-          activeOpacity={0.8}
+          onPress={() =>
+            router.push(
+              `/(nurse)/child-health/${child_health_id}/immunization/add-immunization`
+            )
+          }
         >
           <Ionicons name="add" size={28} color="#FFF" />
         </TouchableOpacity>
@@ -291,6 +346,9 @@ export default function NurseImmunizationListScreen() {
   );
 }
 
+/* ------------------------------------------------------
+   STYLES
+------------------------------------------------------- */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
 
@@ -305,6 +363,7 @@ const styles = StyleSheet.create({
   },
 
   vaccineName: { fontSize: 16, fontWeight: "700" },
+
   statusPill: {
     flexDirection: "row",
     paddingHorizontal: 8,
@@ -313,6 +372,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 8,
   },
+
   doseSummary: { fontSize: 11, color: theme.colors.textSecondary },
 
   doseRow: {
@@ -339,7 +399,11 @@ const styles = StyleSheet.create({
 
   doseChipDisabled: { opacity: 0.5 },
 
-  doseChipText: { fontSize: 12, fontWeight: "500", color: theme.colors.textPrimary },
+  doseChipText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: theme.colors.textPrimary,
+  },
 
   doseChipTextGiven: { color: theme.colors.success },
 
