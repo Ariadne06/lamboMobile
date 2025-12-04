@@ -4,6 +4,11 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+// ✅ General Health Options (for the resident)
+const generalHealthOptions = [
+  { label: 'General Health', icon: 'heart-pulse', iconFamily: 'MaterialCommunityIcons', route: '/(tabs)/health/general-health' },
+];
+
 const maternalOptions = [
   { label: 'Medical/Surgical', icon: 'medkit', route: '/(tabs)/health/maternal/medicalsurgical' },
   { label: 'Immunization', icon: 'shield-checkmark', route: '/(tabs)/health/maternal/immunization' },
@@ -35,6 +40,34 @@ export default function HealthRecordsScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      {/* ✅ General Health Section - NEW */}
+      <View style={styles.sectionTitleContainer}>
+        <MaterialCommunityIcons name="clipboard-pulse" size={26} color="#10b981" style={{ marginRight: 8 }} />
+        <ThemedText style={styles.sectionTitleGeneralBig}>General Health</ThemedText>
+      </View>
+      <View style={styles.sectionCard}>
+        <View style={styles.optionsGrid}>
+          {generalHealthOptions.map((opt) => (
+            <TouchableOpacity
+              key={opt.label}
+              style={styles.optionButton}
+              onPress={() => router.push(opt.route as any)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: '#d1fae5' }]}>
+                {opt.iconFamily === 'MaterialCommunityIcons' ? (
+                  <MaterialCommunityIcons name={opt.icon as any} size={22} color="#10b981" />
+                ) : (
+                  <Ionicons name={opt.icon as any} size={22} color="#10b981" />
+                )}
+              </View>
+              <ThemedText style={styles.optionLabelGeneral}>{opt.label}</ThemedText>
+              <Ionicons name="chevron-forward" size={18} color="#10b981" style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       {/* Maternal Section Title */}
       <View style={styles.sectionTitleContainer}>
         <MaterialCommunityIcons name="human-female" size={26} color="#FF3D33" style={{ marginRight: 8 }} />
@@ -112,6 +145,13 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     marginLeft: 24,
   },
+  // ✅ NEW: General Health Title Style
+  sectionTitleGeneralBig: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#10b981',
+    letterSpacing: 0.5,
+  },
   sectionTitleMaternalBig: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -168,6 +208,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+  },
+  // ✅ NEW: General Health Label Style
+  optionLabelGeneral: {
+    fontSize: 16,
+    color: '#10b981',
+    fontWeight: '600',
+    marginLeft: 2,
+    flexShrink: 1,
   },
   optionLabel: {
     fontSize: 16,

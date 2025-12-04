@@ -271,6 +271,10 @@ MATERNAL_LAB_SCREENING_CREATE: (maternalHealthId: number) =>
 
   // Child Immunization Schedule
   CHILD_IMMUNIZATION_SCHEDULE: '/household_api/child-immunization-schedule/',
+
+  // Resident General Health
+  RESIDENT_GENERAL_HEALTH: (residentId: number) => 
+    `/household_api/residents/${residentId}/general-health/`,
 };
 
 // API settings
