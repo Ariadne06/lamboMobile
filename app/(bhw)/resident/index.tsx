@@ -567,7 +567,7 @@ export default function ResidentListScreen() {
             {searchQuery.trim() && (
               <View style={styles.filterChip}>
                 <Ionicons name="search" size={10} color="#475569" />
-                <Text style={styles.filterChipText}>"{searchQuery}"</Text>
+                <Text style={styles.filterChipText}>&quot;{searchQuery}&quot;</Text>
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
                   <Ionicons name="close" size={12} color="#475569" />
                 </TouchableOpacity>
