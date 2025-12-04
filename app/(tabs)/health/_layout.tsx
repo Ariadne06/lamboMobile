@@ -9,11 +9,12 @@ export default function HealthLayout() {
       }}
     >
       <Stack.Screen 
-        name="health-records" 
+        name="health" 
         options={{ 
           title: 'Health Records',
         }} 
       />
+      
       <Stack.Screen 
         name="child" 
         options={{ 
@@ -22,6 +23,12 @@ export default function HealthLayout() {
       />
       <Stack.Screen 
         name="maternal" 
+        options={{ 
+          headerShown: false,
+        }} 
+      />
+      <Stack.Screen 
+        name="general-health" 
         options={{ 
           headerShown: false,
         }} 

@@ -62,6 +62,7 @@ export default function TabLayout() {
           title: 'Health Records',
         }}
       />
+      
 
       <Tabs.Screen
         name="profile"
