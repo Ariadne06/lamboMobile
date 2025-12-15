@@ -268,6 +268,7 @@ MATERNAL_LAB_SCREENING_CREATE: (maternalHealthId: number) =>
   // ========================================
   MOBILE_BUSINESSES_BY_OWNER: '/api/mobile/businesses/',
   MOBILE_SPECIFIC_BUSINESS: (businessId: number) => `/api/mobile/businesses/${businessId}/`,
+  REGISTER_BUSINESS_RESIDENT: '/certificate_api/register-business/',
 
   // Child Immunization Schedule
   CHILD_IMMUNIZATION_SCHEDULE: '/household_api/child-immunization-schedule/',
