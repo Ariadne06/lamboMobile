@@ -216,7 +216,7 @@ export default function HealthRecordsScreen() {
                   <MaterialCommunityIcons name="clipboard-text-outline" size={64} color="#9CA3AF" />
                   <Text style={styles.emptyTitle}>No Maternal Records</Text>
                   <Text style={styles.emptyText}>
-                    You don't have any maternal health records yet. Contact your Barangay Health Worker to create one.
+                    You don&apos;t have any maternal health records yet. Contact your Barangay Health Worker to create one.
                   </Text>
                 </View>
               ) : (
@@ -261,7 +261,7 @@ export default function HealthRecordsScreen() {
         {/* Children's Health Section */}
         <View style={styles.sectionHeader}>
           <MaterialCommunityIcons name="baby-face" size={24} color="#0ea5e9" />
-          <Text style={styles.sectionTitle}>My Children's Health</Text>
+          <Text style={styles.sectionTitle}>My Children&apos;s Health</Text>
         </View>
         
         <View style={styles.section}>
