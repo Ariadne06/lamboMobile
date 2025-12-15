@@ -62,7 +62,7 @@ export default function HomeScreen() {
             {isResident && (
               <TouchableOpacity 
                 style={[styles.button, { width: BUTTON_WIDTH }]} 
-                onPress={() => router.push('/(tabs)/health/health')}>
+                onPress={() => router.push('/(tabs)/health')}>
                 <View style={styles.buttonContent}>
                   <Ionicons name="medkit-outline" size={22} color="#1e293b" />
                   <ThemedText style={styles.buttonText}>Health Records</ThemedText>
