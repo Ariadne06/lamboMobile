@@ -113,13 +113,13 @@ export default function TabLayout() {
       />
 
       {/* HIDDEN: DevTest tab - only show in development when needed */}
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="devtest"
         options={{
           href: null,
           title: 'Dev Test',
         }}
-      />
+      /> */}
 
     </Tabs>
   );

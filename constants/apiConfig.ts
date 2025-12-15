@@ -276,6 +276,10 @@ MATERNAL_LAB_SCREENING_CREATE: (maternalHealthId: number) =>
   // Resident General Health
   RESIDENT_GENERAL_HEALTH: (residentId: number) => 
     `/household_api/residents/${residentId}/general-health/`,
+  RESIDENT_MATERNAL_RECORDS: (residentId: number) => 
+    `/household_api/residents/${residentId}/maternal-records/`,
+  RESIDENT_CHILDREN: (residentId: number) => 
+    `/household_api/residents/${residentId}/children/`,
 };
 
 // API settings
