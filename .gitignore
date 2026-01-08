@@ -41,4 +41,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# IDE
+.idea/
+
+google-services.json
+
 app-example
