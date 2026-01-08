@@ -44,4 +44,6 @@ yarn-error.*
 # IDE
 .idea/
 
+google-services.json
+
 app-example
